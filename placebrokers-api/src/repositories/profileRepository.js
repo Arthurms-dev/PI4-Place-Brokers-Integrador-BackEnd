@@ -14,15 +14,15 @@ class ProfileRepository {
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
    */
-  async create({ id, nome, email, cargo }) {
+  async create({ id, nome, email, cargo, vinculo = null, creci = null, status = 'pendente' }) {
     const { data, error } = await supabaseAdmin
-      .from('profiles')
-      .insert({ id, nome, email, cargo })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
+    .from('profiles')
+    .insert({ id, nome, email, cargo, vinculo, creci, status })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
 }
 
 module.exports = { ProfileRepository };
