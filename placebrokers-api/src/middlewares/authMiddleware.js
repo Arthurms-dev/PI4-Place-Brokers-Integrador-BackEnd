@@ -1,6 +1,9 @@
 'use strict';
 
 const { supabaseAuth } = require('../config/supabase');
+const { ProfileRepository } = require('../repositories/profileRepository');
+
+const profileRepository = new ProfileRepository();
 
 async function authMiddleware(req, res, next) {
   const header = req.headers.authorization ?? '';
@@ -15,7 +18,13 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ code: 'UNAUTHENTICATED', message: 'Sessão inválida ou expirada.' });
   }
 
-  req.userId = data.user.id;
+  const profile = await profileRepository.findById(data.user.id);
+  if (!profile) {
+    return res.status(401).json({ code: 'UNAUTHENTICATED', message: 'Perfil não encontrado.' });
+  }
+
+  req.userId = profile.id;
+  req.user = profile;
   next();
 }
 
