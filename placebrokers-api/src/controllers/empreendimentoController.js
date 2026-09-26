@@ -42,6 +42,7 @@ async function criar(req, res) {
       ...b,
       lazer: b.lazer ? JSON.parse(b.lazer) : [],
       publicado: b.publicado === 'true',
+      disponivel: b.disponivel !== 'false',
       quartosMin: paraNumero(b.quartosMin),
       quartosMax: paraNumero(b.quartosMax),
       vagasMin: paraNumero(b.vagasMin),

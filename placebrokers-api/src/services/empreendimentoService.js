@@ -37,7 +37,7 @@ class EmpreendimentoService {
   }
 
   /**
-   * @param {object}
+   * @param {object} dados
    * @param {{ capa?, galeria?, book?, tabela? }} arquivos
    */
   async criar(dados, arquivos) {
@@ -78,6 +78,7 @@ class EmpreendimentoService {
       tabela_url: tabelaUrl,
       tabela_atualizado_em: tabelaUrl ? new Date().toISOString() : null,
       publicado: dados.publicado ?? false,
+      disponivel: dados.disponivel ?? true,
     });
 
     if (galeriaUrls.length) {
