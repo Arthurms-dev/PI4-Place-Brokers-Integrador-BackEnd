@@ -7,13 +7,13 @@ const SEVERIDADE_TAG = {
 };
 
 const STATUS_LABEL = {
-    sugestao: 'Sugestao',
+    sugestao: 'Sugestão',
     em_analise: 'Em análise',
     planejado: 'Planejado',
     concluido: 'Concluído',
 };
 
-class painelAdmService {
+class PainelAdmService {
     /** @param {{ painelAdmRepository}} deps*/
     constructor ({ painelAdmRepository}) {
         this.painelAdmRepository = painelAdmRepository;
@@ -51,4 +51,4 @@ class painelAdmService {
         }));
     }
 }
-module.exports = { painelAdmService};
+module.exports = { PainelAdmService};
