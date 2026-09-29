@@ -16,13 +16,20 @@ class ProfileRepository {
    */
   async create({ id, nome, email, cargo, vinculo = null, creci = null, status = 'pendente' }) {
     const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .insert({ id, nome, email, cargo, vinculo, creci, status })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
+      .from('profiles')
+      .insert({ id, nome, email, cargo, vinculo, creci, status })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  /** @param {string} id @param {object} dados */
+  async atualizar(id, dados) {
+    const { data, error } = await supabaseAdmin.from('profiles').update(dados).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
 }
 
 module.exports = { ProfileRepository };

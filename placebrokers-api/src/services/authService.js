@@ -3,7 +3,7 @@
 const { AuthError } = require('../errors/AuthError');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const VALID_ROLES_CADASTRO = ['corretor', 'viabilizador'];
+const VALID_ROLES_CADASTRO = ['corretor'];
 
 function toPublicUser(profile) {
   return { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo };
@@ -17,7 +17,7 @@ class AuthService {
   /**
    * @param {object} deps
    * @param {{ signInWithPassword: Function, createUser: Function }} deps.authClient
-   * @param {{ findById: Function, create: Function }} deps.profileRepository
+   * @param {{ findById: Function, create: Function, atualizar: Function }} deps.profileRepository
    */
   constructor({ authClient, profileRepository }) {
     this.authClient = authClient;
@@ -92,7 +92,7 @@ class AuthService {
     if (confirmPassword !== password) errors.confirmPassword = 'As senhas não coincidem.';
 
     if (!role || !VALID_ROLES_CADASTRO.includes(role)) {
-      errors.role = 'Selecione um perfil válido (corretor ou viabilizador).';
+      errors.role = 'Só corretores podem se cadastrar por aqui.';
     }
 
     if (role === 'corretor') {
@@ -149,6 +149,27 @@ class AuthService {
     }
 
     return { user: toPublicUser(profile), token: null };
+  }
+
+  /**
+   * @param {string} userId @param {{ nome?: string, telefone?: string }} dados
+   */
+  async atualizarPerfil(userId, { nome, telefone } = {}) {
+    const dados = {};
+
+    if (nome !== undefined) {
+      if (!nome?.trim()) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { nome: 'Informe o nome.' });
+      dados.nome = nome.trim();
+    }
+    if (telefone !== undefined) {
+      dados.telefone = telefone?.trim() || null;
+    }
+    if (Object.keys(dados).length === 0) {
+      throw new AuthError('VALIDATION_ERROR', 'Nada para atualizar.');
+    }
+
+    const profile = await this.profileRepository.atualizar(userId, dados);
+    return toPublicUser(profile);
   }
 }
 

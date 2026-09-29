@@ -40,6 +40,15 @@ async function me(req, res) {
   }
 }
 
+async function atualizarMe(req, res) {
+  try {
+    const usuario = await authService.atualizarPerfil(req.userId, req.body);
+    return res.status(200).json({ user: usuario });
+  } catch (err) {
+    return handleAuthError(res, err);
+  }
+}
+
 function handleAuthError(res, err) {
   if (err instanceof AuthError) {
     return res.status(err.statusCode).json({
@@ -52,4 +61,4 @@ function handleAuthError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { login, register, me };
+module.exports = { login, register, me, atualizarMe };
