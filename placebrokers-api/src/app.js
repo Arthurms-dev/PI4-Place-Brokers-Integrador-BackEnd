@@ -10,6 +10,7 @@ const leadRoutes = require('./routes/leadRoutes');
 const equipeRoutes = require('./routes/equipeRoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
 const corretorRoutes = require('./routes/corretorRoutes');
+const metricasRoutes = require('./routes/metricasroutes');
 
 const app = express();
 
@@ -22,9 +23,9 @@ app.use('/corretores', corretorRoutes);
 app.use('/empreendimentos', empreendimentoRoutes);
 app.use('/construtoras', construtoraRoutes);
 app.use('/painel', painelRoutes);
-app.use('/leads', leadRoutes);
 app.use('/equipe', equipeRoutes);
 app.use('/vendas', vendaRoutes);
+app.use('/metricas', metricasRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
