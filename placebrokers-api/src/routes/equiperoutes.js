@@ -5,7 +5,7 @@ const {
   listar, atualizar, criarGerente,
   listarTimes, criarTime, atualizarTime, removerTime,
   listarDiretorias, criarDiretoria,
-} = require('../controllers/equipecontroller');
+} = require('../controllers/equipeController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
 

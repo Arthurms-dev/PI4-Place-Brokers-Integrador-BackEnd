@@ -7,8 +7,9 @@ const empreendimentoRoutes = require('./routes/empreendimentoRoutes');
 const construtoraRoutes = require('./routes/construtoraRoutes');
 const painelRoutes = require('./routes/painelAdmRoutes');
 const leadRoutes = require('./routes/leadRoutes');
-const equipeRoutes = require('./routes/equiperoutes');
-const vendaRoutes = require('./routes/vendaroutes');
+const equipeRoutes = require('./routes/equipeRoutes');
+const vendaRoutes = require('./routes/vendaRoutes');
+const corretorRoutes = require('./routes/corretorRoutes');
 
 const app = express();
 
@@ -16,6 +17,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/auth', authRoutes);
+app.use('/leads', leadRoutes);
+app.use('/corretores', corretorRoutes);
 app.use('/empreendimentos', empreendimentoRoutes);
 app.use('/construtoras', construtoraRoutes);
 app.use('/painel', painelRoutes);

@@ -1,6 +1,6 @@
 'use strict';
 
-const { VendaService } = require('../services/vendaservice');
+const { VendaService } = require('../services/vendaService');
 const { VendaRepository } = require('../repositories/vendaRepository');
 const { EquipeRepository } = require('../repositories/equipeRepository');
 const { AppError } = require('../errors/AppError');
