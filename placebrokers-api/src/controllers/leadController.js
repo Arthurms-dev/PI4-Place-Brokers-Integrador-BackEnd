@@ -8,9 +8,27 @@ class LeadController {
     this.leadService = leadService;
   }
 
+  criar = async (req, res) => {
+    try {
+      const lead = await this.leadService.criar(req.body ?? {});
+      return res.status(201).json({ lead });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
   listar = async (req, res) => {
     try {
       const leads = await this.leadService.listar();
+      return res.status(200).json({ leads });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  listarMeus = async (req, res) => {
+    try {
+      const leads = await this.leadService.listarDoCorretor(req.user);
       return res.status(200).json({ leads });
     } catch (error) {
       return this._handleError(res, error);
@@ -21,7 +39,7 @@ class LeadController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      const lead = await this.leadService.atualizarStatus(id, status);
+      const lead = await this.leadService.atualizarStatus(id, status, req.user);
       return res.status(200).json({ lead });
     } catch (error) {
       return this._handleError(res, error);

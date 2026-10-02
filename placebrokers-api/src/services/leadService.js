@@ -3,6 +3,7 @@
 const { AppError } = require('../errors/AppError');
 
 const LEAD_STATUSES = ['novo', 'em_atendimento', 'convertido', 'perdido'];
+const STATUS_PERMITIDOS_AO_CORRETOR = ['novo', 'em_atendimento', 'perdido'];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -49,7 +50,7 @@ function toPublicLead(row) {
 class LeadService {
   /**
    * @param {object} deps
-   * @param {{ listar: Function, buscarPorId: Function, atualizarStatus: Function, atribuirCorretor: Function, criar: Function }} deps.leadRepository
+   * @param {{ listar: Function, listarPorCorretor: Function, buscarPorId: Function, atualizarStatus: Function, atribuirCorretor: Function, criar: Function }} deps.leadRepository
    * @param {{ criar: Function }} deps.clienteRepository
    */
   constructor({ leadRepository, clienteRepository }) {
@@ -57,22 +58,37 @@ class LeadService {
     this.clienteRepository = clienteRepository;
   }
 
-  /** @returns {Promise<object[]>} */
   async listar() {
     const rows = await this.leadRepository.listar();
+    return rows.map(toPublicLead);
+  }
+
+  async listarDoCorretor(usuario) {
+    const rows = await this.leadRepository.listarPorCorretor(usuario.id);
     return rows.map(toPublicLead);
   }
 
   /**
    * @param {string} id
    * @param {string} status
-   * @returns {Promise<object>}
+   * @param {{ id: string, cargo: string }} [usuario]
    */
-  async atualizarStatus(id, status) {
+  async atualizarStatus(id, status, usuario) {
     if (!LEAD_STATUSES.includes(status)) {
       throw new AppError('VALIDATION_ERROR', 'Status inválido.', 400, {
         status: 'Selecione um status válido.',
       });
+    }
+
+    if (usuario && usuario.cargo !== 'admin') {
+      if (!STATUS_PERMITIDOS_AO_CORRETOR.includes(status)) {
+        throw new AppError('FORBIDDEN', 'A conversão em cliente é feita pelo administrador.', 403);
+      }
+      const lead = await this.leadRepository.buscarPorId(id);
+      if (!lead) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+      if (lead.corretor?.id !== usuario.id) {
+        throw new AppError('FORBIDDEN', 'Esse lead não está atribuído a você.', 403);
+      }
     }
 
     const row = await this.leadRepository.atualizarStatus(id, status);
@@ -82,11 +98,18 @@ class LeadService {
 
   /**
    * @param {string} id
-   * @param {string|null} corretorId 
-   * @returns {Promise<object>}
+   * @param {string|null} corretorId
    */
   async atribuirCorretor(id, corretorId) {
-    const row = await this.leadRepository.atribuirCorretor(id, corretorId ?? null);
+    let row;
+    try {
+      row = await this.leadRepository.atribuirCorretor(id, corretorId ?? null);
+    } catch (err) {
+      if (err?.code === '23503' || err?.code === '22P02') {
+        throw new AppError('VALIDATION_ERROR', 'Corretor inválido.', 400, { corretorId: 'Selecione um corretor válido.' });
+      }
+      throw err;
+    }
     if (!row) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
     return toPublicLead(row);
   }
@@ -122,7 +145,6 @@ class LeadService {
 
   /**
    * @param {{ nome: string, email: string, telefone: string, empreendimentoId?: string|null, mensagem?: string|null }} dados
-   * @returns {Promise<object>}
    */
   async criar({ nome, email, telefone, empreendimentoId, mensagem }) {
     const erros = validarLead({ nome, email, telefone });
@@ -130,14 +152,22 @@ class LeadService {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
     }
 
-    const row = await this.leadRepository.criar({
-      nome: nome.trim(),
-      email: email.trim().toLowerCase(),
-      telefone: telefone.trim(),
-      empreendimentoId: empreendimentoId ?? null,
-      mensagem: mensagem?.trim() || null,
-      origem: 'site',
-    });
+    let row;
+    try {
+      row = await this.leadRepository.criar({
+        nome: nome.trim(),
+        email: email.trim().toLowerCase(),
+        telefone: telefone.trim(),
+        empreendimentoId: empreendimentoId ?? null,
+        mensagem: mensagem?.trim() || null,
+        origem: 'site',
+      });
+    } catch (err) {
+      if (err?.code === '23503' || err?.code === '22P02') {
+        throw new AppError('VALIDATION_ERROR', 'Empreendimento inválido.', 400, { empreendimentoId: 'Empreendimento não encontrado.' });
+      }
+      throw err;
+    }
     return toPublicLead(row);
   }
 }
