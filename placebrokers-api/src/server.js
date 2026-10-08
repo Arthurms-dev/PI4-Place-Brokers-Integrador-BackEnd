@@ -1,5 +1,9 @@
 'use strict';
 
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection (detalhe):', reason);
+});
+
 require('dotenv').config();
 const app = require('./app');
 

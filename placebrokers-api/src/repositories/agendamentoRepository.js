@@ -17,7 +17,7 @@ const AGENDAMENTO_SELECT = `
   atualizado_em,
   cliente:clientes ( id, nome, telefone ),
   corretor:profiles ( id, nome ),
-  empreendimento:empreendimentos ( id, nome, bairro, cidade, uf, valor )
+  empreendimento:empreendimentos ( id, nome, bairro, cidade, uf )
 `;
 
 class AgendamentoRepository {

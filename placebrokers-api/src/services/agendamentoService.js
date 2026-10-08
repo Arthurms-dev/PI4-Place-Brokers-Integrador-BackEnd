@@ -18,7 +18,7 @@ function toPublicCorretor(c) {
 
 function toPublicEmpreendimento(e) {
   if (!e) return null;
-  return { id: e.id, nome: e.nome, bairro: e.bairro, cidade: e.cidade, uf: e.uf, valor: e.valor };
+  return { id: e.id, nome: e.nome, bairro: e.bairro, cidade: e.cidade, uf: e.uf };
 }
 
 function toPublicAgendamento(row) {
