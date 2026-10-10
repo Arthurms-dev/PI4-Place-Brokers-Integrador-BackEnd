@@ -50,6 +50,13 @@ class VendaRepository {
     return data;
   }
 
+  async converterLeadDoCliente(clienteId) {
+    if (!clienteId) return;
+    const { data: cliente } = await supabaseAdmin.from('clientes').select('lead_id').eq('id', clienteId).maybeSingle();
+    if (!cliente?.lead_id) return;
+    await supabaseAdmin.from('leads').update({ status: 'convertido' }).eq('id', cliente.lead_id);
+  }
+
   async atualizar(id, dados) {
     const { data, error } = await supabaseAdmin.from('vendas').update(dados).eq('id', id).select(SELECT).single();
     if (error) throw error;

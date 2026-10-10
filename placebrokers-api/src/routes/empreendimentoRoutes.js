@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const multer = require('multer');
-const { listar, buscarPorId, criar, atualizar } = require('../controllers/empreendimentoController');
+const { listar, buscarPorId, criar, atualizar, documento } = require('../controllers/empreendimentoController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
@@ -16,6 +16,8 @@ const router = Router();
 
 router.get('/', optionalAuthMiddleware, listar);
 router.get('/:id', optionalAuthMiddleware, buscarPorId);
+
+router.get('/:id/documentos/:tipo', authMiddleware, documento);
 
 router.post(
   '/',

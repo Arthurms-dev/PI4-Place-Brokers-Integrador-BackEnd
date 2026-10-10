@@ -56,6 +56,17 @@ class UploadService {
   async uploadDocumento(slug, nomeArquivo, arquivo) {
     return subir(BUCKET_DOCUMENTOS, `${slug}/${nomeArquivo}.pdf`, arquivo.buffer, 'application/pdf');
   }
+
+  /**
+   */
+  async assinarDocumento(urlOuCaminho, segundos = 600) {
+    const marca = `/${BUCKET_DOCUMENTOS}/`;
+    const i = urlOuCaminho.indexOf(marca);
+    const caminho = (i >= 0 ? urlOuCaminho.slice(i + marca.length) : urlOuCaminho).split('?')[0];
+    const { data, error } = await supabaseAdmin.storage.from(BUCKET_DOCUMENTOS).createSignedUrl(decodeURIComponent(caminho), segundos);
+    if (error) throw error;
+    return { url: data.signedUrl, expiraEmSegundos: segundos };
+  }
 }
 
 module.exports = { UploadService };

@@ -14,7 +14,8 @@ class EmpreendimentoService {
   /** @param {{ cargo: string }|null} usuario */
   async listar(usuario) {
     const apenasPublicados = !usuario;
-    return this.empreendimentoRepository.listar({ apenasPublicados });
+    const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
+    return linhas.map((l) => this.sanitizar(l));
   }
 
   async buscarPorId(id, usuario) {
@@ -23,7 +24,22 @@ class EmpreendimentoService {
     if (!empreendimento.publicado && !usuario) {
       throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
     }
-    return empreendimento;
+    return this.sanitizar(empreendimento);
+  }
+
+  sanitizar(row) {
+    if (!row) return row;
+    const { book_url: book, tabela_url: tabela, ...resto } = row;
+    return { ...resto, tem_book: Boolean(book), tem_tabela: Boolean(tabela) };
+  }
+
+  async urlDoDocumento(id, tipo) {
+    const COLUNAS = { book: 'book_url', tabela: 'tabela_url' };
+    if (!COLUNAS[tipo]) throw new AppError('VALIDATION_ERROR', 'Tipo de documento inválido.', 400, { tipo: 'Use book ou tabela.' });
+    const empreendimento = await this.empreendimentoRepository.buscarPorId(id);
+    const guardado = empreendimento?.[COLUNAS[tipo]];
+    if (!empreendimento || !guardado) throw new AppError('NOT_FOUND', 'Documento não disponível.');
+    return this.uploadService.assinarDocumento(guardado);
   }
 
   validar(dados) {
@@ -120,7 +136,7 @@ class EmpreendimentoService {
     if (Object.keys(dados).length === 0) throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
 
     if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
-    return this.empreendimentoRepository.atualizar(id, dados);
+    return this.sanitizar(await this.empreendimentoRepository.atualizar(id, dados));
   }
 }
 

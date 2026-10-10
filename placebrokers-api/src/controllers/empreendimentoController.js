@@ -59,7 +59,15 @@ async function criar(req, res) {
       book: arquivos.book?.[0],
       tabela: arquivos.tabela?.[0],
     });
-    return res.status(201).json(resultado);
+    return res.status(201).json(empreendimentoService.sanitizar(resultado));
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+async function documento(req, res) {
+  try {
+    return res.status(200).json(await empreendimentoService.urlDoDocumento(req.params.id, req.params.tipo));
   } catch (err) {
     return handleError(res, err);
   }
@@ -81,4 +89,4 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar };
+module.exports = { listar, buscarPorId, criar, atualizar, documento };

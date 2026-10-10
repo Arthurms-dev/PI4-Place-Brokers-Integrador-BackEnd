@@ -18,7 +18,7 @@ class VendaService {
       const membros = await this.equipeRepository.listar({});
       return membros.filter((m) => equipes.some((e) => e.id === m.equipe_id)).map((m) => m.id);
     }
-    return [usuario.id];
+    return [usuario.id]; // corretor só vê a si mesmo
   }
 
   async criar({ valor, empreendimentoId, clienteId } = {}, corretor) {
@@ -69,11 +69,19 @@ class VendaService {
       }
     }
 
-    return this.vendaRepository.atualizar(id, {
+    const atualizada = await this.vendaRepository.atualizar(id, {
       status,
       confirmado_por: usuario.id,
       confirmado_em: new Date().toISOString(),
     });
+    if (status === 'confirmada') {
+      try {
+        await this.vendaRepository.converterLeadDoCliente(venda.cliente_id);
+      } catch (err) {
+        console.error('Venda confirmada, mas não foi possível marcar o lead como convertido:', err);
+      }
+    }
+    return atualizada;
   }
 
   /**
