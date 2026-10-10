@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const multer = require('multer');
-const { listar, buscarPorId, criar } = require('../controllers/empreendimentoController');
+const { listar, buscarPorId, criar, atualizar } = require('../controllers/empreendimentoController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
@@ -29,5 +29,7 @@ router.post(
   ]),
   criar,
 );
+
+router.patch('/:id', authMiddleware, requireRole('admin'), atualizar);
 
 module.exports = router;

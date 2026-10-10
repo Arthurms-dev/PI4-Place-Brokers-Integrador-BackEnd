@@ -58,6 +58,10 @@ class VendaService {
     const venda = await this.vendaRepository.buscarPorId(id);
     if (!venda) throw new AppError('NOT_FOUND', 'Venda não encontrada.');
 
+    if (venda.status !== 'pendente') {
+      throw new AppError('CONFLICT', 'Essa venda já foi decidida.', 409);
+    }
+
     if (usuario.cargo === 'gerente') {
       const idsVisiveis = await this.corretoresVisiveis(usuario);
       if (!idsVisiveis.includes(venda.corretor_id)) {

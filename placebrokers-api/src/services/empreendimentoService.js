@@ -89,6 +89,39 @@ class EmpreendimentoService {
 
     return empreendimento;
   }
+
+  async atualizar(id, m = {}) {
+    const atual = await this.empreendimentoRepository.buscarPorId(id);
+    if (!atual) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
+
+    const MAPA = {
+      nome: 'nome', construtoraId: 'construtora_id', status: 'status', descricao: 'descricao',
+      uf: 'uf', cidade: 'cidade', bairro: 'bairro', endereco: 'endereco',
+      latitude: 'latitude', longitude: 'longitude',
+      quartosMin: 'quartos_min', quartosMax: 'quartos_max', vagasMin: 'vagas_min', vagasMax: 'vagas_max',
+      precoMin: 'preco_min', precoMax: 'preco_max',
+      lazer: 'lazer', publicado: 'publicado', disponivel: 'disponivel', destaque: 'destaque',
+    };
+    const dados = {};
+    for (const [campo, coluna] of Object.entries(MAPA)) {
+      if (m[campo] !== undefined) dados[coluna] = m[campo] === '' ? null : m[campo];
+    }
+
+    const erros = {};
+    if ('nome' in dados && !String(dados.nome ?? '').trim()) erros.nome = 'Informe o nome.';
+    if ('status' in dados && !STATUS_VALIDOS.includes(dados.status)) erros.status = 'Status inválido.';
+    for (const c of ['uf', 'cidade', 'bairro']) {
+      if (c in dados && !String(dados[c] ?? '').trim()) erros[c] = 'Campo obrigatório.';
+    }
+    for (const c of ['latitude', 'longitude', 'quartos_min', 'quartos_max', 'vagas_min', 'vagas_max', 'preco_min', 'preco_max']) {
+      if (c in dados && dados[c] !== null && typeof dados[c] !== 'number') erros[c] = 'Informe um número.';
+    }
+    if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    if (Object.keys(dados).length === 0) throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
+
+    if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
+    return this.empreendimentoRepository.atualizar(id, dados);
+  }
 }
 
 module.exports = { EmpreendimentoService };

@@ -1,7 +1,7 @@
 'use strict';
 
 const { MetricasService } = require('../services/metricasservice');
-const { MetricasRepository } = require('../repositories/metricasRepository');
+const { MetricasRepository } = require('../repositories/metricasrepository');
 const { EquipeRepository } = require('../repositories/equipeRepository');
 const { AppError } = require('../errors/AppError');
 

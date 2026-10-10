@@ -2,9 +2,16 @@
 
 const { supabaseAdmin } = require('../config/supabase');
 
+const SELECT = `
+  *,
+  corretor:profiles!corretor_id ( id, nome ),
+  cliente:clientes ( id, nome ),
+  empreendimento:empreendimentos ( id, nome, cidade, uf )
+`;
+
 class VendaRepository {
   async listarTodas() {
-    const { data, error } = await supabaseAdmin.from('vendas').select('*').order('criado_em', { ascending: false });
+    const { data, error } = await supabaseAdmin.from('vendas').select(SELECT).order('criado_em', { ascending: false });
     if (error) throw error;
     return data;
   }
@@ -12,7 +19,7 @@ class VendaRepository {
   async listarPorCorretor(corretorId) {
     const { data, error } = await supabaseAdmin
       .from('vendas')
-      .select('*')
+      .select(SELECT)
       .eq('corretor_id', corretorId)
       .order('criado_em', { ascending: false });
     if (error) throw error;
@@ -24,7 +31,7 @@ class VendaRepository {
     if (!corretorIds.length) return [];
     const { data, error } = await supabaseAdmin
       .from('vendas')
-      .select('*')
+      .select(SELECT)
       .in('corretor_id', corretorIds)
       .order('criado_em', { ascending: false });
     if (error) throw error;
@@ -32,19 +39,19 @@ class VendaRepository {
   }
 
   async buscarPorId(id) {
-    const { data, error } = await supabaseAdmin.from('vendas').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabaseAdmin.from('vendas').select(SELECT).eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   }
 
   async criar(dados) {
-    const { data, error } = await supabaseAdmin.from('vendas').insert(dados).select().single();
+    const { data, error } = await supabaseAdmin.from('vendas').insert(dados).select(SELECT).single();
     if (error) throw error;
     return data;
   }
 
   async atualizar(id, dados) {
-    const { data, error } = await supabaseAdmin.from('vendas').update(dados).eq('id', id).select().single();
+    const { data, error } = await supabaseAdmin.from('vendas').update(dados).eq('id', id).select(SELECT).single();
     if (error) throw error;
     return data;
   }

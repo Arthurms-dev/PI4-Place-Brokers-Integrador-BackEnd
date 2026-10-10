@@ -26,6 +26,16 @@ class LeadRepository {
     return data;
   }
 
+  async listarPorCorretor(corretorId) {
+     const { data, error } = await supabaseAdmin
+       .from('leads')
+       .select(LEAD_SELECT)
+       .eq('corretor_id', corretorId)
+       .order('criado_em', { ascending: false });
+     if (error) throw error;
+     return data;
+   }
+   
   /** @param {string} id @returns {Promise<object|null>} */
   async buscarPorId(id) {
     const { data, error } = await supabaseAdmin.from('leads').select(LEAD_SELECT).eq('id', id).maybeSingle();

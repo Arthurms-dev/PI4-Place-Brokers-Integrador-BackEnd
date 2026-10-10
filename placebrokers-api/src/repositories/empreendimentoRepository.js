@@ -30,6 +30,17 @@ class EmpreendimentoRepository {
     return data;
   }
 
+  async atualizar(id, dados) {
+    const { data, error } = await supabaseAdmin
+      .from('empreendimentos')
+      .update(dados)
+      .eq('id', id)
+      .select(SELECT_PADRAO)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
   async inserirImagens(linhas) {
     if (!linhas.length) return;
     const { error } = await supabaseAdmin.from('empreendimento_imagens').insert(linhas);

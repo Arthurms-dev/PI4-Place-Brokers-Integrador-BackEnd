@@ -65,6 +65,14 @@ async function criar(req, res) {
   }
 }
 
+async function atualizar(req, res) {
+  try {
+    return res.status(200).json(await empreendimentoService.atualizar(req.params.id, req.body));
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 function handleError(res, err) {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ code: err.code, message: err.message, fieldErrors: err.fieldErrors });
@@ -73,4 +81,4 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { listar, buscarPorId, criar };
+module.exports = { listar, buscarPorId, criar, atualizar };

@@ -3,6 +3,7 @@
 const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['pendente', 'aprovado', 'recusado'];
+const SEDES_VALIDAS = ['Paulista', 'Recife', 'Caruaru'];
 const CARGOS_VALIDOS = ['admin', 'corretor', 'viabilizador', 'gerente'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -165,6 +166,7 @@ class EquipeService {
         gerente: gerente ? { id: gerente.id, nome: gerente.nome, email: gerente.email } : null,
         diretoriaId: time.diretoria_id,
         diretoria: diretoria ? { id: diretoria.id, nome: diretoria.nome } : null,
+        sede: time.sede ?? null,
         totalMembros: membros.filter((m) => m.equipe_id === time.id).length,
         criado_em: time.criado_em,
       };
@@ -184,13 +186,14 @@ class EquipeService {
   }
 
   /** @param {{ nome?: string, gerenteId?: string|null, diretoriaId?: string|null }} dados */
-  async criarTime({ nome, gerenteId, diretoriaId } = {}) {
+  async criarTime({ nome, gerenteId, diretoriaId, sede } = {}) {
     if (!nome?.trim()) throw erroDeCampo('nome', 'Informe o nome da equipe.');
+    if (sede && !SEDES_VALIDAS.includes(sede)) throw erroDeCampo('sede', 'Sede inválida.');
     const gerente_id = await this.validarGerente(gerenteId);
     const diretoria_id = await this.validarDiretoria(diretoriaId);
 
     try {
-      return await this.equipeRepository.criarTime({ nome: nome.trim(), gerente_id, diretoria_id });
+      return await this.equipeRepository.criarTime({ nome: nome.trim(), gerente_id, diretoria_id, sede: sede || null });
     } catch (err) {
       throw this.traduzirErroDeTime(err);
     }
@@ -210,6 +213,10 @@ class EquipeService {
     }
     if (mudancas.diretoriaId !== undefined) {
       dados.diretoria_id = await this.validarDiretoria(mudancas.diretoriaId || null);
+    }
+    if (mudancas.sede !== undefined) {
+      if (mudancas.sede && !SEDES_VALIDAS.includes(mudancas.sede)) throw erroDeCampo('sede', 'Sede inválida.');
+      dados.sede = mudancas.sede || null;
     }
     if (Object.keys(dados).length === 0) {
       throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');

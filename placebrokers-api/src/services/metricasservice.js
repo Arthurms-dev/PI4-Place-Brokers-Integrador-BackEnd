@@ -43,9 +43,11 @@ class MetricasService {
     this.equipeRepository = equipeRepository;
   }
 
+  // ---------- eventos ----------
+
   /**
    * @param {{ tipo?: string, empreendimentoId?: string, sessaoId?: string }} dados
-   * @param {{ id: string }|null} usuario quem está logado, se houver
+   * @param {{ id: string }|null} usuario
    */
   async registrarEvento({ tipo, empreendimentoId, sessaoId } = {}, usuario = null) {
     const erros = {};
@@ -99,7 +101,6 @@ class MetricasService {
 
   /**
    * @param {{ de?: string, ate?: string, equipeId?: string, diretoriaId?: string }} filtros
-   *  
    */
   async dashboard({ de, ate, equipeId, diretoriaId } = {}) {
     const fim = ate ?? hojeEmSaoPaulo();
@@ -121,44 +122,82 @@ class MetricasService {
 
     const corretorIds = await this.corretoresDoFiltro({ equipeId, diretoriaId });
     const repo = this.metricasRepository;
+    const atual = [inicioDoDia(inicio), fimDoDia(fim)];
+    const anterior = [inicioDoDia(inicioAnterior), fimDoDia(fimAnterior)];
+    const visualizacoes = (p) => repo.contarEventos({ tipo: 'visualizacao_empreendimento', deTs: p[0], ateTs: p[1] });
 
-    const [serie, serieAnterior, imoveis, vgv, vgvAnterior, agendamentos, agendamentosAnterior] = await Promise.all([
+    const [
+      serie, serieAnt, imoveis, viewsAtual, viewsAnt, vgv, vgvAnt, agSerie, agSerieAnt,
+      leadsAtual, leadsAnt, convAtual, convAnt, recentes,
+    ] = await Promise.all([
       repo.acessosPorDia(inicio, fim),
       repo.acessosPorDia(inicioAnterior, fimAnterior),
-      repo.imoveisMaisProcurados(inicioDoDia(inicio), fimDoDia(fim), 5),
-      repo.vgv(inicioDoDia(inicio), fimDoDia(fim), corretorIds),
-      repo.vgv(inicioDoDia(inicioAnterior), fimDoDia(fimAnterior), corretorIds),
-      repo.contarAgendamentos(inicioDoDia(inicio), fimDoDia(fim)),
-      repo.contarAgendamentos(inicioDoDia(inicioAnterior), fimDoDia(fimAnterior)),
+      repo.imoveisMaisProcurados(atual[0], atual[1], 5),
+      visualizacoes(atual),
+      visualizacoes(anterior),
+      repo.vgv(atual[0], atual[1], corretorIds),
+      repo.vgv(anterior[0], anterior[1], corretorIds),
+      repo.agendamentosPorDia(inicio, fim),
+      repo.agendamentosPorDia(inicioAnterior, fimAnterior),
+      repo.contarLeads(atual[0], atual[1]),
+      repo.contarLeads(anterior[0], anterior[1]),
+      repo.contarLeads(atual[0], atual[1], 'convertido'),
+      repo.contarLeads(anterior[0], anterior[1], 'convertido'),
+      repo.leadsRecentes(5),
     ]);
 
-    const acessos = somarAcessos(serie);
-    const acessosAnterior = somarAcessos(serieAnterior);
-    const vgvTotal = Number(vgv.total);
-    const vgvTotalAnterior = Number(vgvAnterior.total);
+    const soma = (linhas, campo) => linhas.reduce((t, l) => t + Number(l[campo]), 0);
+    const taxa = (conv, total) => (total ? Math.round((conv / total) * 1000) / 10 : 0);
+
+    const acessos = soma(serie, 'acessos');
+    const agendamentos = soma(agSerie, 'total');
+    const taxaAtual = taxa(convAtual, leadsAtual);
 
     return {
       periodo: { de: inicio, ate: fim, dias },
       vgv: {
-        total: vgvTotal,
+        total: Number(vgv.total),
         quantidade: Number(vgv.quantidade),
-        variacao: variacao(vgvTotal, vgvTotalAnterior),
+        variacao: variacao(Number(vgv.total), Number(vgvAnt.total)),
       },
       acessos: {
         total: acessos,
-        variacao: variacao(acessos, acessosAnterior),
+        variacao: variacao(acessos, soma(serieAnt, 'acessos')),
         porDia: serie.slice(-7).map((l) => ({ dia: l.dia, acessos: Number(l.acessos) })),
       },
-      imoveisMaisProcurados: imoveis.map((i) => ({
-        id: i.empreendimento_id,
-        nome: i.nome,
-        visualizacoes: Number(i.visualizacoes),
-      })),
+      imoveis: {
+        visualizacoes: { total: viewsAtual, variacao: variacao(viewsAtual, viewsAnt) },
+        maisProcurados: imoveis.map((i) => ({
+          id: i.empreendimento_id,
+          nome: i.nome,
+          cidade: i.cidade,
+          uf: i.uf,
+          capaUrl: i.capa_url,
+          visualizacoes: Number(i.visualizacoes),
+        })),
+      },
       agendamentos: {
         total: agendamentos,
-        variacao: variacao(agendamentos, agendamentosAnterior),
+        variacao: variacao(agendamentos, soma(agSerieAnt, 'total')),
+        porDia: agSerie.map((l) => ({ dia: l.dia, total: Number(l.total) })),
       },
-      avaliacoes: { media: 0, total: 0 },
+      leads: {
+        total: leadsAtual,
+        variacao: variacao(leadsAtual, leadsAnt),
+        conversao: { taxa: taxaAtual, variacao: variacao(taxaAtual, taxa(convAnt, leadsAnt)) },
+        recentes: recentes.map((l) => ({
+          id: l.id,
+          nome: l.nome,
+          status: l.status,
+          criadoEm: l.criado_em,
+          empreendimento: l.empreendimento?.nome ?? null,
+        })),
+      },
+      avaliacoes: {
+        media: 0,
+        total: 0,
+        distribuicao: [5, 4, 3, 2, 1].map((estrelas) => ({ estrelas, percentual: 0 })),
+      },
     };
   }
 }

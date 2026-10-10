@@ -31,7 +31,7 @@ const rowVisita = {
   atualizado_em: '2026-10-01T10:00:00.000Z',
   cliente: { id: 'cliente-1', nome: 'Mariana Silva', telefone: '81999990001' },
   corretor: { id: 'corretor-1', nome: 'Rafael Santos' },
-  empreendimento: { id: 'emp-1', nome: 'Residencial Mar Azul', bairro: 'Boa Viagem', cidade: 'Recife', uf: 'PE', valor: 650000 },
+  empreendimento: { id: 'emp-1', nome: 'Residencial Mar Azul', bairro: 'Boa Viagem', cidade: 'Recife', uf: 'PE'},
 };
 
 const dadosVisitaValida = {
@@ -58,7 +58,7 @@ describe('AgendamentoService', () => {
         status: 'agendado',
         cliente: { id: 'cliente-1', nome: 'Mariana Silva', telefone: '81999990001' },
         corretor: { id: 'corretor-1', nome: 'Rafael Santos' },
-        empreendimento: { id: 'emp-1', nome: 'Residencial Mar Azul', bairro: 'Boa Viagem', cidade: 'Recife', uf: 'PE', valor: 650000 },
+        empreendimento: { id: 'emp-1', nome: 'Residencial Mar Azul', bairro: 'Boa Viagem', cidade: 'Recife', uf: 'PE'},
       });
     });
   });

@@ -2,7 +2,7 @@
 
 const { supabaseAdmin } = require('../config/supabase');
 
-const CAMPOS = 'id, nome, email, telefone, cargo, vinculo, creci, status, ativo, equipe_id, criado_em, aprovado_em';
+const CAMPOS = 'id, nome, email, telefone, cargo, vinculo, creci, uf, status, ativo, equipe_id, criado_em, aprovado_em';
 
 class EquipeRepository {
 
@@ -28,7 +28,6 @@ class EquipeRepository {
     return data;
   }
 
-
   async listarTimes() {
     const { data, error } = await supabaseAdmin.from('equipes').select('*').order('nome');
     if (error) throw error;
@@ -53,8 +52,12 @@ class EquipeRepository {
     return data;
   }
 
-  async criarTime({ nome, gerente_id, diretoria_id }) {
-    const { data, error } = await supabaseAdmin.from('equipes').insert({ nome, gerente_id, diretoria_id }).select().single();
+  async criarTime({ nome, gerente_id, diretoria_id, sede }) {
+    const { data, error } = await supabaseAdmin
+      .from('equipes')
+      .insert({ nome, gerente_id, diretoria_id, sede: sede ?? null })
+      .select()
+      .single();
     if (error) throw error;
     return data;
   }
@@ -69,6 +72,7 @@ class EquipeRepository {
     const { error } = await supabaseAdmin.from('equipes').delete().eq('id', id);
     if (error) throw error;
   }
+
 
   async listarDiretorias() {
     const { data, error } = await supabaseAdmin.from('diretorias').select('*').order('nome');
