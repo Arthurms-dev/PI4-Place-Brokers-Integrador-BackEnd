@@ -3,10 +3,11 @@
 const { AuthService } = require('../services/authService');
 const { ProfileRepository } = require('../repositories/profileRepository');
 const { authClient } = require('../adapters/authClient');
+const { passwordClient } = require('../adapters/passwordClient');
 const { AuthError } = require('../errors/AuthError');
 
 const profileRepository = new ProfileRepository();
-const authService = new AuthService({ authClient, profileRepository });
+const authService = new AuthService({ authClient, profileRepository, passwordClient });
 
 async function login(req, res) {
   try {
@@ -49,6 +50,14 @@ async function atualizarMe(req, res) {
   }
 }
 
+async function alterarSenha(req, res) {
+  try {
+    return res.status(200).json(await authService.alterarSenha(req.userId, req.body));
+  } catch (err) {
+    return handleAuthError(res, err);
+  }
+}
+
 function handleAuthError(res, err) {
   if (err instanceof AuthError) {
     return res.status(err.statusCode).json({
@@ -61,4 +70,4 @@ function handleAuthError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { login, register, me, atualizarMe };
+module.exports = { login, register, me, atualizarMe, alterarSenha };

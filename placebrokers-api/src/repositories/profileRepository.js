@@ -14,10 +14,10 @@ class ProfileRepository {
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
    */
-  async create({ id, nome, email, cargo, vinculo = null, creci = null, status = 'pendente' }) {
+  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, status = 'pendente' }) {
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .insert({ id, nome, email, cargo, vinculo, creci, status })
+      .insert({ id, nome, email, cargo, vinculo, creci, uf, status })
       .select()
       .single();
     if (error) throw error;

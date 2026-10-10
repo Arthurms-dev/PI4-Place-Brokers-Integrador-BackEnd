@@ -3,7 +3,8 @@
 const { AuthError } = require('../errors/AuthError');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const VALID_ROLES_CADASTRO = ['corretor'];
+const VALID_ROLES_CADASTRO = ['corretor', 'viabilizador'];
+const UFS_VALIDAS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 function toPublicUser(profile) {
   return { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo };
@@ -19,9 +20,10 @@ class AuthService {
    * @param {{ signInWithPassword: Function, createUser: Function }} deps.authClient
    * @param {{ findById: Function, create: Function, atualizar: Function }} deps.profileRepository
    */
-  constructor({ authClient, profileRepository }) {
+  constructor({ authClient, profileRepository, passwordClient }) {
     this.authClient = authClient;
     this.profileRepository = profileRepository;
+    this.passwordClient = passwordClient;
   }
 
   validateLoginInput({ email, password } = {}) {
@@ -86,13 +88,13 @@ class AuthService {
   /**
    * @param {{ nome, email, password, confirmPassword, role, vinculo, creci }} payload
    */
-  validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci } = {}) {
+  validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci, uf } = {}) {
     const errors = this.validateLoginInput({ email, password });
     if (!nome?.trim()) errors.nome = 'Informe o nome completo.';
     if (confirmPassword !== password) errors.confirmPassword = 'As senhas não coincidem.';
 
     if (!role || !VALID_ROLES_CADASTRO.includes(role)) {
-      errors.role = 'Só corretores podem se cadastrar por aqui.';
+      errors.role = 'Selecione um perfil válido (corretor ou viabilizador).';
     }
 
     if (role === 'corretor') {
@@ -101,6 +103,9 @@ class AuthService {
       }
       if (vinculo === 'externo' && !creci?.trim()) {
         errors.creci = 'CRECI é obrigatório para corretores externos.';
+      }
+      if (vinculo === 'externo' && !UFS_VALIDAS.includes(String(uf ?? '').toUpperCase())) {
+        errors.uf = 'Informe o estado em que você atua.';
       }
     }
 
@@ -142,6 +147,7 @@ class AuthService {
         cargo: payload.role,
         vinculo: payload.vinculo ?? null,
         creci: payload.creci?.trim() || null,
+        uf: payload.role === 'corretor' && payload.vinculo === 'externo' ? String(payload.uf).toUpperCase() : null,
         status: 'pendente',
       });
     } catch (cause) {
@@ -170,6 +176,46 @@ class AuthService {
 
     const profile = await this.profileRepository.atualizar(userId, dados);
     return toPublicUser(profile);
+  }
+
+  /**
+   * @param {string} userId @param {{ senhaAtual: string, novaSenha: string, confirmarSenha: string }} dados
+   */
+  async alterarSenha(userId, { senhaAtual, novaSenha, confirmarSenha } = {}) {
+    const erros = {};
+    if (!senhaAtual) erros.senhaAtual = 'Informe a senha atual.';
+    if (!novaSenha || novaSenha.length < 8) erros.novaSenha = 'A nova senha deve ter pelo menos 8 caracteres.';
+    else if (novaSenha === senhaAtual) erros.novaSenha = 'A nova senha precisa ser diferente da atual.';
+    if (confirmarSenha !== novaSenha) erros.confirmarSenha = 'As senhas não coincidem.';
+    if (Object.keys(erros).length > 0) {
+      throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    }
+
+    let profile;
+    try {
+      profile = await this.profileRepository.findById(userId);
+    } catch (cause) {
+      throw new AuthError('SERVER_ERROR', 'Erro ao buscar o perfil do usuário.', {}, cause);
+    }
+    if (!profile) throw new AuthError('SERVER_ERROR', 'Perfil não encontrado.');
+
+    let conferencia;
+    try {
+      conferencia = await this.authClient.signInWithPassword({ email: profile.email, password: senhaAtual });
+    } catch (cause) {
+      throw new AuthError('SERVER_ERROR', 'Erro ao conectar à autenticação.', {}, cause);
+    }
+    if (conferencia.error || !conferencia.data?.user) {
+      throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { senhaAtual: 'Senha atual incorreta.' });
+    }
+
+    try {
+      const { error } = await this.passwordClient.updatePassword(userId, novaSenha);
+      if (error) throw error;
+    } catch (cause) {
+      throw new AuthError('SERVER_ERROR', 'Não foi possível alterar a senha agora.', {}, cause);
+    }
+    return { ok: true };
   }
 }
 
