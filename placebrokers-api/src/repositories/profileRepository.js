@@ -4,6 +4,13 @@ const { supabaseAdmin } = require('../config/supabase');
 
 class ProfileRepository {
   /** @param {string} id @returns {Promise<object|null>} */
+  async construtoraExiste(id) {
+    if (!id) return false;
+    const { data, error } = await supabaseAdmin.from('construtoras').select('id').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+
   async findById(id) {
     const { data, error } = await supabaseAdmin.from('profiles').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
@@ -14,10 +21,10 @@ class ProfileRepository {
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
    */
-  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, status = 'pendente' }) {
+  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, construtoraId = null, status = 'pendente' }) {
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .insert({ id, nome, email, cargo, vinculo, creci, uf, status })
+      .insert({ id, nome, email, cargo, vinculo, creci, uf, construtora_id: construtoraId, status })
       .select()
       .single();
     if (error) throw error;

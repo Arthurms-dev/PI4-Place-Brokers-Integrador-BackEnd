@@ -88,7 +88,7 @@ class AuthService {
   /**
    * @param {{ nome, email, password, confirmPassword, role, vinculo, creci }} payload
    */
-  validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci, uf } = {}) {
+  validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci, uf, construtoraId } = {}) {
     const errors = this.validateLoginInput({ email, password });
     if (!nome?.trim()) errors.nome = 'Informe o nome completo.';
     if (confirmPassword !== password) errors.confirmPassword = 'As senhas não coincidem.';
@@ -109,6 +109,10 @@ class AuthService {
       }
     }
 
+    if (role === 'viabilizador' && !construtoraId) {
+      errors.construtoraId = 'Selecione a construtora em que você trabalha.';
+    }
+
     return errors;
   }
 
@@ -119,6 +123,18 @@ class AuthService {
     const fieldErrors = this.validateRegisterInput(payload);
     if (Object.keys(fieldErrors).length > 0) {
       throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', fieldErrors);
+    }
+
+    if (payload.role === 'viabilizador') {
+      let existe;
+      try {
+        existe = await this.profileRepository.construtoraExiste(payload.construtoraId);
+      } catch (cause) {
+        throw new AuthError('SERVER_ERROR', 'Erro ao validar a construtora.', {}, cause);
+      }
+      if (!existe) {
+        throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { construtoraId: 'Selecione uma construtora válida.' });
+      }
     }
 
     const email = payload.email.trim().toLowerCase();
@@ -148,6 +164,7 @@ class AuthService {
         vinculo: payload.vinculo ?? null,
         creci: payload.creci?.trim() || null,
         uf: payload.role === 'corretor' && payload.vinculo === 'externo' ? String(payload.uf).toUpperCase() : null,
+        construtoraId: payload.role === 'viabilizador' ? payload.construtoraId : null,
         status: 'pendente',
       });
     } catch (cause) {

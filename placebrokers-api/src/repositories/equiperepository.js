@@ -2,7 +2,7 @@
 
 const { supabaseAdmin } = require('../config/supabase');
 
-const CAMPOS = 'id, nome, email, telefone, cargo, vinculo, creci, uf, status, ativo, equipe_id, criado_em, aprovado_em';
+const CAMPOS = 'id, nome, email, telefone, cargo, vinculo, creci, uf, construtora_id, status, ativo, equipe_id, criado_em, aprovado_em';
 
 class EquipeRepository {
 
@@ -46,6 +46,12 @@ class EquipeRepository {
     return data;
   }
 
+  async construtoraExiste(id) {
+    const { data, error } = await supabaseAdmin.from('construtoras').select('id').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+
   async buscarTime(id) {
     const { data, error } = await supabaseAdmin.from('equipes').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
@@ -72,7 +78,6 @@ class EquipeRepository {
     const { error } = await supabaseAdmin.from('equipes').delete().eq('id', id);
     if (error) throw error;
   }
-
 
   async listarDiretorias() {
     const { data, error } = await supabaseAdmin.from('diretorias').select('*').order('nome');

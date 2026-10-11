@@ -75,6 +75,14 @@ class EquipeService {
       dados.equipe_id = equipeId;
     }
 
+    if (mudancas.construtoraId !== undefined) {
+      const construtoraId = mudancas.construtoraId === '' ? null : mudancas.construtoraId;
+      if (construtoraId && !(await this.equipeRepository.construtoraExiste(construtoraId))) {
+        throw erroDeCampo('construtoraId', 'Construtora não encontrada.');
+      }
+      dados.construtora_id = construtoraId;
+    }
+
     if (dados.status && dados.status !== 'aprovado') dados.equipe_id = null;
 
     if (Object.keys(dados).length === 0) {
@@ -83,6 +91,7 @@ class EquipeService {
 
     return this.equipeRepository.atualizar(id, dados);
   }
+
 
   /**
    * @param {{ nome?: string, email?: string, password?: string }} dados
@@ -125,7 +134,6 @@ class EquipeService {
     }
   }
 
-
   async listarDiretorias() {
     return this.equipeRepository.listarDiretorias();
   }
@@ -147,7 +155,6 @@ class EquipeService {
       throw err;
     }
   }
-
 
   async listarTimes() {
     const [times, membros, diretorias] = await Promise.all([
