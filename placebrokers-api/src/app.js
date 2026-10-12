@@ -10,9 +10,9 @@ const leadRoutes = require('./routes/leadRoutes');
 const equipeRoutes = require('./routes/equipeRoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
 const corretorRoutes = require('./routes/corretorRoutes');
-const metricasRoutes = require('./routes/metricasroutes');
+const metricasRoutes = require('./routes/metricasRoutes');
 const agendamentoRoutes = require('./routes/agendamentoRoutes');
-const clienteRoutes = require('./routes/clienteroutes');
+const clienteRoutes = require('./routes/clienteRoutes');
 
 const app = express();
 

@@ -17,11 +17,32 @@ class ClienteController {
     }
   };
 
+  buscarPorId = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const cliente = await this.clienteService.buscarPorId(id, req.user);
+      return res.status(200).json({ cliente });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
   criar = async (req, res) => {
     try {
       const { nome, email, telefone, observacoes, corretorId } = req.body;
       const cliente = await this.clienteService.criar({ nome, email, telefone, observacoes, corretorId }, req.user);
       return res.status(201).json({ cliente });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  atualizar = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { nome, email, telefone, observacoes, corretorId } = req.body;
+      const cliente = await this.clienteService.atualizar(id, { nome, email, telefone, observacoes, corretorId }, req.user);
+      return res.status(200).json({ cliente });
     } catch (error) {
       return this._handleError(res, error);
     }

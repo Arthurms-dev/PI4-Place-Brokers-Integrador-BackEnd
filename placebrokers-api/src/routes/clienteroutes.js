@@ -1,8 +1,8 @@
 'use strict';
 
 const { Router } = require('express');
-const { ClienteController } = require('../controllers/clientecontroller');
-const { ClienteService } = require('../services/clienteservice');
+const { ClienteController } = require('../controllers/clienteController');
+const { ClienteService } = require('../services/clienteService');
 const { ClienteRepository } = require('../repositories/clienteRepository');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
@@ -16,6 +16,8 @@ const router = Router();
 router.use(authMiddleware, requireRole('admin', 'corretor'));
 
 router.get('/', clienteController.listar);
+router.get('/:id', clienteController.buscarPorId);
 router.post('/', clienteController.criar);
+router.patch('/:id', clienteController.atualizar);
 
 module.exports = router;
