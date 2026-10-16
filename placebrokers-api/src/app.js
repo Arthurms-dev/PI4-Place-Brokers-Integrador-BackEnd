@@ -1,23 +1,22 @@
 'use strict';
 
 const express = require('express');
-const cors = require('cors');
+const { aplicarSeguranca, aplicarErros } = require('./middlewares/seguranca');
 const authRoutes = require('./routes/authRoutes');
 const empreendimentoRoutes = require('./routes/empreendimentoRoutes');
 const construtoraRoutes = require('./routes/construtoraRoutes');
 const painelRoutes = require('./routes/painelAdmRoutes');
 const leadRoutes = require('./routes/leadRoutes');
-const equipeRoutes = require('./routes/equipeRoutes');
+const equipeRoutes = require('./routes/equiperoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
 const corretorRoutes = require('./routes/corretorRoutes');
-const metricasRoutes = require('./routes/metricasRoutes');
+const metricasRoutes = require('./routes/metricasroutes');
 const agendamentoRoutes = require('./routes/agendamentoRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+aplicarSeguranca(app);
 
 app.use('/auth', authRoutes);
 app.use('/leads', leadRoutes);
@@ -32,5 +31,7 @@ app.use('/agendamentos', agendamentoRoutes);
 app.use('/clientes', clienteRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+aplicarErros(app);
 
 module.exports = app;

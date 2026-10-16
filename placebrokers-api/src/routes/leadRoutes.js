@@ -7,6 +7,7 @@ const { LeadRepository } = require('../repositories/leadRepository');
 const { ClienteRepository } = require('../repositories/clienteRepository.js');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
+const { limitadores, antiSpamLead } = require('../middlewares/seguranca');
 
 const leadRepository = new LeadRepository();
 const clienteRepository = new ClienteRepository();
@@ -15,10 +16,9 @@ const leadController = new LeadController({ leadService });
 
 const router = Router();
 
-router.post('/', leadController.criar);
+router.post('/', limitadores.leadPublico, antiSpamLead, leadController.criar);
 
 router.get('/meus', authMiddleware, requireRole('corretor'), leadController.listarMeus);
-
 router.patch('/:id/status', authMiddleware, requireRole('admin', 'corretor'), leadController.atualizarStatus);
 
 router.get('/', authMiddleware, requireRole('admin'), leadController.listar);
