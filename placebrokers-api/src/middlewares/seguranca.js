@@ -1,12 +1,7 @@
 'use strict';
 
-/**
- */
-
 const MINUTO = 60 * 1000;
 
-/**
- */
 function criarLimitador({
   janelaMs,
   maximo,
@@ -67,8 +62,6 @@ const limitadores = {
 const SEM_CONTROLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const corte = (valor, limite) => (typeof valor === 'string' ? valor.replace(SEM_CONTROLE, '').trim().slice(0, limite) : valor);
 
-/**
- */
 function antiSpamLead(req, res, next) {
   const b = req.body && typeof req.body === 'object' ? req.body : {};
   const links = String(b.mensagem ?? '').match(/https?:\/\//gi) ?? [];
@@ -85,10 +78,12 @@ function antiSpamLead(req, res, next) {
   return next();
 }
 
+const ORIGENS_DE_DESENVOLVIMENTO = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
 function origensPermitidas(env = process.env) {
-  const lista = (env.CORS_ORIGIN ?? '').split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean);
-  if (lista.length) return lista;
-  return env.NODE_ENV === 'production' ? [] : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+  const configuradas = (env.CORS_ORIGIN ?? '').split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean);
+  const locais = env.NODE_ENV === 'production' ? [] : ORIGENS_DE_DESENVOLVIMENTO;
+  return [...new Set([...configuradas, ...locais])];
 }
 
 const origemPermitida = (origin, lista) => !origin || lista.includes(origin);
@@ -112,11 +107,20 @@ function aplicarSeguranca(app) {
   if (proxies > 0) app.set('trust proxy', proxies);
 
   const lista = origensPermitidas();
+  console.log(`CORS liberado para: ${lista.join(', ') || '(nenhum site)'}`);
   if (lista.length === 0) console.warn('CORS_ORIGIN não definido em produção: nenhum site conseguirá chamar a API.');
+  const avisadas = new Set();
 
   app.use(cabecalhosDeSeguranca);
   app.use(cors({
-    origin: (origin, cb) => cb(null, origemPermitida(origin, lista)),
+    origin: (origin, cb) => {
+      const liberada = origemPermitida(origin, lista);
+      if (!liberada && !avisadas.has(origin)) {
+        avisadas.add(origin);
+        console.warn(`CORS bloqueou a origem ${origin}. Para liberar, acrescente em CORS_ORIGIN no .env do back (ou tire NODE_ENV=production no ambiente local).`);
+      }
+      cb(null, liberada);
+    },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 600,
@@ -127,6 +131,7 @@ function aplicarSeguranca(app) {
 
 function aplicarErros(app) {
   app.use((req, res) => res.status(404).json({ code: 'NOT_FOUND', message: 'Rota não encontrada.' }));
+  // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {
     if (err?.type === 'entity.too.large') return res.status(413).json({ code: 'PAYLOAD_TOO_LARGE', message: 'Conteúdo grande demais.' });
     if (err instanceof SyntaxError && 'body' in err) return res.status(400).json({ code: 'INVALID_JSON', message: 'O corpo da requisição não é um JSON válido.' });

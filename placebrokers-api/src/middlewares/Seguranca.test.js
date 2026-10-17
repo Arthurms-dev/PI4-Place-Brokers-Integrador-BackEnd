@@ -1,6 +1,6 @@
 'use strict';
 
-const { criarLimitador, antiSpamLead, origensPermitidas, origemPermitida, aplicarErros } = require('../middlewares/seguranca');
+const { criarLimitador, antiSpamLead, origensPermitidas, origemPermitida, aplicarErros } = require('./seguranca');
 
 function criarRes() {
   const res = {
@@ -165,10 +165,23 @@ describe('antiSpamLead', () => {
 });
 
 describe('CORS', () => {
-  test('CORS_ORIGIN aceita várias origens, ignora espaços e a barra final', () => {
-    const lista = origensPermitidas({ CORS_ORIGIN: ' https://placebrokers.com.br/ , https://www.placebrokers.com.br' });
+  test('em produção, CORS_ORIGIN aceita várias origens, ignora espaços e a barra final, e só elas passam', () => {
+    const lista = origensPermitidas({ NODE_ENV: 'production', CORS_ORIGIN: ' https://placebrokers.com.br/ , https://www.placebrokers.com.br' });
 
     expect(lista).toEqual(['https://placebrokers.com.br', 'https://www.placebrokers.com.br']);
+  });
+
+  test('fora de produção, o front local continua liberado mesmo com CORS_ORIGIN apontando para o site de produção', () => {
+    const lista = origensPermitidas({ CORS_ORIGIN: 'https://placebrokers.com.br' });
+
+    expect(lista).toContain('https://placebrokers.com.br');
+    expect(lista).toContain('http://localhost:5173');
+  });
+
+  test('não repete origem quando ela está nas duas listas', () => {
+    const lista = origensPermitidas({ CORS_ORIGIN: 'http://localhost:5173' });
+
+    expect(lista.filter((o) => o === 'http://localhost:5173')).toHaveLength(1);
   });
 
   test('sem a variável, em desenvolvimento, só o front local passa', () => {
