@@ -1,158 +1,134 @@
+
 'use strict';
 
-const { AppError } = require('../errors/AppError');
+const {
+  ClienteService,
+  validarCliente,
+} = require('./clienteService');
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const cliente = {
+  id: 'cliente-1',
+  nome: 'Maria Silva',
+  email: 'maria@exemplo.com',
+  telefone: '81999998888',
+  observacoes: null,
+  criado_em: '2026-10-22T12:00:00Z',
+  corretor: { id: 'corretor-1', nome: 'João' },
+  lead: null,
+};
 
-function toPublicCorretor(c) {
-  if (!c) return null;
-  return { id: c.id, nome: c.nome };
-}
+function preparar(overrides = {}) {
+  const repo = {
+    listar: jest.fn().mockResolvedValue([cliente]),
+    listarPorCorretor: jest.fn().mockResolvedValue([cliente]),
+    buscarPorId: jest.fn().mockResolvedValue(cliente),
+    criar: jest.fn().mockResolvedValue(cliente),
+    atualizar: jest.fn().mockResolvedValue(cliente),
+    ...overrides,
+  };
 
-function toPublicLeadResumo(l) {
-  if (!l) return null;
-  return { id: l.id, nome: l.nome };
-}
-
-function toPublicCliente(row) {
   return {
-    id: row.id,
-    nome: row.nome,
-    email: row.email,
-    telefone: row.telefone,
-    observacoes: row.observacoes,
-    criadoEm: row.criado_em,
-    corretor: toPublicCorretor(row.corretor),
-    leadOrigem: toPublicLeadResumo(row.lead),
+    repo,
+    service: new ClienteService({ clienteRepository: repo }),
   };
 }
 
-/**
- * @returns {Record<string,string>}
- */
-function validarCliente({ nome, email, telefone } = {}, { exigirCampos = true } = {}) {
-  const erros = {};
+describe('ClienteService', () => {
+  test('rejeita nome e telefone vazios', () => {
+    const erros = validarCliente({
+      nome: '',
+      telefone: '',
+    });
 
-  if (exigirCampos ? !nome?.trim() : nome !== undefined && !nome.trim()) {
-    erros.nome = 'Informe o nome.';
-  }
+    expect(erros.nome).toBeDefined();
+    expect(erros.telefone).toBeDefined();
+  });
 
-  if (telefone !== undefined || exigirCampos) {
-    const digitos = (telefone ?? '').replace(/\D/g, '');
-    if (digitos.length < 10 || digitos.length > 11) erros.telefone = 'Telefone inválido (com DDD).';
-  }
+  test('aceita dados válidos', () => {
+    expect(validarCliente({
+      nome: 'Maria',
+      email: 'maria@exemplo.com',
+      telefone: '81999998888',
+    })).toEqual({});
+  });
 
-  if (email?.trim() && !EMAIL_REGEX.test(email.trim())) erros.email = 'E-mail inválido.';
+  test('admin lista os clientes', async () => {
+    const { service, repo } = preparar();
 
-  return erros;
-}
+    const lista = await service.listar({
+      id: 'admin-1',
+      cargo: 'admin',
+    });
 
-class ClienteService {
-  /** @param {{ clienteRepository: object }} deps */
-  constructor({ clienteRepository }) {
-    this.clienteRepository = clienteRepository;
-  }
+    expect(repo.listar).toHaveBeenCalled();
+    expect(lista[0].nome).toBe('Maria Silva');
+  });
 
-  /**
-   * @param {{ id: string, cargo: string }} usuario
-   * @returns {Promise<object[]>}
-   */
-  async listar(usuario) {
-    const rows =
-      usuario.cargo === 'admin'
-        ? await this.clienteRepository.listar()
-        : await this.clienteRepository.listarPorCorretor(usuario.id);
-    return rows.map(toPublicCliente);
-  }
+  test('corretor lista apenas seus clientes', async () => {
+    const { service, repo } = preparar();
 
-  /**
-   * @param {string} id
-   * @param {{ id: string, cargo: string }} usuario
-   * @returns {Promise<object>}
-   */
-  async buscarPorId(id, usuario) {
-    const row = await this.clienteRepository.buscarPorId(id);
-    if (!row) throw new AppError('NOT_FOUND', 'Cliente não encontrado.', 404);
+    await service.listar({
+      id: 'corretor-1',
+      cargo: 'corretor',
+    });
 
-    if (usuario.cargo !== 'admin' && row.corretor?.id !== usuario.id) {
-      throw new AppError('FORBIDDEN', 'Você não tem acesso a este cliente.', 403);
-    }
+    expect(repo.listarPorCorretor)
+      .toHaveBeenCalledWith('corretor-1');
+  });
 
-    return toPublicCliente(row);
-  }
+  test('cliente inexistente retorna NOT_FOUND', async () => {
+    const { service } = preparar({
+      buscarPorId: jest.fn().mockResolvedValue(null),
+    });
 
-  /**
-   * @param {{ nome: string, email?: string, telefone: string, observacoes?: string, corretorId?: string }} dados
-   * @param {{ id: string, cargo: string }} usuario
-   * @returns {Promise<object>}
-   */
-  async criar(dados, usuario) {
-    const erros = validarCliente(dados);
-    const corretorId = usuario.cargo === 'admin' ? dados.corretorId : usuario.id;
-    if (!corretorId) erros.corretorId = 'Selecione o corretor responsável.';
-    if (Object.keys(erros).length) {
-      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
-    }
+    await expect(
+      service.buscarPorId('inexistente', {
+        id: 'admin-1',
+        cargo: 'admin',
+      })
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
 
-    try {
-      const row = await this.clienteRepository.criar({
-        nome: dados.nome.trim(),
-        email: dados.email?.trim().toLowerCase() || null,
-        telefone: dados.telefone.replace(/\D/g, ''),
-        observacoes: dados.observacoes?.trim() || null,
-        corretorId,
-        leadId: dados.leadId ?? null,
-      });
-      return toPublicCliente(row);
-    } catch (err) {
-      if (err?.code === '23503' || err?.code === '22P02') {
-        throw new AppError('VALIDATION_ERROR', 'Corretor inválido.', 400, { corretorId: 'Corretor não encontrado.' });
-      }
-      throw err;
-    }
-  }
+  test('corretor não acessa cliente de outro', async () => {
+    const { service } = preparar();
 
-  /**
-   * @param {string} id
-   * @param {{ nome?: string, email?: string, telefone?: string, observacoes?: string, corretorId?: string }} dados
-   * @param {{ id: string, cargo: string }} usuario
-   * @returns {Promise<object>}
-   */
-  async atualizar(id, dados, usuario) {
-    const existente = await this.clienteRepository.buscarPorId(id);
-    if (!existente) throw new AppError('NOT_FOUND', 'Cliente não encontrado.', 404);
+    await expect(
+      service.buscarPorId('cliente-1', {
+        id: 'outro-corretor',
+        cargo: 'corretor',
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
 
-    if (usuario.cargo !== 'admin' && existente.corretor?.id !== usuario.id) {
-      throw new AppError('FORBIDDEN', 'Você não tem acesso a este cliente.', 403);
-    }
+  test('corretor cria cliente vinculado a si', async () => {
+    const { service, repo } = preparar();
 
-    if (usuario.cargo !== 'admin' && dados.corretorId !== undefined) {
-      throw new AppError('FORBIDDEN', 'Apenas o admin pode reatribuir o corretor responsável.', 403);
-    }
+    await service.criar({
+      nome: 'Maria Silva',
+      email: 'maria@exemplo.com',
+      telefone: '(81) 99999-8888',
+    }, {
+      id: 'corretor-1',
+      cargo: 'corretor',
+    });
 
-    const erros = validarCliente(dados, { exigirCampos: false });
-    if (Object.keys(erros).length) {
-      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
-    }
+    expect(repo.criar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        corretorId: 'corretor-1',
+        telefone: '81999998888',
+      })
+    );
+  });
 
-    const atualizacao = { ...dados };
-    if (atualizacao.nome !== undefined) atualizacao.nome = atualizacao.nome.trim();
-    if (atualizacao.email !== undefined) atualizacao.email = atualizacao.email?.trim().toLowerCase() || null;
-    if (atualizacao.telefone !== undefined) atualizacao.telefone = atualizacao.telefone.replace(/\D/g, '');
-    if (atualizacao.observacoes !== undefined) atualizacao.observacoes = atualizacao.observacoes?.trim() || null;
+  test('corretor não pode reatribuir cliente', async () => {
+    const { service } = preparar();
 
-    try {
-      const row = await this.clienteRepository.atualizar(id, atualizacao);
-      if (!row) throw new AppError('NOT_FOUND', 'Cliente não encontrado.', 404);
-      return toPublicCliente(row);
-    } catch (err) {
-      if (err instanceof AppError) throw err;
-      if (err?.code === '23503' || err?.code === '22P02') {
-        throw new AppError('VALIDATION_ERROR', 'Corretor inválido.', 400, { corretorId: 'Corretor não encontrado.' });
-      }
-      throw err;
-    }
-  }
-}
-
-module.exports = { ClienteService, toPublicCliente, validarCliente };
+    await expect(
+      service.atualizar(
+        'cliente-1',
+        { corretorId: 'outro-corretor' },
+        { id: 'corretor-1', cargo: 'corretor' }
+      )
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+});

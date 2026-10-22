@@ -13,9 +13,14 @@ class AppError extends Error {
     super(message);
     this.name = 'AppError';
     this.code = code;
-    this.fieldErrors = fieldErrors;
-    this.statusCode = STATUS_BY_CODE[code] ?? 500;
-    if (cause) this.cause = cause;
+    // Aceita (code, message, fieldErrors, cause) e chamadas legadas
+    // (code, message, statusCode, fieldErrors).
+    const statusExplicito = typeof fieldErrors === 'number' ? fieldErrors : null;
+    const detalhes = statusExplicito == null ? fieldErrors :
+      (cause && typeof cause === 'object' ? cause : {});
+    this.fieldErrors = detalhes;
+    this.statusCode = statusExplicito ?? STATUS_BY_CODE[code] ?? 500;
+    if (statusExplicito == null && cause) this.cause = cause;
   }
 }
 

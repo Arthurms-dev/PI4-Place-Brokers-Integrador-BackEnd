@@ -39,6 +39,10 @@ class EmpreendimentoService {
     const empreendimento = await this.empreendimentoRepository.buscarPorId(id);
     const guardado = empreendimento?.[COLUNAS[tipo]];
     if (!empreendimento || !guardado) throw new AppError('NOT_FOUND', 'Documento não disponível.');
+    // Documentos legados continuam no Storage. Links do Drive mantêm as próprias permissões.
+    if (/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view(?:\?.*)?$/.test(guardado)) {
+      return { url: guardado, expiraEmSegundos: null };
+    }
     return this.uploadService.assinarDocumento(guardado);
   }
 

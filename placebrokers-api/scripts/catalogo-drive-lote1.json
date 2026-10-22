@@ -1,0 +1,30 @@
+[
+  {
+    "nome": "Vale dos Guararapes",
+    "origem": "MCMV / Casa Concreto",
+    "book_url": "https://drive.google.com/file/d/1_vpu1eRQQuiysCljO9LGbnLXaQf_Ztwz/view",
+    "tabela_url": "https://drive.google.com/file/d/1h__uQhcjUMN2GsjPTWqH6m2wLhW4tH1F/view",
+    "tabela_referencia": "outubro/2026",
+    "observacao": "A tabela discrimina unidades, preços e condições; não usar um único preço sem validar todas as unidades."
+  },
+  {
+    "nome": "Viva Paineiras",
+    "origem": "MCMV / Bora!",
+    "book_url": "https://drive.google.com/file/d/16qQ0d2RJsbCLGE9OSxT1G_uC4T_-TDV2/view",
+    "tabela_segunda_fase_url": "https://drive.google.com/file/d/1SJRfyACy0qDWAVb_UUWkjHRTiJZXuHxT/view",
+    "tabela_referencia": "outubro/2026",
+    "observacao": "Duas fases com tabelas distintas; primeira fase não representa todo o empreendimento. Lançamento com tabelas distintas por fase; não vincular tabela única automaticamente.",
+    "tabela_primeira_fase_url": "https://drive.google.com/file/d/1Byl2TJjsjT83TZYYz6-s2XDQV0A27vlF/view",
+    "tabela_url": null
+  },
+  {
+    "nome": "Brisa do Mar",
+    "origem": "MCMV / Bora!",
+    "book_url": "https://drive.google.com/file/d/1ps-E8ERrLSjviCS-4xjAe-vwAMvyUhff/view",
+    "tabela_segunda_fase_url": "https://drive.google.com/file/d/1pTNvqqEa7vA9nVmj_YRmSNK13flmYRW2/view",
+    "tabela_referencia": "outubro/2026",
+    "observacao": "Duas fases com tabelas distintas; verificar preço promocional vs valor total e disponibilidade antes de publicar. Lançamento com tabelas distintas por fase; não vincular tabela única automaticamente.",
+    "tabela_primeira_fase_url": "https://drive.google.com/file/d/1jNwA9MYiS30YaeSDK2ITFHWYV-2Y8kh1/view",
+    "tabela_url": null
+  }
+]

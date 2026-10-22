@@ -7,12 +7,14 @@ const empreendimentoRoutes = require('./routes/empreendimentoRoutes');
 const construtoraRoutes = require('./routes/construtoraRoutes');
 const painelRoutes = require('./routes/painelAdmRoutes');
 const leadRoutes = require('./routes/leadRoutes');
-const equipeRoutes = require('./routes/equiperoutes');
+const equipeRoutes = require('./routes/equipeRoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
 const corretorRoutes = require('./routes/corretorRoutes');
-const metricasRoutes = require('./routes/metricasroutes');
+const metricasRoutes = require('./routes/metricasRoutes');
 const agendamentoRoutes = require('./routes/agendamentoRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
+const gerenteRoutes = require('./routes/gerenteRoutes');
+const viabilizadorRoutes = require('./routes/viabilizadorRoutes');
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/vendas', vendaRoutes);
 app.use('/metricas', metricasRoutes);
 app.use('/agendamentos', agendamentoRoutes);
 app.use('/clientes', clienteRoutes);
+app.use('/gerente', gerenteRoutes);
+app.use('/viabilizador', viabilizadorRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
