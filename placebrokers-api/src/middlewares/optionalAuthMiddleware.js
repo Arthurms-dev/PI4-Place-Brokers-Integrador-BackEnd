@@ -20,7 +20,10 @@ async function optionalAuthMiddleware(req, res, next) {
     return next();
   }
 
-  req.user = await profileRepository.findById(data.user.id);
+  const profile = await profileRepository.findById(data.user.id);
+  req.user = profile && profile.ativo !== false && !['pendente', 'recusado'].includes(profile.status)
+    ? profile
+    : null;
   next();
 }
 

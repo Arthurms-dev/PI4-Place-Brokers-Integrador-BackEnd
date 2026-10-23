@@ -67,7 +67,7 @@ async function criar(req, res) {
 
 async function documento(req, res) {
   try {
-    return res.status(200).json(await empreendimentoService.urlDoDocumento(req.params.id, req.params.tipo));
+    return res.status(200).json(await empreendimentoService.urlDoDocumento(req.params.id, req.params.tipo, req.user));
   } catch (err) {
     return handleError(res, err);
   }

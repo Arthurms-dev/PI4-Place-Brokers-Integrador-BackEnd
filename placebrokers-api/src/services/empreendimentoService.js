@@ -4,6 +4,17 @@ const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 
+const CARGOS_INTERNOS = new Set(['admin', 'corretor']);
+
+function usuarioPodeVerRascunhos(usuario) {
+  return Boolean(
+    usuario &&
+    CARGOS_INTERNOS.has(usuario.cargo) &&
+    usuario.ativo !== false &&
+    !['pendente', 'recusado'].includes(usuario.status)
+  );
+}
+
 class EmpreendimentoService {
   /** @param {{ empreendimentoRepository, uploadService }} deps */
   constructor({ empreendimentoRepository, uploadService }) {
@@ -13,7 +24,7 @@ class EmpreendimentoService {
 
   /** @param {{ cargo: string }|null} usuario */
   async listar(usuario) {
-    const apenasPublicados = !usuario;
+    const apenasPublicados = !usuarioPodeVerRascunhos(usuario);
     const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
     return linhas.map((l) => this.sanitizar(l));
   }
@@ -21,7 +32,7 @@ class EmpreendimentoService {
   async buscarPorId(id, usuario) {
     const empreendimento = await this.empreendimentoRepository.buscarPorId(id);
     if (!empreendimento) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
-    if (!empreendimento.publicado && !usuario) {
+    if (!empreendimento.publicado && !usuarioPodeVerRascunhos(usuario)) {
       throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
     }
     return this.sanitizar(empreendimento);
@@ -33,12 +44,12 @@ class EmpreendimentoService {
     return { ...resto, tem_book: Boolean(book), tem_tabela: Boolean(tabela) };
   }
 
-  async urlDoDocumento(id, tipo) {
+  async urlDoDocumento(id, tipo, usuario = null) {
     const COLUNAS = { book: 'book_url', tabela: 'tabela_url' };
     if (!COLUNAS[tipo]) throw new AppError('VALIDATION_ERROR', 'Tipo de documento inválido.', 400, { tipo: 'Use book ou tabela.' });
     const empreendimento = await this.empreendimentoRepository.buscarPorId(id);
     const guardado = empreendimento?.[COLUNAS[tipo]];
-    if (!empreendimento || !guardado) throw new AppError('NOT_FOUND', 'Documento não disponível.');
+    if (!empreendimento || (!empreendimento.publicado && !usuarioPodeVerRascunhos(usuario)) || !guardado) throw new AppError('NOT_FOUND', 'Documento não disponível.');
     // Documentos legados continuam no Storage. Links do Drive mantêm as próprias permissões.
     if (/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view(?:\?.*)?$/.test(guardado)) {
       return { url: guardado, expiraEmSegundos: null };
@@ -144,4 +155,4 @@ class EmpreendimentoService {
   }
 }
 
-module.exports = { EmpreendimentoService };
+module.exports = { EmpreendimentoService, usuarioPodeVerRascunhos };

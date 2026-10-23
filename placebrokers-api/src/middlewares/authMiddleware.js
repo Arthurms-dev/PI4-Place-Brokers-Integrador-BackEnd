@@ -23,6 +23,10 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ code: 'UNAUTHENTICATED', message: 'Perfil não encontrado.' });
   }
 
+  if (profile.ativo === false || ['pendente', 'recusado'].includes(profile.status)) {
+    return res.status(403).json({ code: 'FORBIDDEN', message: 'Acesso não autorizado.' });
+  }
+
   req.userId = profile.id;
   req.user = profile;
   next();

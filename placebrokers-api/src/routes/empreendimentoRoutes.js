@@ -6,6 +6,7 @@ const { listar, buscarPorId, criar, atualizar, documento } = require('../control
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
+const { listar: listarDocsComerciais, abrir: abrirDocComercial } = require('../controllers/documentosEmpreendimentoController');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -17,7 +18,9 @@ const router = Router();
 router.get('/', optionalAuthMiddleware, listar);
 router.get('/:id', optionalAuthMiddleware, buscarPorId);
 
-router.get('/:id/documentos/:tipo', authMiddleware, documento);
+router.get('/:id/documentos', authMiddleware, requireRole('admin', 'corretor', 'gerente'), listarDocsComerciais);
+router.get('/:id/documentos/arquivo/:docId', authMiddleware, requireRole('admin', 'corretor', 'gerente'), abrirDocComercial);
+router.get('/:id/documentos/:tipo', authMiddleware, requireRole('admin', 'corretor', 'gerente'), documento);
 
 router.post(
   '/',
