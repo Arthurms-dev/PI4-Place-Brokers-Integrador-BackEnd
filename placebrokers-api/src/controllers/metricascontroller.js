@@ -1,8 +1,8 @@
 'use strict';
 
-const { MetricasService } = require('../services/metricasService');
-const { MetricasRepository } = require('../repositories/metricasRepository');
-const { EquipeRepository } = require('../repositories/equipeRepository');
+const { MetricasService } = require('../services/metricasservice');
+const { MetricasRepository } = require('../repositories/metricasrepository');
+const { EquipeRepository } = require('../repositories/equiperepository');
 const { AppError } = require('../errors/AppError');
 
 const metricasService = new MetricasService({

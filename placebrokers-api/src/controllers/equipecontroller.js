@@ -1,7 +1,7 @@
 'use strict';
 
-const { EquipeService } = require('../services/equipeService');
-const { EquipeRepository } = require('../repositories/equipeRepository');
+const { EquipeService } = require('../services/equipeservice');
+const { EquipeRepository } = require('../repositories/equiperepository');
 const { ProfileRepository } = require('../repositories/profileRepository');
 const { authClient } = require('../adapters/authClient');
 const { AppError } = require('../errors/AppError');

@@ -2,9 +2,9 @@
 
 const { Router } = require('express');
 const multer = require('multer');
-const { ViabilizadorController } = require('../controllers/viabilizadorController');
-const { ViabilizadorService } = require('../services/viabilizadorService');
-const { ViabilizadorRepository } = require('../repositories/viabilizadorRepository');
+const { ViabilizadorController } = require('../controllers/viabilizadorcontroller');
+const { ViabilizadorService } = require('../services/viabilizadorservice');
+const { ViabilizadorRepository } = require('../repositories/viabilizadorrepository');
 const { UploadService } = require('../services/uploadService');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');

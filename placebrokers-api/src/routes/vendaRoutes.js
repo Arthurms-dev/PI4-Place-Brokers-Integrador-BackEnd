@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { criar, listar, decidir, vgv } = require('../controllers/vendaController');
+const { criar, listar, decidir, vgv } = require('../controllers/vendacontroller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 const router = Router();

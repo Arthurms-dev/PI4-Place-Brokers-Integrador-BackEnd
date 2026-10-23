@@ -3,7 +3,7 @@
 const { AuthService } = require('../services/authService');
 const { ProfileRepository } = require('../repositories/profileRepository');
 const { authClient } = require('../adapters/authClient');
-const { passwordClient } = require('../adapters/passwordClient');
+const { passwordClient } = require('../adapters/passwordclient');
 const { AuthError } = require('../errors/AuthError');
 
 const profileRepository = new ProfileRepository();

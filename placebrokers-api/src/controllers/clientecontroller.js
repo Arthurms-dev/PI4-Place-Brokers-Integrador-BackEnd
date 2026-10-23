@@ -3,7 +3,7 @@
 const { AppError } = require('../errors/AppError');
 
 class ClienteController {
-  /** @param {{ clienteService: import('../services/clienteService').ClienteService }} deps */
+  /** @param {{ clienteService: import('../services/clienteservice').ClienteService }} deps */
   constructor({ clienteService }) {
     this.clienteService = clienteService;
   }

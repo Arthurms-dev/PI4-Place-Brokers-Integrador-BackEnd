@@ -17,7 +17,7 @@ class EmpreendimentoRepository {
   async buscarPorId(id) {
     const { data, error } = await supabaseAdmin
       .from('empreendimentos')
-      .select(`${SELECT_PADRAO}, imagens:empreendimento_imagens(url, ordem)`)
+      .select(`${SELECT_PADRAO}, imagens:empreendimento_imagens(url, ordem, alt)`)
       .eq('id', id)
       .maybeSingle();
     if (error) throw error;
