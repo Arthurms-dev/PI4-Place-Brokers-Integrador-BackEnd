@@ -6,7 +6,7 @@ const { AgendamentoRepository } = require('../repositories/agendamentoRepository
 const { LeadService } = require('../services/leadService');
 const { LeadRepository } = require('../repositories/leadRepository');
 const { ClienteRepository } = require('../repositories/clienteRepository');
-const { EquipeRepository } = require('../repositories/equipeRepository');
+const { EquipeRepository } = require('../repositories/equiperepository');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
 

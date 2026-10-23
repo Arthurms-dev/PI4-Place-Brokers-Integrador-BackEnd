@@ -4,7 +4,7 @@
 const {
   ClienteService,
   validarCliente,
-} = require('./clienteService');
+} = require('./clienteservice');
 
 const cliente = {
   id: 'cliente-1',

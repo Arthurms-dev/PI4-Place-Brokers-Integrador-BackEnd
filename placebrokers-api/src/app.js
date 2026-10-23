@@ -7,14 +7,14 @@ const empreendimentoRoutes = require('./routes/empreendimentoRoutes');
 const construtoraRoutes = require('./routes/construtoraRoutes');
 const painelRoutes = require('./routes/painelAdmRoutes');
 const leadRoutes = require('./routes/leadRoutes');
-const equipeRoutes = require('./routes/equipeRoutes');
+const equipeRoutes = require('./routes/equiperoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
 const corretorRoutes = require('./routes/corretorRoutes');
-const metricasRoutes = require('./routes/metricasRoutes');
+const metricasRoutes = require('./routes/metricasroutes');
 const agendamentoRoutes = require('./routes/agendamentoRoutes');
-const clienteRoutes = require('./routes/clienteRoutes');
-const gerenteRoutes = require('./routes/gerenteRoutes');
-const viabilizadorRoutes = require('./routes/viabilizadorRoutes');
+const clienteRoutes = require('./routes/clienteroutes');
+const gerenteRoutes = require('./routes/gerenteroutes');
+const viabilizadorRoutes = require('./routes/viabilizadorroutes');
 
 const app = express();
 

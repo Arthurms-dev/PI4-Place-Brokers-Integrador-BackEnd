@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { registrarEvento, dashboard } = require('../controllers/metricasController');
+const { registrarEvento, dashboard } = require('../controllers/metricascontroller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
 const { requireRole } = require('../middlewares/requireRole');

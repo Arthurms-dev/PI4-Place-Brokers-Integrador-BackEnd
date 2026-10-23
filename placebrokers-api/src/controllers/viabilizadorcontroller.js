@@ -3,7 +3,7 @@
 const { AppError } = require('../errors/AppError');
 
 class ViabilizadorController {
-  /** @param {{ viabilizadorService: import('../services/viabilizadorService').ViabilizadorService }} deps */
+  /** @param {{ viabilizadorService: import('../services/viabilizadorservice').ViabilizadorService }} deps */
   constructor({ viabilizadorService }) {
     this.viabilizadorService = viabilizadorService;
   }

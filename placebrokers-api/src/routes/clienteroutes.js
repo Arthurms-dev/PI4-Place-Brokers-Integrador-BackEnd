@@ -1,8 +1,8 @@
 'use strict';
 
 const { Router } = require('express');
-const { ClienteController } = require('../controllers/clienteController');
-const { ClienteService } = require('../services/clienteService');
+const { ClienteController } = require('../controllers/clientecontroller');
+const { ClienteService } = require('../services/clienteservice');
 const { ClienteRepository } = require('../repositories/clienteRepository');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
