@@ -4,7 +4,7 @@ const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 
-const CARGOS_INTERNOS = new Set(['admin', 'corretor']);
+const CARGOS_INTERNOS = new Set(['admin', 'corretor', 'gerente']);
 
 function usuarioPodeVerRascunhos(usuario) {
   return Boolean(
