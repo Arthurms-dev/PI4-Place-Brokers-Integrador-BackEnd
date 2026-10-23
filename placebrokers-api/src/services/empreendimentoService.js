@@ -20,13 +20,46 @@ class EmpreendimentoService {
   constructor({ empreendimentoRepository, uploadService }) {
     this.empreendimentoRepository = empreendimentoRepository;
     this.uploadService = uploadService;
+    // Cache exclusivamente para a listagem anônima; nunca armazena resposta interna.
+    this._catalogoPublico = { value: null, expiresAt: 0, inflight: null, revision: 0 };
   }
 
   /** @param {{ cargo: string }|null} usuario */
   async listar(usuario) {
     const apenasPublicados = !usuarioPodeVerRascunhos(usuario);
-    const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
-    return linhas.map((l) => this.sanitizar(l));
+    // Sessões identificadas mantêm consulta própria, sem cache de dados de visitante.
+    if (usuario != null || !apenasPublicados) {
+      const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
+      return linhas.map((l) => this.sanitizar(l));
+    }
+
+    const cache = this._catalogoPublico;
+    if (cache.value !== null && Date.now() < cache.expiresAt) return cache.value;
+    if (cache.inflight) return cache.inflight;
+
+    const revision = cache.revision;
+    const inflight = this.empreendimentoRepository
+      .listar({ apenasPublicados: true })
+      .then((linhas) => linhas.map((l) => this.sanitizar(l)));
+    cache.inflight = inflight;
+    try {
+      const itens = await inflight;
+      if (cache.revision === revision) {
+        cache.value = itens;
+        cache.expiresAt = Date.now() + 30_000;
+      }
+      return itens;
+    } finally {
+      if (cache.inflight === inflight) cache.inflight = null;
+    }
+  }
+
+  invalidarCachePublico() {
+    const cache = this._catalogoPublico;
+    cache.value = null;
+    cache.expiresAt = 0;
+    cache.inflight = null;
+    cache.revision += 1;
   }
 
   async buscarPorId(id, usuario) {
@@ -118,6 +151,7 @@ class EmpreendimentoService {
       );
     }
 
+    this.invalidarCachePublico();
     return empreendimento;
   }
 
@@ -151,7 +185,9 @@ class EmpreendimentoService {
     if (Object.keys(dados).length === 0) throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
 
     if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
-    return this.sanitizar(await this.empreendimentoRepository.atualizar(id, dados));
+    const atualizado = await this.empreendimentoRepository.atualizar(id, dados);
+    this.invalidarCachePublico();
+    return this.sanitizar(atualizado);
   }
 }
 
