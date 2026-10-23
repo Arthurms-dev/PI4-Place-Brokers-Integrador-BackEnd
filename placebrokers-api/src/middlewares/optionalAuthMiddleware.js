@@ -1,30 +1,35 @@
+
 'use strict';
 
-const { supabaseAuth } = require('../config/supabase');
-const { ProfileRepository } = require('../repositories/profileRepository');
-
-const profileRepository = new ProfileRepository();
+const { consultarSessao } = require('./consultarSessao');
 
 async function optionalAuthMiddleware(req, res, next) {
   const header = req.headers.authorization ?? '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+
+  const token = header.startsWith('Bearer ')
+    ? header.slice(7)
+    : null;
 
   if (!token) {
     req.user = null;
     return next();
   }
 
-  const { data, error } = await supabaseAuth.auth.getUser(token);
-  if (error || !data?.user) {
-    req.user = null;
-    return next();
-  }
+  try {
+    const { autenticado, profile } = await consultarSessao(token);
 
-  const profile = await profileRepository.findById(data.user.id);
-  req.user = profile && profile.ativo !== false && !['pendente', 'recusado'].includes(profile.status)
-    ? profile
-    : null;
-  next();
+    req.user =
+      autenticado &&
+      profile &&
+      profile.ativo !== false &&
+      !['pendente', 'recusado'].includes(profile.status)
+        ? profile
+        : null;
+
+    return next();
+  } catch (error) {
+    return next(error);
+  }
 }
 
 module.exports = { optionalAuthMiddleware };

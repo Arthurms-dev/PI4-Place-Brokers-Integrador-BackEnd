@@ -7,11 +7,17 @@ const { passwordClient } = require('../adapters/passwordclient');
 const { AuthError } = require('../errors/AuthError');
 
 const profileRepository = new ProfileRepository();
-const authService = new AuthService({ authClient, profileRepository, passwordClient });
+
+const authService = new AuthService({
+  authClient,
+  profileRepository,
+  passwordClient,
+});
 
 async function login(req, res) {
   try {
     const result = await authService.login(req.body);
+
     return res.status(200).json(result);
   } catch (err) {
     return handleAuthError(res, err);
@@ -21,6 +27,7 @@ async function login(req, res) {
 async function register(req, res) {
   try {
     const result = await authService.register(req.body);
+
     return res.status(201).json(result);
   } catch (err) {
     return handleAuthError(res, err);
@@ -29,12 +36,22 @@ async function register(req, res) {
 
 async function me(req, res) {
   try {
-    const profile = await profileRepository.findById(req.userId);
+    const profile = req.user;
+
     if (!profile) {
-      return res.status(404).json({ code: 'NOT_FOUND', message: 'Perfil não encontrado.' });
+      return res.status(404).json({
+        code: 'NOT_FOUND',
+        message: 'Perfil não encontrado.',
+      });
     }
+
     return res.status(200).json({
-      user: { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo },
+      user: {
+        id: profile.id,
+        nome: profile.nome,
+        email: profile.email,
+        role: profile.cargo,
+      },
     });
   } catch (err) {
     return handleAuthError(res, err);
@@ -43,8 +60,14 @@ async function me(req, res) {
 
 async function atualizarMe(req, res) {
   try {
-    const usuario = await authService.atualizarPerfil(req.userId, req.body);
-    return res.status(200).json({ user: usuario });
+    const usuario = await authService.atualizarPerfil(
+      req.userId,
+      req.body
+    );
+
+    return res.status(200).json({
+      user: usuario,
+    });
   } catch (err) {
     return handleAuthError(res, err);
   }
@@ -52,7 +75,12 @@ async function atualizarMe(req, res) {
 
 async function alterarSenha(req, res) {
   try {
-    return res.status(200).json(await authService.alterarSenha(req.userId, req.body));
+    const resultado = await authService.alterarSenha(
+      req.userId,
+      req.body
+    );
+
+    return res.status(200).json(resultado);
   } catch (err) {
     return handleAuthError(res, err);
   }
@@ -66,8 +94,19 @@ function handleAuthError(res, err) {
       fieldErrors: err.fieldErrors,
     });
   }
+
   console.error(err);
-  return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
+
+  return res.status(500).json({
+    code: 'SERVER_ERROR',
+    message: 'Erro interno do servidor.',
+  });
 }
 
-module.exports = { login, register, me, atualizarMe, alterarSenha };
+module.exports = {
+  login,
+  register,
+  me,
+  atualizarMe,
+  alterarSenha,
+};
