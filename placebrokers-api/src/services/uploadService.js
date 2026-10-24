@@ -1,6 +1,8 @@
 'use strict';
 
 const sharp = require('sharp');
+const { randomUUID } = require('node:crypto');
+const { AppError } = require('../errors/AppError');
 const { supabaseAdmin } = require('../config/supabase');
 
 const BUCKET_IMAGENS = 'empreendimentos';
@@ -51,6 +53,30 @@ class UploadService {
       urls.push(await subir(BUCKET_IMAGENS, `${slug}/galeria/${nome}`, buffer, 'image/webp'));
     }
     return urls;
+  }
+
+  async uploadImagemNova(empreendimentoId, grupo, arquivo) {
+    // Não reutilizar os caminhos da criação antiga: cada upload deve ser imutável.
+    const info = await sharp(arquivo.buffer, { limitInputPixels: 40_000_000 })
+      .metadata().catch(() => null);
+    if (!info || !['jpeg', 'png', 'webp'].includes(info.format)) {
+      throw new AppError('VALIDATION_ERROR', 'Arquivo inválido. Use JPG, PNG ou WebP.');
+    }
+    const buffer = await sharp(arquivo.buffer, { limitInputPixels: 40_000_000 })
+      .resize({ width: LARGURA_MAXIMA, withoutEnlargement: true })
+      .webp({ quality: QUALIDADE_WEBP }).toBuffer();
+    const caminho = empreendimentoId + '/' + grupo + '/' + randomUUID() + '.webp';
+    const { error } = await supabaseAdmin.storage.from(BUCKET_IMAGENS)
+      .upload(caminho, buffer, { upsert: false, contentType: 'image/webp', cacheControl: '3600' });
+    if (error) throw error;
+    const { data } = supabaseAdmin.storage.from(BUCKET_IMAGENS).getPublicUrl(caminho);
+    return { url: data.publicUrl, caminho };
+  }
+
+  async limparImagensNovas(caminhos) {
+    if (!caminhos.length) return;
+    const { error } = await supabaseAdmin.storage.from(BUCKET_IMAGENS).remove(caminhos);
+    if (error) throw error;
   }
 
   async uploadDocumento(slug, nomeArquivo, arquivo) {

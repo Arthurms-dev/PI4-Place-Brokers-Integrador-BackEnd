@@ -25,7 +25,7 @@ class EmpreendimentoRepository {
   async buscarPorId(id) {
     const { data, error } = await supabaseAdmin
       .from('empreendimentos')
-      .select(`${SELECT_PADRAO}, imagens:empreendimento_imagens(url, ordem, alt)`)
+      .select(`${SELECT_PADRAO}, imagens:empreendimento_imagens(id, url, ordem, alt)`)
       .eq('id', id)
       .maybeSingle();
 
@@ -64,6 +64,21 @@ class EmpreendimentoRepository {
       .insert(linhas);
 
     if (error) throw error;
+  }
+
+  async adicionarImagens(linhas) {
+    const { data, error } = await supabaseAdmin.from('empreendimento_imagens')
+      .insert(linhas).select('id,url,alt,ordem');
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async removerImagem(empreendimentoId, imagemId) {
+    const { data, error } = await supabaseAdmin.from('empreendimento_imagens')
+      .delete().eq('empreendimento_id', empreendimentoId).eq('id', imagemId)
+      .select('id').maybeSingle();
+    if (error) throw error;
+    return data;
   }
 
   async buscarTipologia(empreendimentoId, tipologiaId) {

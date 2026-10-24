@@ -4,11 +4,34 @@ const { EmpreendimentoService } = require('../services/empreendimentoService');
 const { EmpreendimentoRepository } = require('../repositories/empreendimentoRepository');
 const { UploadService } = require('../services/uploadService');
 const { AppError } = require('../errors/AppError');
+const { EmpreendimentoImagensService } = require('../services/empreendimentoImagensService');
 
 const empreendimentoService = new EmpreendimentoService({
   empreendimentoRepository: new EmpreendimentoRepository(),
   uploadService: new UploadService(),
 });
+
+const imagemService = new EmpreendimentoImagensService({
+  repository: new EmpreendimentoRepository(),
+  uploadService: new UploadService(),
+  invalidarCache: () => empreendimentoService.invalidarCachePublico(),
+});
+
+async function trocarCapa(req, res) {
+  try {
+    return res.status(200).json(await imagemService.trocarCapa(req.params.id, req.file));
+  } catch (erro) { return handleError(res, erro); }
+}
+async function adicionarFotos(req, res) {
+  try {
+    return res.status(201).json(await imagemService.adicionarGaleria(req.params.id, req.files));
+  } catch (erro) { return handleError(res, erro); }
+}
+async function removerFoto(req, res) {
+  try {
+    return res.status(200).json(await imagemService.removerFoto(req.params.id, req.params.imagemId));
+  } catch (erro) { return handleError(res, erro); }
+}
 
 function paraNumero(valor) {
   if (valor === undefined || valor === null || valor === '') return null;
@@ -127,4 +150,7 @@ module.exports = {
   documento,
   criarTipologia,
   atualizarTipologia,
+  trocarCapa,
+  adicionarFotos,
+  removerFoto,
 };

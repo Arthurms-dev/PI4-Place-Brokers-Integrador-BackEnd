@@ -10,6 +10,9 @@ const {
   documento,
   criarTipologia,
   atualizarTipologia,
+  trocarCapa,
+  adicionarFotos,
+  removerFoto,
 } = require('../controllers/empreendimentoController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
@@ -58,6 +61,10 @@ router.post(
   criar,
 );
 router.patch('/:id', authMiddleware, requireRole('admin'), atualizar);
+// Uploads protegidos: até 15 MB por foto, cinco fotos por envio.
+router.post('/:id/imagens/capa', authMiddleware, requireRole('admin'), upload.single('imagem'), trocarCapa);
+router.post('/:id/imagens/galeria', authMiddleware, requireRole('admin'), upload.array('imagens', 5), adicionarFotos);
+router.delete('/:id/imagens/:imagemId', authMiddleware, requireRole('admin'), removerFoto);
 router.post('/:id/tipologias', authMiddleware, requireRole('admin'), criarTipologia);
 router.patch('/:id/tipologias/:tipologiaId', authMiddleware, requireRole('admin'), atualizarTipologia);
 module.exports = router;
