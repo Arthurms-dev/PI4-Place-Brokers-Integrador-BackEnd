@@ -24,12 +24,15 @@ const {
   atualizar: atualizarDocAdmin,
 } = require('../controllers/documentosEmpreendimentoAdminController');
 
+const { listar: listarPendenciasDrive } = require('../controllers/pendenciasDriveController');
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 const router = Router();
 
+router.get('/documentos/pendencias', authMiddleware, requireRole('admin'), listarPendenciasDrive);
 router.get('/', optionalAuthMiddleware, listar);
 router.get('/:id', optionalAuthMiddleware, buscarPorId);
 
