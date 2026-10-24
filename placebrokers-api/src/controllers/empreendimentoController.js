@@ -18,8 +18,7 @@ function paraNumero(valor) {
 
 async function listar(req, res) {
   try {
-    const dados = await empreendimentoService.listar(req.user);
-    return res.status(200).json(dados);
+    return res.status(200).json(await empreendimentoService.listar(req.user));
   } catch (err) {
     return handleError(res, err);
   }
@@ -27,8 +26,7 @@ async function listar(req, res) {
 
 async function buscarPorId(req, res) {
   try {
-    const dados = await empreendimentoService.buscarPorId(req.params.id, req.user);
-    return res.status(200).json(dados);
+    return res.status(200).json(await empreendimentoService.buscarPorId(req.params.id, req.user));
   } catch (err) {
     return handleError(res, err);
   }
@@ -47,6 +45,8 @@ async function criar(req, res) {
       quartosMax: paraNumero(b.quartosMax),
       vagasMin: paraNumero(b.vagasMin),
       vagasMax: paraNumero(b.vagasMax),
+      areaMin: paraNumero(b.areaMin),
+      areaMax: paraNumero(b.areaMax),
       precoMin: paraNumero(b.precoMin),
       precoMax: paraNumero(b.precoMax),
       latitude: paraNumero(b.latitude),
@@ -59,6 +59,7 @@ async function criar(req, res) {
       book: arquivos.book?.[0],
       tabela: arquivos.tabela?.[0],
     });
+
     return res.status(201).json(empreendimentoService.sanitizar(resultado));
   } catch (err) {
     return handleError(res, err);
@@ -67,7 +68,9 @@ async function criar(req, res) {
 
 async function documento(req, res) {
   try {
-    return res.status(200).json(await empreendimentoService.urlDoDocumento(req.params.id, req.params.tipo, req.user));
+    return res.status(200).json(
+      await empreendimentoService.urlDoDocumento(req.params.id, req.params.tipo, req.user)
+    );
   } catch (err) {
     return handleError(res, err);
   }
@@ -81,12 +84,47 @@ async function atualizar(req, res) {
   }
 }
 
+async function criarTipologia(req, res) {
+  try {
+    const dados = await empreendimentoService.criarTipologia(req.params.id, req.body);
+    return res.status(201).json(dados);
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+async function atualizarTipologia(req, res) {
+  try {
+    const dados = await empreendimentoService.atualizarTipologia(
+      req.params.id,
+      req.params.tipologiaId,
+      req.body
+    );
+    return res.status(200).json(dados);
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 function handleError(res, err) {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({ code: err.code, message: err.message, fieldErrors: err.fieldErrors });
+    return res.status(err.statusCode).json({
+      code: err.code,
+      message: err.message,
+      fieldErrors: err.fieldErrors,
+    });
   }
+
   console.error(err);
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, documento };
+module.exports = {
+  listar,
+  buscarPorId,
+  criar,
+  atualizar,
+  documento,
+  criarTipologia,
+  atualizarTipologia,
+};

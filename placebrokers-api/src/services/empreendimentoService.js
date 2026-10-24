@@ -3,8 +3,14 @@
 const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
-
 const CARGOS_INTERNOS = new Set(['admin', 'corretor', 'gerente']);
+const CAMPOS_TIPOLOGIA = {
+  quartos: 'quartos',
+  suites: 'suites',
+  vagas: 'vagas',
+  areaM2: 'area_m2',
+  ordem: 'ordem',
+};
 
 function usuarioPodeVerRascunhos(usuario) {
   return Boolean(
@@ -16,21 +22,18 @@ function usuarioPodeVerRascunhos(usuario) {
 }
 
 class EmpreendimentoService {
-  /** @param {{ empreendimentoRepository, uploadService }} deps */
   constructor({ empreendimentoRepository, uploadService }) {
     this.empreendimentoRepository = empreendimentoRepository;
     this.uploadService = uploadService;
-    // Cache exclusivamente para a listagem anônima; nunca armazena resposta interna.
     this._catalogoPublico = { value: null, expiresAt: 0, inflight: null, revision: 0 };
   }
 
-  /** @param {{ cargo: string }|null} usuario */
   async listar(usuario) {
     const apenasPublicados = !usuarioPodeVerRascunhos(usuario);
-    // Sessões identificadas mantêm consulta própria, sem cache de dados de visitante.
+
     if (usuario != null || !apenasPublicados) {
       const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
-      return linhas.map((l) => this.sanitizar(l));
+      return linhas.map((linha) => this.sanitizar(linha));
     }
 
     const cache = this._catalogoPublico;
@@ -40,8 +43,10 @@ class EmpreendimentoService {
     const revision = cache.revision;
     const inflight = this.empreendimentoRepository
       .listar({ apenasPublicados: true })
-      .then((linhas) => linhas.map((l) => this.sanitizar(l)));
+      .then((linhas) => linhas.map((linha) => this.sanitizar(linha)));
+
     cache.inflight = inflight;
+
     try {
       const itens = await inflight;
       if (cache.revision === revision) {
@@ -73,20 +78,47 @@ class EmpreendimentoService {
 
   sanitizar(row) {
     if (!row) return row;
-    const { book_url: book, tabela_url: tabela, ...resto } = row;
-    return { ...resto, tem_book: Boolean(book), tem_tabela: Boolean(tabela) };
+
+    const { book_url: book, tabela_url: tabela, ...dados } = row;
+    const tipologias = Array.isArray(dados.tipologias)
+      ? [...dados.tipologias].sort(
+          (a, b) =>
+            (a.ordem ?? 0) - (b.ordem ?? 0) ||
+            a.nome.localeCompare(b.nome, 'pt-BR')
+        )
+      : [];
+
+    return {
+      ...dados,
+      tipologias,
+      tem_book: Boolean(book),
+      tem_tabela: Boolean(tabela),
+    };
   }
 
   async urlDoDocumento(id, tipo, usuario = null) {
     const COLUNAS = { book: 'book_url', tabela: 'tabela_url' };
-    if (!COLUNAS[tipo]) throw new AppError('VALIDATION_ERROR', 'Tipo de documento inválido.', 400, { tipo: 'Use book ou tabela.' });
+    if (!COLUNAS[tipo]) {
+      throw new AppError('VALIDATION_ERROR', 'Tipo de documento inválido.', 400, {
+        tipo: 'Use book ou tabela.',
+      });
+    }
+
     const empreendimento = await this.empreendimentoRepository.buscarPorId(id);
     const guardado = empreendimento?.[COLUNAS[tipo]];
-    if (!empreendimento || (!empreendimento.publicado && !usuarioPodeVerRascunhos(usuario)) || !guardado) throw new AppError('NOT_FOUND', 'Documento não disponível.');
-    // Documentos legados continuam no Storage. Links do Drive mantêm as próprias permissões.
+
+    if (
+      !empreendimento ||
+      (!empreendimento.publicado && !usuarioPodeVerRascunhos(usuario)) ||
+      !guardado
+    ) {
+      throw new AppError('NOT_FOUND', 'Documento não disponível.');
+    }
+
     if (/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view(?:\?.*)?$/.test(guardado)) {
       return { url: guardado, expiraEmSegundos: null };
     }
+
     return this.uploadService.assinarDocumento(guardado);
   }
 
@@ -100,13 +132,11 @@ class EmpreendimentoService {
     return erros;
   }
 
-  /**
-   * @param {object} dados
-   * @param {{ capa?, galeria?, book?, tabela? }} arquivos
-   */
   async criar(dados, arquivos) {
     const erros = this.validar(dados);
-    if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    if (Object.keys(erros).length) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    }
 
     const slug = this.uploadService.gerarSlug(dados.nome);
 
@@ -133,6 +163,8 @@ class EmpreendimentoService {
       quartos_max: dados.quartosMax ?? null,
       vagas_min: dados.vagasMin ?? null,
       vagas_max: dados.vagasMax ?? null,
+      area_min: dados.areaMin ?? null,
+      area_max: dados.areaMax ?? null,
       preco_min: dados.precoMin ?? null,
       preco_max: dados.precoMax ?? null,
       lazer: dados.lazer ?? [],
@@ -147,7 +179,7 @@ class EmpreendimentoService {
 
     if (galeriaUrls.length) {
       await this.empreendimentoRepository.inserirImagens(
-        galeriaUrls.map((url, i) => ({ empreendimento_id: empreendimento.id, url, ordem: i })),
+        galeriaUrls.map((url, i) => ({ empreendimento_id: empreendimento.id, url, ordem: i }))
       );
     }
 
@@ -155,39 +187,187 @@ class EmpreendimentoService {
     return empreendimento;
   }
 
-  async atualizar(id, m = {}) {
+  async atualizar(id, mudancas = {}) {
     const atual = await this.empreendimentoRepository.buscarPorId(id);
     if (!atual) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
 
     const MAPA = {
-      nome: 'nome', construtoraId: 'construtora_id', status: 'status', descricao: 'descricao',
-      uf: 'uf', cidade: 'cidade', bairro: 'bairro', endereco: 'endereco',
-      latitude: 'latitude', longitude: 'longitude',
-      quartosMin: 'quartos_min', quartosMax: 'quartos_max', vagasMin: 'vagas_min', vagasMax: 'vagas_max',
-      precoMin: 'preco_min', precoMax: 'preco_max',
-      lazer: 'lazer', publicado: 'publicado', disponivel: 'disponivel', destaque: 'destaque',
+      nome: 'nome',
+      construtoraId: 'construtora_id',
+      status: 'status',
+      descricao: 'descricao',
+      uf: 'uf',
+      cidade: 'cidade',
+      bairro: 'bairro',
+      endereco: 'endereco',
+      latitude: 'latitude',
+      longitude: 'longitude',
+      quartosMin: 'quartos_min',
+      quartosMax: 'quartos_max',
+      vagasMin: 'vagas_min',
+      vagasMax: 'vagas_max',
+      areaMin: 'area_min',
+      areaMax: 'area_max',
+      precoMin: 'preco_min',
+      precoMax: 'preco_max',
+      lazer: 'lazer',
+      publicado: 'publicado',
+      disponivel: 'disponivel',
+      destaque: 'destaque',
     };
+
     const dados = {};
     for (const [campo, coluna] of Object.entries(MAPA)) {
-      if (m[campo] !== undefined) dados[coluna] = m[campo] === '' ? null : m[campo];
+      if (mudancas[campo] !== undefined) {
+        dados[coluna] = mudancas[campo] === '' ? null : mudancas[campo];
+      }
     }
 
     const erros = {};
     if ('nome' in dados && !String(dados.nome ?? '').trim()) erros.nome = 'Informe o nome.';
     if ('status' in dados && !STATUS_VALIDOS.includes(dados.status)) erros.status = 'Status inválido.';
-    for (const c of ['uf', 'cidade', 'bairro']) {
-      if (c in dados && !String(dados[c] ?? '').trim()) erros[c] = 'Campo obrigatório.';
+
+    for (const campo of ['uf', 'cidade', 'bairro']) {
+      if (campo in dados && !String(dados[campo] ?? '').trim()) {
+        erros[campo] = 'Campo obrigatório.';
+      }
     }
-    for (const c of ['latitude', 'longitude', 'quartos_min', 'quartos_max', 'vagas_min', 'vagas_max', 'preco_min', 'preco_max']) {
-      if (c in dados && dados[c] !== null && typeof dados[c] !== 'number') erros[c] = 'Informe um número.';
+
+    const numericos = [
+      'latitude', 'longitude', 'quartos_min', 'quartos_max',
+      'vagas_min', 'vagas_max', 'area_min', 'area_max',
+      'preco_min', 'preco_max',
+    ];
+    for (const campo of numericos) {
+      if (campo in dados && dados[campo] !== null &&
+          (typeof dados[campo] !== 'number' || !Number.isFinite(dados[campo]))) {
+        erros[campo] = 'Informe um número válido.';
+      }
     }
-    if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
-    if (Object.keys(dados).length === 0) throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
+
+    if (Object.keys(erros).length) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    }
+    if (Object.keys(dados).length === 0) {
+      throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
+    }
 
     if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
+
     const atualizado = await this.empreendimentoRepository.atualizar(id, dados);
     this.invalidarCachePublico();
     return this.sanitizar(atualizado);
+  }
+
+  validarTipologia(entrada, atual = null) {
+    if (!entrada || typeof entrada !== 'object' || Array.isArray(entrada) ||
+        Object.keys(entrada).length === 0) {
+      throw new AppError('VALIDATION_ERROR', 'Informe os dados da tipologia.');
+    }
+
+    const dados = {};
+    const erros = {};
+
+    for (const campo of Object.keys(entrada)) {
+      if (campo !== 'nome' && !Object.hasOwn(CAMPOS_TIPOLOGIA, campo)) {
+        erros[campo] = 'Campo não permitido.';
+      }
+    }
+
+    if (Object.hasOwn(entrada, 'nome')) {
+      if (typeof entrada.nome !== 'string' ||
+          entrada.nome.trim().length < 2 || entrada.nome.trim().length > 120) {
+        erros.nome = 'Informe um nome entre 2 e 120 caracteres.';
+      } else {
+        dados.nome = entrada.nome.trim();
+      }
+    } else if (!atual) {
+      erros.nome = 'Informe o nome da tipologia.';
+    }
+
+    for (const [campo, coluna] of Object.entries(CAMPOS_TIPOLOGIA)) {
+      if (!Object.hasOwn(entrada, campo)) continue;
+
+      const valor = entrada[campo];
+      if (valor === null && campo !== 'ordem') {
+        dados[coluna] = null;
+        continue;
+      }
+
+      if (typeof valor !== 'number' || !Number.isFinite(valor)) {
+        erros[campo] = 'Informe um número válido.';
+        continue;
+      }
+
+      if (campo === 'areaM2') {
+        if (valor <= 0 || valor > 999999.99 ||
+            Math.abs(valor - Math.round(valor * 100) / 100) > 0.000001) {
+          erros[campo] = 'Informe uma área válida com até 2 casas decimais.';
+        } else {
+          dados[coluna] = valor;
+        }
+      } else if (!Number.isInteger(valor) || valor < 0 || valor > 32767) {
+        erros[campo] = 'Informe um número inteiro válido.';
+      } else {
+        dados[coluna] = valor;
+      }
+    }
+
+    const resultado = { ...atual, ...dados };
+    if (resultado.quartos != null && resultado.suites != null &&
+        resultado.suites > resultado.quartos) {
+      erros.suites = 'Suítes não podem superar os quartos.';
+    }
+
+    if (Object.keys(erros).length) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    }
+
+    return dados;
+  }
+
+  async criarTipologia(empreendimentoId, entrada) {
+    const dados = this.validarTipologia(entrada);
+    const empreendimento = await this.empreendimentoRepository.buscarPorId(empreendimentoId);
+    if (!empreendimento) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
+
+    try {
+      const tipologia = await this.empreendimentoRepository.criarTipologia(empreendimentoId, dados);
+      this.invalidarCachePublico();
+      return tipologia;
+    } catch (erro) {
+      if (erro.code === '23505') {
+        throw new AppError('VALIDATION_ERROR', 'Já existe uma tipologia com esse nome.', {
+          nome: 'Escolha outro nome.',
+        });
+      }
+      throw erro;
+    }
+  }
+
+  async atualizarTipologia(empreendimentoId, tipologiaId, entrada) {
+    const atual = await this.empreendimentoRepository.buscarTipologia(empreendimentoId, tipologiaId);
+    if (!atual) throw new AppError('NOT_FOUND', 'Tipologia não encontrada.');
+
+    const dados = this.validarTipologia(entrada, atual);
+
+    try {
+      const tipologia = await this.empreendimentoRepository.atualizarTipologia(
+        empreendimentoId,
+        tipologiaId,
+        dados
+      );
+      if (!tipologia) throw new AppError('NOT_FOUND', 'Tipologia não encontrada.');
+      this.invalidarCachePublico();
+      return tipologia;
+    } catch (erro) {
+      if (erro.code === '23505') {
+        throw new AppError('VALIDATION_ERROR', 'Já existe uma tipologia com esse nome.', {
+          nome: 'Escolha outro nome.',
+        });
+      }
+      throw erro;
+    }
   }
 }
 
