@@ -14,13 +14,17 @@ const crypto = require('node:crypto');
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const { prepararPendencias } = require('./drive-pendencias.cjs');
+const { listarArvoreDrive, exigirVarreduraCompleta, formatarProgressoDrive } = require('./drive-arvore.cjs');
 
 const args = process.argv.slice(2);
-if (args.some((a) => a !== '--apply') || args.filter((a) => a === '--apply').length > 1) {
-  console.error('Uso: node scripts/registrar-pendencias-drive.cjs [--apply]');
+const modoRelatorio = args.length === 2 && args[0] === '--relatorio' &&
+  !args[1].startsWith('--') && path.extname(args[1]).toLowerCase() === '.json';
+if (!(args.length === 0 || (args.length === 1 && args[0] === '--apply') || modoRelatorio)) {
+  console.error('Uso: node scripts/registrar-pendencias-drive.cjs [--apply | --relatorio caminho.json]');
   process.exit(2);
 }
 const aplicar = args.includes('--apply');
+const destinoRelatorio = modoRelatorio ? path.resolve(args[1]) : null;
 
 function configuracao() {
   const env = process.env;
@@ -63,33 +67,12 @@ async function tokenDrive(credenciais) {
   return data.access_token;
 }
 
-async function listarPasta(idPasta, token) {
-  const arquivos = [];
-  let nextPageToken;
-  do {
-    const q = new URLSearchParams({
-      q: `'${idPasta}' in parents and trashed = false`,
-      fields: 'nextPageToken,incompleteSearch,files(id,name,mimeType,modifiedTime)',
-      pageSize: '1000', supportsAllDrives: 'true', includeItemsFromAllDrives: 'true',
-    });
-    if (nextPageToken) q.set('pageToken', nextPageToken);
-    const resposta = await fetch(`https://www.googleapis.com/drive/v3/files?${q}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!resposta.ok) throw new Error(`Falha ao consultar a pasta ${idPasta.slice(0, 6)}… (HTTP ${resposta.status}).`);
-    const dados = await resposta.json();
-    if (dados.incompleteSearch) throw new Error('Drive retornou uma busca incompleta; nenhuma gravação foi feita.');
-    arquivos.push(...(dados.files ?? []).map((item) => ({ ...item, pastaId: idPasta })));
-    nextPageToken = dados.nextPageToken;
-  } while (nextPageToken);
-  return arquivos;
-}
-
 async function executar() {
   const { credenciais, pastas } = configuracao();
+  console.log('[1/3] Consultando catálogo e documentos no Supabase (limite de 20s por consulta)...');
   const banco = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } });
+    { auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: (url, opcoes = {}) => fetch(url, { ...opcoes, signal: AbortSignal.timeout(20000) }) } });
 
   const [emp, docs] = await Promise.all([
     banco.from('empreendimentos').select('id,nome,book_url,tabela_url'),
@@ -99,16 +82,62 @@ async function executar() {
   if (emp.error) throw new Error(`Supabase/empreendimentos: ${emp.error.message}`);
   if (docs.error) throw new Error(`Supabase/documentos: ${docs.error.message}`);
 
+  console.log('[2/3] Autenticando a conta de serviço no Google...');
   const token = await tokenDrive(credenciais);
-  const encontrados = [];
-  for (const id of pastas) {
-    const arquivos = await listarPasta(id, token);
-    console.log(`Pasta ${id.slice(0, 6)}…: ${arquivos.length} arquivos listados.`);
-    encontrados.push(...arquivos);
+  console.log('[3/3] Percorrendo pastas e atalhos do Drive...');
+  const varredura = await listarArvoreDrive({ pastas, token,
+    timeoutMs: Number(process.env.GOOGLE_DRIVE_TIMEOUT_MS || 600000),
+    onProgresso: (info) => console.log(formatarProgressoDrive(info)),
+  });
+  console.table(varredura.resumo);
+  for (const aviso of varredura.avisos) {
+    console.warn(`REVISAR ${aviso.codigo}: ${aviso.caminho.join(' / ')} — ${aviso.mensagem}`);
+  }
+  if (!varredura.completo) {
+    console.warn('LEITURA INCOMPLETA: esta simulação não representa todo o acervo.');
   }
   const { pendencias, avisos } = prepararPendencias({
-    arquivos: encontrados, documentos: docs.data ?? [], empreendimentos: emp.data ?? [],
+    arquivos: varredura.arquivos, documentos: docs.data ?? [], empreendimentos: emp.data ?? [],
   });
+
+  if (destinoRelatorio) {
+    // Exportação local em simulação. Lista explícita: nunca serializar ambiente,
+    // credenciais, tokens, cabeçalhos ou resource keys.
+    const contar = (itens, campo) => itens.reduce((total, item) => {
+      const valor = item[campo] || 'nao_informado';
+      total[valor] = (total[valor] || 0) + 1;
+      return total;
+    }, Object.create(null));
+    const relatorio = {
+      versao: 1,
+      gerado_em: new Date().toISOString(),
+      modo: 'simulacao',
+      completo: varredura.completo,
+      resumo: varredura.resumo,
+      catalogo_consultado: {
+        empreendimentos: (emp.data ?? []).length,
+        documentos: (docs.data ?? []).length,
+      },
+      motivos_pendencias: contar(pendencias, 'motivo'),
+      tipos_de_arquivo: contar(varredura.arquivos, 'mimeType'),
+      arquivos: varredura.arquivos.map((a) => ({
+        id: a.id, nome: a.name, mime_type: a.mimeType,
+        modificado_em: a.modifiedTime, pasta_id: a.pastaId,
+        caminho: a.caminho ?? [],
+        link: `https://drive.google.com/file/d/${a.id}/view`,
+      })),
+      pendencias,
+      avisos_drive: varredura.avisos.map((a) => ({
+        codigo: a.codigo, id: a.id, arquivo: a.arquivo,
+        caminho: a.caminho, mensagem: a.mensagem,
+      })),
+      avisos_documentos: avisos.map((a) => ({ arquivo: a.arquivo, motivo: a.motivo })),
+    };
+    // Não sobrescrever arquivos existentes, inclusive um relatório anterior.
+    fs.writeFileSync(destinoRelatorio, JSON.stringify(relatorio, null, 2) + '\n',
+      { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+    console.log(`Relatório JSON salvo: ${destinoRelatorio}`);
+  }
 
   console.table(pendencias.map((p) => ({
     arquivo: p.arquivo_nome, motivo: p.motivo, tipo: p.tipo ?? 'A DEFINIR',
@@ -118,9 +147,17 @@ async function executar() {
   console.log(`Pendências identificadas: ${pendencias.length}. Avisos de metadados: ${avisos.length}.`);
 
   if (!aplicar) {
-    console.log('MODO SIMULAÇÃO: nenhuma alteração no banco. Para registrar pendências, use --apply após revisar a lista.');
+    if (!varredura.completo) process.exitCode = 2;
+    console.log('MODO SIMULAÇÃO: nenhuma alteração no banco.');
+    if (pendencias.length > 100) {
+      console.log('Mais de 100 pendências: --apply está bloqueado. Revise o acervo e os vínculos antes de gravar.');
+    } else {
+      console.log('Para registrar pendências, use --apply após revisar a lista.');
+    }
     return;
   }
+
+  exigirVarreduraCompleta(varredura);
 
   // Falha se a migração ainda não existe. Sem modificar registros comerciais.
   const { error: erroTabela } = await banco.from('empreendimento_documentos_pendencias').select('id').limit(1);

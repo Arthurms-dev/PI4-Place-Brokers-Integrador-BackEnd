@@ -27,7 +27,7 @@ const {
   atualizar: atualizarDocAdmin,
 } = require('../controllers/documentosEmpreendimentoAdminController');
 
-const { listar: listarPendenciasDrive } = require('../controllers/pendenciasDriveController');
+const { listar: listarPendenciasDrive, revisar: revisarPendenciaDrive } = require('../controllers/pendenciasDriveController');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -36,6 +36,7 @@ const upload = multer({
 const router = Router();
 
 router.get('/documentos/pendencias', authMiddleware, requireRole('admin'), listarPendenciasDrive);
+router.patch('/documentos/pendencias/:pendenciaId', authMiddleware, requireRole('admin'), revisarPendenciaDrive);
 router.get('/', optionalAuthMiddleware, listar);
 router.get('/:id', optionalAuthMiddleware, buscarPorId);
 

@@ -22,6 +22,7 @@ require('dotenv').config();
 
 const { createClient } = require('@supabase/supabase-js');
 const { compararDocumentosDrive } = require('./drive-documentos-diff.cjs');
+const { listarArvoreDrive, formatarProgressoDrive } = require('./drive-arvore.cjs');
 
 const ESCOPO = 'https://www.googleapis.com/auth/drive.metadata.readonly';
 
@@ -91,45 +92,14 @@ async function obterToken(credenciais) {
   return dados.access_token;
 }
 
-async function listarPastaDrive(token, idPasta) {
-  const arquivos = [];
-  let proximaPagina;
-
-  do {
-    const params = new URLSearchParams({
-      q: `'${idPasta}' in parents and trashed = false`,
-      fields: 'nextPageToken,incompleteSearch,files(id,name,mimeType,modifiedTime)',
-      pageSize: '1000',
-      supportsAllDrives: 'true',
-      includeItemsFromAllDrives: 'true',
-    });
-    if (proximaPagina) params.set('pageToken', proximaPagina);
-
-    const resposta = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!resposta.ok) {
-      throw new Error(`Falha ao listar pasta do Drive (HTTP ${resposta.status}). Confira acesso da service account.`);
-    }
-
-    const corpo = await resposta.json();
-    if (corpo.incompleteSearch) {
-      throw new Error('Busca incompleta no Drive. Não use estes resultados.');
-    }
-    arquivos.push(...(corpo.files ?? []));
-    proximaPagina = corpo.nextPageToken;
-  } while (proximaPagina);
-
-  return arquivos;
-}
-
 async function principal() {
   const { credenciais, idsPasta } = validarConfiguracao();
+  console.log('[1/3] Consultando catálogo e documentos no Supabase (limite de 20s por consulta)...');
   const banco = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    { auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: (url, opcoes = {}) => fetch(url, { ...opcoes, signal: AbortSignal.timeout(20000) }) } }
   );
 
   const [resEmp, resDocs] = await Promise.all([
@@ -142,17 +112,23 @@ async function principal() {
   if (resEmp.error) throw new Error(`Supabase/empreendimentos: ${resEmp.error.message}`);
   if (resDocs.error) throw new Error(`Supabase/documentos: ${resDocs.error.message}`);
 
+  console.log('[2/3] Autenticando a conta de serviço no Google...');
   const token = await obterToken(credenciais);
-  const encontrados = [];
-  for (const id of idsPasta) {
-    const arquivos = await listarPastaDrive(token, id);
-    encontrados.push(...arquivos);
-    console.log(`Pasta ${id.slice(0, 6)}…: ${arquivos.length} itens consultados.`);
+  console.log('[3/3] Percorrendo pastas e atalhos do Drive...');
+  const varredura = await listarArvoreDrive({ pastas: idsPasta, token,
+    timeoutMs: Number(process.env.GOOGLE_DRIVE_TIMEOUT_MS || 600000),
+    onProgresso: (info) => console.log(formatarProgressoDrive(info)),
+  });
+  console.table(varredura.resumo);
+  for (const aviso of varredura.avisos) {
+    console.warn(`REVISAR ${aviso.codigo}: ${aviso.caminho.join(' / ')} — ${aviso.mensagem}`);
   }
-
-  const arquivosUnicos = [...new Map(encontrados.map((item) => [item.id, item])).values()];
+  if (!varredura.completo) {
+    console.warn('LEITURA INCOMPLETA: os itens abaixo representam somente a parte acessível do acervo.');
+    process.exitCode = 2;
+  }
   const resultado = compararDocumentosDrive({
-    arquivos: arquivosUnicos,
+    arquivos: varredura.arquivos,
     empreendimentos: resEmp.data ?? [],
     documentos: resDocs.data ?? [],
   });

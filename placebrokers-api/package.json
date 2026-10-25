@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:drive": "node --test scripts/drive-arvore.test.cjs scripts/drive-documentos-diff.test.cjs scripts/drive-pendencias.test.cjs scripts/registrar-pendencias-drive.test.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
