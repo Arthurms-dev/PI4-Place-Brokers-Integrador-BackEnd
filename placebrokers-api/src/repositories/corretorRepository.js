@@ -10,6 +10,7 @@ class CorretorRepository {
       .select('id, nome')
       .in('cargo', ['corretor', 'admin'])
       .eq('ativo', true)
+      .eq('status', 'aprovado')
       .order('nome', { ascending: true });
     if (error) throw error;
     return data;

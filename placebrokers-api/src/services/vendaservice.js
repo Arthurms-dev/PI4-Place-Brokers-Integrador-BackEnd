@@ -4,9 +4,10 @@ const { AppError } = require('../errors/AppError');
 
 class VendaService {
   /** @param {{ vendaRepository, equipeRepository }} deps */
-  constructor({ vendaRepository, equipeRepository }) {
+  constructor({ vendaRepository, equipeRepository, clienteRepository }) {
     this.vendaRepository = vendaRepository;
     this.equipeRepository = equipeRepository;
+    this.clienteRepository = clienteRepository;
   }
 
   /** @param {{ id: string, cargo: string }} usuario @returns {Promise<string[]>} */
@@ -23,8 +24,19 @@ class VendaService {
 
   async criar({ valor, empreendimentoId, clienteId } = {}, corretor) {
     const numero = Number(valor);
-    if (!valor || Number.isNaN(numero) || numero <= 0) {
-      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', { valor: 'Informe um valor de venda válido.' });
+    if (valor === null || valor === undefined || valor === '' || !Number.isFinite(numero) || numero <= 0) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, { valor: 'Informe um valor de venda válido.' });
+    }
+    if (!clienteId) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, { clienteId: 'Selecione o cliente da sua carteira.' });
+    }
+
+    // O navegador não é fonte de autorização. Verificar no banco que o cliente
+    // informado pertence ao corretor autenticado (inclusive via API direta).
+    const cliente = await this.clienteRepository.buscarPorId(clienteId);
+    if (!cliente) throw new AppError('NOT_FOUND', 'Cliente não encontrado.', 404);
+    if (cliente.corretor?.id !== corretor.id) {
+      throw new AppError('FORBIDDEN', 'Esse cliente não pertence à sua carteira.', 403);
     }
 
     return this.vendaRepository.criar({

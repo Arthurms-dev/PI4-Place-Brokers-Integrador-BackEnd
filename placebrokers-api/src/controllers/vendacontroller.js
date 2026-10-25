@@ -3,11 +3,13 @@
 const { VendaService } = require('../services/vendaservice');
 const { VendaRepository } = require('../repositories/vendaRepository');
 const { EquipeRepository } = require('../repositories/equiperepository');
+const { ClienteRepository } = require('../repositories/clienteRepository');
 const { AppError } = require('../errors/AppError');
 
 const vendaService = new VendaService({
   vendaRepository: new VendaRepository(),
   equipeRepository: new EquipeRepository(),
+  clienteRepository: new ClienteRepository(),
 });
 
 async function criar(req, res) {
