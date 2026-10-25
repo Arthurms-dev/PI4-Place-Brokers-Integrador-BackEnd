@@ -77,7 +77,7 @@ router.patch('/leads/:id/corretor', async (req, res) => {
     }
     const lead = await leadRepository.buscarPorId(req.params.id);
     if (!lead) return res.status(404).json({ code: 'NOT_FOUND', message: 'Lead não encontrado.' });
-    if (!lead.corretor_id || !new Set(membros.map((m) => m.id)).has(lead.corretor_id)) {
+    if (!lead.corretor?.id || !new Set(membros.map((m) => m.id)).has(lead.corretor.id)) {
       return res.status(403).json({ code: 'FORBIDDEN', message: 'Esse lead não está com um corretor da sua equipe.' });
     }
     return res.status(200).json({ lead: await leadService.atribuirCorretor(req.params.id, corretorId) });
