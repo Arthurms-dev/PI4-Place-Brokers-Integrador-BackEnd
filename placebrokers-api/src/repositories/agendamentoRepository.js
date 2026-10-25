@@ -45,6 +45,18 @@ class AgendamentoRepository {
     return data;
   }
 
+  // Consulta restrita aos corretores aprovados das equipes do gerente.
+  async listarPorCorretores(corretorIds) {
+    if (!corretorIds.length) return [];
+    const { data, error } = await supabaseAdmin
+      .from('agendamentos')
+      .select(AGENDAMENTO_SELECT)
+      .in('corretor_id', corretorIds)
+      .order('data_hora', { ascending: true });
+    if (error) throw error;
+    return data;
+  }
+
   /** @param {string} id @returns {Promise<object|null>} */
   async buscarPorId(id) {
     const { data, error } = await supabaseAdmin

@@ -16,6 +16,20 @@ class EquipeRepository {
     return data;
   }
 
+  // Escopo minimo necessario ao painel do gerente, sem ler todos os perfis.
+  async listarMembrosPorEquipes(equipeIds) {
+    if (!equipeIds.length) return [];
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, nome, email, telefone, cargo, status, ativo, equipe_id')
+      .in('equipe_id', equipeIds)
+      .eq('cargo', 'corretor')
+      .eq('status', 'aprovado')
+      .order('criado_em', { ascending: false });
+    if (error) throw error;
+    return data;
+  }
+
   async buscarPorId(id) {
     const { data, error } = await supabaseAdmin.from('profiles').select(CAMPOS).eq('id', id).maybeSingle();
     if (error) throw error;

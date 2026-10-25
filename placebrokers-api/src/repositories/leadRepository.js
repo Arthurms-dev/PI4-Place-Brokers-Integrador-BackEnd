@@ -26,6 +26,18 @@ class LeadRepository {
     return data;
   }
 
+  // Evita trazer leads de outras equipes para memoria do servidor.
+  async listarPorCorretores(corretorIds) {
+    if (!corretorIds.length) return [];
+    const { data, error } = await supabaseAdmin
+      .from('leads')
+      .select(LEAD_SELECT)
+      .in('corretor_id', corretorIds)
+      .order('criado_em', { ascending: false });
+    if (error) throw error;
+    return data;
+  }
+
   async listarPorCorretor(corretorId) {
      const { data, error } = await supabaseAdmin
        .from('leads')

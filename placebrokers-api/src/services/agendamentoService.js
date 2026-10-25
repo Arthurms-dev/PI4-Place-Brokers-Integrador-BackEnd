@@ -77,6 +77,12 @@ class AgendamentoService {
     return rows.map(toPublicAgendamento);
   }
 
+  /** Consulta os agendamentos da equipe no banco, sem varrer a agenda geral. */
+  async listarPorCorretores(corretorIds) {
+    const rows = await this.agendamentoRepository.listarPorCorretores(corretorIds);
+    return rows.map(toPublicAgendamento);
+  }
+
   /**
    * @param {{ corretorId: string, dataHora: string, duracaoMinutos: number, ignorarId?: string }} params
    * @returns {Promise<boolean>}

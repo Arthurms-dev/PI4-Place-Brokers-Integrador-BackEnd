@@ -63,6 +63,12 @@ class LeadService {
     return rows.map(toPublicLead);
   }
 
+  /** Consulta a carteira da equipe no banco, mantendo o mesmo formato da API. */
+  async listarPorCorretores(corretorIds) {
+    const rows = await this.leadRepository.listarPorCorretores(corretorIds);
+    return rows.map(toPublicLead);
+  }
+
   async listarDoCorretor(usuario) {
     const rows = await this.leadRepository.listarPorCorretor(usuario.id);
     return rows.map(toPublicLead);

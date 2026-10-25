@@ -4,7 +4,7 @@
 // portanto o responsavel retornado e lead.corretor.id (nao lead.corretor_id).
 const mockEquipeRepository = {
   listarTimesDoGerente: jest.fn(),
-  listar: jest.fn(),
+  listarMembrosPorEquipes: jest.fn(),
   listarDiretorias: jest.fn(),
 };
 const mockLeadRepository = { buscarPorId: jest.fn() };
@@ -55,7 +55,7 @@ async function executar(corretorId = 'c2') {
 beforeEach(() => {
   jest.clearAllMocks();
   mockEquipeRepository.listarTimesDoGerente.mockResolvedValue([{ id: 'time-1', gerente_id: 'g1' }]);
-  mockEquipeRepository.listar.mockResolvedValue([
+  mockEquipeRepository.listarMembrosPorEquipes.mockResolvedValue([
     { id: 'c1', equipe_id: 'time-1', cargo: 'corretor', status: 'aprovado', ativo: true },
     { id: 'c2', equipe_id: 'time-1', cargo: 'corretor', status: 'aprovado', ativo: true },
     { id: 'c3', equipe_id: 'time-2', cargo: 'corretor', status: 'aprovado', ativo: true },

@@ -20,9 +20,10 @@ const router = Router();
 router.use(authMiddleware, requireRole('gerente'));
 
 async function contexto(usuario) {
-  const [equipes, todos, diretorias] = await Promise.all([
-    equipeRepository.listarTimesDoGerente(usuario.id),
-    equipeRepository.listar({}),
+  // Seleciona apenas perfis das equipes administradas por este gerente.
+  const equipes = await equipeRepository.listarTimesDoGerente(usuario.id);
+  const [todos, diretorias] = await Promise.all([
+    equipeRepository.listarMembrosPorEquipes(equipes.map((e) => e.id)),
     equipeRepository.listarDiretorias(),
   ]);
   const membros = todos.filter((m) => m.cargo === 'corretor' && m.status === 'aprovado' && equipes.some((e) => e.id === m.equipe_id));
@@ -52,16 +53,17 @@ router.get('/equipe', tratar((req) => contexto(req.user)));
 
 router.get('/leads', tratar(async (req) => {
   const { membros } = await contexto(req.user);
-  const ids = new Set(membros.map((m) => m.id));
-  const leads = await leadService.listar();
-  return { leads: leads.filter((l) => l.corretor && ids.has(l.corretor.id)) };
+  const ids = membros.map((m) => m.id);
+  if (!ids.length) return { leads: [] };
+  // O filtro de carteira agora e realizado diretamente no banco.
+  return { leads: await leadService.listarPorCorretores(ids) };
 }));
 
 router.get('/agendamentos', tratar(async (req) => {
   const { membros } = await contexto(req.user);
-  const ids = new Set(membros.map((m) => m.id));
-  const agendamentos = await agendamentoService.listar();
-  return { agendamentos: agendamentos.filter((a) => a.corretor && ids.has(a.corretor.id)) };
+  const ids = membros.map((m) => m.id);
+  if (!ids.length) return { agendamentos: [] };
+  return { agendamentos: await agendamentoService.listarPorCorretores(ids) };
 }));
 
 /**
