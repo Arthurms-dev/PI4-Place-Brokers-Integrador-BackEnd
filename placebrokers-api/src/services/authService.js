@@ -13,8 +13,12 @@ function toPublicUser(profile) {
 }
 
 function isDuplicateEmailError(error) {
-  return /already registered|already exists|duplicate/i.test(error?.message ?? '');
+  const codigo = String(error?.code ?? '').toLowerCase();
+  if (['email_exists', 'user_already_exists', 'user_already_registered'].includes(codigo)) return true;
+  return /already\s+(?:been\s+)?registered|already\s+exists|duplicate|e-?mail.{0,50}(?:already|exists|registered|cadastrad|em uso)/i.test(String(error?.message ?? ''));
 }
+
+const MENSAGEM_EMAIL_EXISTENTE = 'Este e-mail já possui um cadastro. Se foi recusado, peça ao administrador para reabrir a análise.';
 
 class AuthService {
   /**
@@ -141,17 +145,31 @@ class AuthService {
 
     const email = payload.email.trim().toLowerCase();
 
+    // A rejeição de cadastro não exclui o usuário do Auth nem do profiles.
+    // Evita recriar uma identidade já registrada e mostra orientação clara.
+    try {
+      if (await this.profileRepository.findByEmail(email)) {
+        throw new AuthError('USER_ALREADY_EXISTS', MENSAGEM_EMAIL_EXISTENTE);
+      }
+    } catch (cause) {
+      if (cause instanceof AuthError) throw cause;
+      throw new AuthError('SERVER_ERROR', 'Não foi possível verificar o cadastro existente.', {}, cause);
+    }
+
     let createResult;
     try {
       createResult = await this.authClient.createUser({ email, password: payload.password });
     } catch (cause) {
+      if (isDuplicateEmailError(cause)) {
+        throw new AuthError('USER_ALREADY_EXISTS', MENSAGEM_EMAIL_EXISTENTE, {}, cause);
+      }
       throw new AuthError('SERVER_ERROR', 'Erro ao criar o usuário de autenticação.', {}, cause);
     }
 
     const { data, error } = createResult;
     if (error) {
       if (isDuplicateEmailError(error)) {
-        throw new AuthError('USER_ALREADY_EXISTS', 'Já existe uma conta com este e-mail.', {}, error);
+        throw new AuthError('USER_ALREADY_EXISTS', MENSAGEM_EMAIL_EXISTENTE, {}, error);
       }
       throw new AuthError('SERVER_ERROR', 'Erro ao criar o usuário de autenticação.', {}, error);
     }

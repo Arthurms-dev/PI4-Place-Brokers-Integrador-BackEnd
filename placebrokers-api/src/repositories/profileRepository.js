@@ -17,6 +17,13 @@ class ProfileRepository {
     return data;
   }
 
+  async findByEmail(email) {
+    const { data, error } = await supabaseAdmin.from('profiles')
+      .select('id, status').eq('email', email).limit(1).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
   /**
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
