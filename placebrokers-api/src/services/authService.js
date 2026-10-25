@@ -3,7 +3,9 @@
 const { AuthError } = require('../errors/AuthError');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const VALID_ROLES_CADASTRO = ['corretor', 'viabilizador'];
+// Viabilizador temporariamente desativado no cadastro publico.
+// Preservamos perfis e rotas legadas para eventual reativacao controlada.
+const VALID_ROLES_CADASTRO = ['corretor'];
 const UFS_VALIDAS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 function toPublicUser(profile) {
@@ -94,7 +96,7 @@ class AuthService {
     if (confirmPassword !== password) errors.confirmPassword = 'As senhas não coincidem.';
 
     if (!role || !VALID_ROLES_CADASTRO.includes(role)) {
-      errors.role = 'Selecione um perfil válido (corretor ou viabilizador).';
+      errors.role = 'Cadastro publico disponivel apenas para corretores.';
     }
 
     if (role === 'corretor') {
