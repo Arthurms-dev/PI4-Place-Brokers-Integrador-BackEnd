@@ -125,27 +125,16 @@ class LeadService {
    * @returns {Promise<{ cliente: object, lead: object }>}
    */
   async converterEmCliente(id) {
-    const lead = await this.leadRepository.buscarPorId(id);
-    if (!lead) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
-
-    if (!lead.corretor) {
-      throw new AppError('VALIDATION_ERROR', 'Atribua um corretor ao lead antes de converter em cliente.', 400, {
-        corretor: 'Selecione um corretor responsável.',
-      });
+    // A RPC faz INSERT do cliente + UPDATE do lead numa transacao do PostgreSQL.
+    // A consulta apos o COMMIT preserva o formato existente da API.
+    const clienteId = await this.clienteRepository.converterLeadEmCliente(id);
+    const [cliente, atualizado] = await Promise.all([
+      this.clienteRepository.buscarPorId(clienteId),
+      this.leadRepository.buscarPorId(id),
+    ]);
+    if (!cliente || !atualizado) {
+      throw new AppError('SERVER_ERROR', 'Conversão realizada, mas não foi possível consultar seu resultado. Atualize a página.');
     }
-    if (lead.status === 'convertido') {
-      throw new AppError('VALIDATION_ERROR', 'Este lead já foi convertido em cliente.', 400);
-    }
-
-    const cliente = await this.clienteRepository.criar({
-      nome: lead.nome,
-      email: lead.email,
-      telefone: lead.telefone,
-      corretorId: lead.corretor.id,
-      leadId: lead.id,
-    });
-
-    const atualizado = await this.leadRepository.atualizarStatus(id, 'convertido');
     return { cliente, lead: toPublicLead(atualizado) };
   }
 

@@ -14,6 +14,37 @@ const CLIENTE_SELECT = `
 `;
 
 class ClienteRepository {
+  /** A conversao completa ocorre em uma unica transacao no banco. */
+  async converterLeadEmCliente(leadId) {
+    const { data, error } = await supabaseAdmin.rpc('converter_lead_em_cliente', { p_lead_id: leadId });
+    if (!error) return data;
+
+    const { AppError } = require('../errors/AppError');
+    if (error.code === 'P0001') {
+      if (error.message === 'PB_LEAD_NOT_FOUND') {
+        throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+      }
+      if (error.message === 'PB_LEAD_MISSING_OWNER') {
+        throw new AppError('VALIDATION_ERROR', 'Atribua um corretor ao lead antes de converter em cliente.', 400, {
+          corretor: 'Selecione um corretor responsável.',
+        });
+      }
+      if (error.message === 'PB_LEAD_ALREADY_CONVERTED') {
+        throw new AppError('CONFLICT', 'Este lead já foi convertido em cliente.', 409);
+      }
+      if (error.message === 'PB_LEAD_ALREADY_HAS_CLIENT') {
+        throw new AppError('CONFLICT', 'Este lead já possui um cliente vinculado.', 409);
+      }
+    }
+    if (error.code === '23505') {
+      throw new AppError('CONFLICT', 'Este lead já possui um cliente vinculado.', 409);
+    }
+    if (error.code === '22P02') {
+      throw new AppError('VALIDATION_ERROR', 'Identificador de lead inválido.', 400);
+    }
+    throw error;
+  }
+
   /** @returns {Promise<object[]>} */
   async listar() {
     const { data, error } = await supabaseAdmin
