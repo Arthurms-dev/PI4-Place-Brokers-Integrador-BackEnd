@@ -71,6 +71,12 @@ class AgendamentoService {
     return rows.map(toPublicAgendamento);
   }
 
+  /** Listagem de agendamentos limitada no banco ao corretor autenticado. */
+  async listarPorCorretor(corretorId) {
+    const rows = await this.agendamentoRepository.listarPorCorretor(corretorId);
+    return rows.map(toPublicAgendamento);
+  }
+
   /**
    * @param {{ corretorId: string, dataHora: string, duracaoMinutos: number, ignorarId?: string }} params
    * @returns {Promise<boolean>}

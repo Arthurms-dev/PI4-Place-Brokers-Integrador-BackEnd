@@ -31,6 +31,20 @@ class AgendamentoRepository {
     return data;
   }
 
+  /** Consulta restrita na origem: evita buscar dados de outras carteiras.
+   * @param {string} corretorId
+   * @returns {Promise<object[]>}
+   */
+  async listarPorCorretor(corretorId) {
+    const { data, error } = await supabaseAdmin
+      .from('agendamentos')
+      .select(AGENDAMENTO_SELECT)
+      .eq('corretor_id', corretorId)
+      .order('data_hora', { ascending: true });
+    if (error) throw error;
+    return data;
+  }
+
   /** @param {string} id @returns {Promise<object|null>} */
   async buscarPorId(id) {
     const { data, error } = await supabaseAdmin
