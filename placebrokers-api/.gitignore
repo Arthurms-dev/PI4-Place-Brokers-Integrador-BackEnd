@@ -1,3 +1,11 @@
 node_modules
 .env
+.env.*
+!.env.esample
+!.env.example
 coverage
+
+# Chaves do Google (conta de servico) nunca entram no repo
+*service-account*.json
+place-brokers-*.json
+credenciais/

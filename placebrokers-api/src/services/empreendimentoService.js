@@ -3,6 +3,7 @@
 const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
+const SEGMENTOS_VALIDOS = ['mcmv', 'medio_padrao', 'alto_padrao', 'litoral'];
 const CARGOS_INTERNOS = new Set(['admin', 'corretor', 'gerente']);
 const CAMPOS_TIPOLOGIA = {
   quartos: 'quartos',
@@ -167,6 +168,9 @@ class EmpreendimentoService {
       area_max: dados.areaMax ?? null,
       preco_min: dados.precoMin ?? null,
       preco_max: dados.precoMax ?? null,
+      segmento: dados.segmento || null,
+      parcela_min: dados.parcelaMin ?? null,
+      previsao_entrega: dados.previsaoEntrega || null,
       lazer: dados.lazer ?? [],
       capa_url: capaUrl,
       book_url: bookUrl,
@@ -210,6 +214,9 @@ class EmpreendimentoService {
       areaMax: 'area_max',
       precoMin: 'preco_min',
       precoMax: 'preco_max',
+      segmento: 'segmento',
+      parcelaMin: 'parcela_min',
+      previsaoEntrega: 'previsao_entrega',
       lazer: 'lazer',
       publicado: 'publicado',
       disponivel: 'disponivel',
@@ -226,6 +233,10 @@ class EmpreendimentoService {
     const erros = {};
     if ('nome' in dados && !String(dados.nome ?? '').trim()) erros.nome = 'Informe o nome.';
     if ('status' in dados && !STATUS_VALIDOS.includes(dados.status)) erros.status = 'Status inválido.';
+    if (dados.segmento != null && !SEGMENTOS_VALIDOS.includes(dados.segmento)) erros.segmento = 'Segmento inválido.';
+    if (dados.previsao_entrega != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(dados.previsao_entrega))) {
+      erros.previsaoEntrega = 'Use o formato AAAA-MM-DD.';
+    }
 
     for (const campo of ['uf', 'cidade', 'bairro']) {
       if (campo in dados && !String(dados[campo] ?? '').trim()) {
@@ -236,7 +247,7 @@ class EmpreendimentoService {
     const numericos = [
       'latitude', 'longitude', 'quartos_min', 'quartos_max',
       'vagas_min', 'vagas_max', 'area_min', 'area_max',
-      'preco_min', 'preco_max',
+      'preco_min', 'preco_max', 'parcela_min',
     ];
     for (const campo of numericos) {
       if (campo in dados && dados[campo] !== null &&

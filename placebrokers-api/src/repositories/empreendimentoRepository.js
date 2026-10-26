@@ -12,7 +12,8 @@ class EmpreendimentoRepository {
   async listar({ apenasPublicados }) {
     let query = supabaseAdmin
       .from('empreendimentos')
-      .select(SELECT_PADRAO)
+      // A vitrine pública precisa da galeria já na listagem (fotos do card e abertura imediata do detalhe).
+      .select(`${SELECT_PADRAO}, imagens:empreendimento_imagens(url, ordem, alt)`)
       .order('atualizado_em', { ascending: false });
 
     if (apenasPublicados) query = query.eq('publicado', true);
