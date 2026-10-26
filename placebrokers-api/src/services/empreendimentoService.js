@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { normalizarNumeros, validarNumeros } = require('./validacaoEmpreendimento');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 const CARGOS_INTERNOS = new Set(['admin', 'corretor', 'gerente']);
@@ -124,15 +125,20 @@ class EmpreendimentoService {
 
   validar(dados) {
     const erros = {};
-    if (!dados.nome?.trim()) erros.nome = 'Informe o nome.';
+    if (typeof dados.nome !== 'string' || !dados.nome.trim()) erros.nome = 'Informe o nome.';
     if (!STATUS_VALIDOS.includes(dados.status)) erros.status = 'Status inválido.';
-    if (!dados.uf?.trim()) erros.uf = 'Informe o estado.';
-    if (!dados.cidade?.trim()) erros.cidade = 'Informe a cidade.';
-    if (!dados.bairro?.trim()) erros.bairro = 'Informe o bairro.';
+    if (typeof dados.uf !== 'string' || !dados.uf.trim()) erros.uf = 'Informe o estado.';
+    if (typeof dados.cidade !== 'string' || !dados.cidade.trim()) erros.cidade = 'Informe a cidade.';
+    if (typeof dados.bairro !== 'string' || !dados.bairro.trim()) erros.bairro = 'Informe o bairro.';
+    Object.assign(erros, validarNumeros(dados));
     return erros;
   }
 
-  async criar(dados, arquivos) {
+  async criar(dados, arquivos = {}) {
+    if (!dados || typeof dados !== 'object' || Array.isArray(dados)) {
+      throw new AppError('VALIDATION_ERROR', 'Informe os dados do empreendimento.');
+    }
+    dados = normalizarNumeros(dados);
     const erros = this.validar(dados);
     if (Object.keys(erros).length) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
@@ -188,6 +194,10 @@ class EmpreendimentoService {
   }
 
   async atualizar(id, mudancas = {}) {
+    if (!mudancas || typeof mudancas !== 'object' || Array.isArray(mudancas)) {
+      throw new AppError('VALIDATION_ERROR', 'Informe os dados do empreendimento.');
+    }
+    mudancas = normalizarNumeros(mudancas);
     const atual = await this.empreendimentoRepository.buscarPorId(id);
     if (!atual) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
 
@@ -224,26 +234,16 @@ class EmpreendimentoService {
     }
 
     const erros = {};
-    if ('nome' in dados && !String(dados.nome ?? '').trim()) erros.nome = 'Informe o nome.';
+    if ('nome' in dados && (typeof dados.nome !== 'string' || !dados.nome.trim())) erros.nome = 'Informe o nome.';
     if ('status' in dados && !STATUS_VALIDOS.includes(dados.status)) erros.status = 'Status inválido.';
 
     for (const campo of ['uf', 'cidade', 'bairro']) {
-      if (campo in dados && !String(dados[campo] ?? '').trim()) {
+      if (campo in dados && (typeof dados[campo] !== 'string' || !dados[campo].trim())) {
         erros[campo] = 'Campo obrigatório.';
       }
     }
 
-    const numericos = [
-      'latitude', 'longitude', 'quartos_min', 'quartos_max',
-      'vagas_min', 'vagas_max', 'area_min', 'area_max',
-      'preco_min', 'preco_max',
-    ];
-    for (const campo of numericos) {
-      if (campo in dados && dados[campo] !== null &&
-          (typeof dados[campo] !== 'number' || !Number.isFinite(dados[campo]))) {
-        erros[campo] = 'Informe um número válido.';
-      }
-    }
+    Object.assign(erros, validarNumeros(mudancas, atual));
 
     if (Object.keys(erros).length) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);

@@ -5,6 +5,7 @@ const { EmpreendimentoRepository } = require('../repositories/empreendimentoRepo
 const { UploadService } = require('../services/uploadService');
 const { AppError } = require('../errors/AppError');
 const { EmpreendimentoImagensService } = require('../services/empreendimentoImagensService');
+const { numeroDoFormulario } = require('../services/validacaoEmpreendimento');
 
 const empreendimentoService = new EmpreendimentoService({
   empreendimentoRepository: new EmpreendimentoRepository(),
@@ -33,12 +34,6 @@ async function removerFoto(req, res) {
   } catch (erro) { return handleError(res, erro); }
 }
 
-function paraNumero(valor) {
-  if (valor === undefined || valor === null || valor === '') return null;
-  const n = Number(valor);
-  return Number.isNaN(n) ? null : n;
-}
-
 async function listar(req, res) {
   try {
     return res.status(200).json(await empreendimentoService.listar(req.user));
@@ -64,16 +59,16 @@ async function criar(req, res) {
       lazer: b.lazer ? JSON.parse(b.lazer) : [],
       publicado: b.publicado === 'true',
       disponivel: b.disponivel !== 'false',
-      quartosMin: paraNumero(b.quartosMin),
-      quartosMax: paraNumero(b.quartosMax),
-      vagasMin: paraNumero(b.vagasMin),
-      vagasMax: paraNumero(b.vagasMax),
-      areaMin: paraNumero(b.areaMin),
-      areaMax: paraNumero(b.areaMax),
-      precoMin: paraNumero(b.precoMin),
-      precoMax: paraNumero(b.precoMax),
-      latitude: paraNumero(b.latitude),
-      longitude: paraNumero(b.longitude),
+      quartosMin: numeroDoFormulario(b.quartosMin),
+      quartosMax: numeroDoFormulario(b.quartosMax),
+      vagasMin: numeroDoFormulario(b.vagasMin),
+      vagasMax: numeroDoFormulario(b.vagasMax),
+      areaMin: numeroDoFormulario(b.areaMin),
+      areaMax: numeroDoFormulario(b.areaMax),
+      precoMin: numeroDoFormulario(b.precoMin),
+      precoMax: numeroDoFormulario(b.precoMax),
+      latitude: numeroDoFormulario(b.latitude),
+      longitude: numeroDoFormulario(b.longitude),
     };
 
     const resultado = await empreendimentoService.criar(dados, {
