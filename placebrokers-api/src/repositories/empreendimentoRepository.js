@@ -56,6 +56,15 @@ class EmpreendimentoRepository {
     return data;
   }
 
+  async removerCriacaoIncompleta(id) {
+    // Exclusivamente o UUID pré-alocado pela tentativa de criação que falhou.
+    // Não excluir filhos: uma FK pode impedir a remoção se o registro foi usado.
+    const { data, error } = await supabaseAdmin.from('empreendimentos')
+      .delete().eq('id', id).select('id').maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
   async inserirImagens(linhas) {
     if (!linhas.length) return;
 

@@ -3,6 +3,7 @@
 const sharp = require('sharp');
 const { randomUUID } = require('node:crypto');
 const { AppError } = require('../errors/AppError');
+const { validarImagem } = require('./empreendimentoImagensService');
 const { supabaseAdmin } = require('../config/supabase');
 
 const BUCKET_IMAGENS = 'empreendimentos';
@@ -19,18 +20,21 @@ function gerarSlug(nome) {
     .replace(/(^-|-$)/g, '');
 }
 
-async function comprimir(buffer) {
-  return sharp(buffer)
-    .resize({ width: LARGURA_MAXIMA, withoutEnlargement: true })
-    .webp({ quality: QUALIDADE_WEBP })
-    .toBuffer();
+async function subirNovo(bucket, caminho, buffer, contentType) {
+  const storage = supabaseAdmin.storage.from(bucket);
+  const { data } = storage.getPublicUrl(caminho);
+  if (!data?.publicUrl) throw new AppError('SERVER_ERROR', 'Não foi possível preparar o arquivo.');
+  const { error } = await storage.upload(caminho, buffer, { upsert: false, contentType, cacheControl: '3600' });
+  if (error) throw error;
+  return { url: data.publicUrl, caminho, bucket };
 }
 
-async function subir(bucket, path, buffer, contentType) {
-  const { error } = await supabaseAdmin.storage.from(bucket).upload(path, buffer, { upsert: true, contentType, cacheControl: '3600' });
-  if (error) throw error;
-  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+function validarPdf(arquivo) {
+  if (!arquivo || !Buffer.isBuffer(arquivo.buffer) || arquivo.buffer.length === 0 ||
+      arquivo.buffer.length > 15 * 1024 * 1024 || arquivo.mimetype !== 'application/pdf' ||
+      arquivo.buffer.subarray(0, 5).toString('ascii') !== '%PDF-') {
+    throw new AppError('VALIDATION_ERROR', 'Envie um arquivo PDF válido de até 15 MB.');
+  }
 }
 
 class UploadService {
@@ -40,22 +44,16 @@ class UploadService {
 
   /** @param {string} slug @param {string} nomeArquivo @param {{buffer: Buffer}} arquivo */
   async uploadImagem(slug, nomeArquivo, arquivo) {
-    const buffer = await comprimir(arquivo.buffer);
-    return subir(BUCKET_IMAGENS, `${slug}/${nomeArquivo}.webp`, buffer, 'image/webp');
+    return (await this.uploadImagemNova(slug, nomeArquivo, arquivo)).url;
   }
 
   /** @param {string} slug @param {{buffer: Buffer}[]} arquivos */
   async uploadGaleria(slug, arquivos) {
-    const urls = [];
-    for (let i = 0; i < arquivos.length; i++) {
-      const buffer = await comprimir(arquivos[i].buffer);
-      const nome = `${String(i + 1).padStart(2, '0')}.webp`;
-      urls.push(await subir(BUCKET_IMAGENS, `${slug}/galeria/${nome}`, buffer, 'image/webp'));
-    }
-    return urls;
+    return (await this.uploadCadastro(slug, { galeria: arquivos })).galeriaUrls;
   }
 
   async uploadImagemNova(empreendimentoId, grupo, arquivo) {
+    validarImagem(arquivo);
     // Não reutilizar os caminhos da criação antiga: cada upload deve ser imutável.
     const info = await sharp(arquivo.buffer, { limitInputPixels: 40_000_000 })
       .metadata().catch(() => null);
@@ -66,11 +64,7 @@ class UploadService {
       .resize({ width: LARGURA_MAXIMA, withoutEnlargement: true })
       .webp({ quality: QUALIDADE_WEBP }).toBuffer();
     const caminho = empreendimentoId + '/' + grupo + '/' + randomUUID() + '.webp';
-    const { error } = await supabaseAdmin.storage.from(BUCKET_IMAGENS)
-      .upload(caminho, buffer, { upsert: false, contentType: 'image/webp', cacheControl: '3600' });
-    if (error) throw error;
-    const { data } = supabaseAdmin.storage.from(BUCKET_IMAGENS).getPublicUrl(caminho);
-    return { url: data.publicUrl, caminho };
+    return subirNovo(BUCKET_IMAGENS, caminho, buffer, 'image/webp');
   }
 
   async limparImagensNovas(caminhos) {
@@ -80,7 +74,60 @@ class UploadService {
   }
 
   async uploadDocumento(slug, nomeArquivo, arquivo) {
-    return subir(BUCKET_DOCUMENTOS, `${slug}/${nomeArquivo}.pdf`, arquivo.buffer, 'application/pdf');
+    return (await this.uploadDocumentoNovo(slug, nomeArquivo, arquivo)).url;
+  }
+
+  async uploadDocumentoNovo(slug, tipo, arquivo) {
+    if (!['book', 'tabela'].includes(tipo)) throw new AppError('VALIDATION_ERROR', 'Tipo de documento inválido.');
+    validarPdf(arquivo);
+    return subirNovo(BUCKET_DOCUMENTOS, `${slug}/documentos/${tipo}-${randomUUID()}.pdf`, arquivo.buffer, 'application/pdf');
+  }
+
+  async limparArquivosNovos(arquivos) {
+    // Recebe somente o manifesto de uploads concluídos desta tentativa.
+    const grupos = new Map();
+    for (const arquivo of arquivos) {
+      if (![BUCKET_IMAGENS, BUCKET_DOCUMENTOS].includes(arquivo.bucket) ||
+          typeof arquivo.caminho !== 'string' || !arquivo.caminho) {
+        throw new Error('Manifesto de limpeza inválido.');
+      }
+      const caminhos = grupos.get(arquivo.bucket) ?? [];
+      caminhos.push(arquivo.caminho);
+      grupos.set(arquivo.bucket, caminhos);
+    }
+    const resultados = await Promise.allSettled([...grupos].map(async ([bucket, caminhos]) => {
+      const { error } = await supabaseAdmin.storage.from(bucket).remove(caminhos);
+      if (error) throw error;
+    }));
+    const falhas = resultados.filter((r) => r.status === 'rejected');
+    if (falhas.length) throw new AggregateError(falhas.map((r) => r.reason), 'Falha ao limpar arquivos novos.');
+  }
+
+  async uploadCadastro(slug, arquivos) {
+    const galeria = arquivos.galeria ?? [];
+    if (!Array.isArray(galeria) || galeria.length > 20) {
+      throw new AppError('VALIDATION_ERROR', 'A galeria permite no máximo 20 fotos.');
+    }
+    [...(arquivos.capa ? [arquivos.capa] : []), ...galeria].forEach(validarImagem);
+    if (arquivos.book) validarPdf(arquivos.book);
+    if (arquivos.tabela) validarPdf(arquivos.tabela);
+
+    const prefixo = `${slug}/cadastros/${randomUUID()}`;
+    const lote = { capaUrl: null, galeriaUrls: [], bookUrl: null, tabelaUrl: null, arquivos: [] };
+    const registrar = (novo) => { lote.arquivos.push(novo); return novo.url; };
+    try {
+      // Sequencial: nenhum upload continua em segundo plano depois de uma falha.
+      if (arquivos.capa) lote.capaUrl = registrar(await this.uploadImagemNova(prefixo, 'capas', arquivos.capa));
+      for (const foto of galeria) lote.galeriaUrls.push(registrar(await this.uploadImagemNova(prefixo, 'galeria', foto)));
+      if (arquivos.book) lote.bookUrl = registrar(await this.uploadDocumentoNovo(prefixo, 'book', arquivos.book));
+      if (arquivos.tabela) lote.tabelaUrl = registrar(await this.uploadDocumentoNovo(prefixo, 'tabela', arquivos.tabela));
+      return lote;
+    } catch (erro) {
+      await this.limparArquivosNovos(lote.arquivos).catch(() => {
+        console.error('Falha ao limpar arquivos novos de um cadastro interrompido.');
+      });
+      throw erro;
+    }
   }
 
   /**

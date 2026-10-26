@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { randomUUID } = require('node:crypto');
 const { normalizarNumeros, validarNumeros } = require('./validacaoEmpreendimento');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
@@ -146,51 +147,89 @@ class EmpreendimentoService {
 
     const slug = this.uploadService.gerarSlug(dados.nome);
 
-    const [capaUrl, galeriaUrls, bookUrl, tabelaUrl] = await Promise.all([
-      arquivos.capa ? this.uploadService.uploadImagem(slug, 'capa', arquivos.capa) : null,
-      arquivos.galeria?.length ? this.uploadService.uploadGaleria(slug, arquivos.galeria) : [],
-      arquivos.book ? this.uploadService.uploadDocumento(slug, 'book', arquivos.book) : null,
-      arquivos.tabela ? this.uploadService.uploadDocumento(slug, 'tabela', arquivos.tabela) : null,
-    ]);
+    const temArquivos = arquivos.capa || arquivos.book || arquivos.tabela || arquivos.galeria?.length;
+    const lote = temArquivos
+      ? await this.uploadService.uploadCadastro(slug, arquivos)
+      : { capaUrl: null, galeriaUrls: [], bookUrl: null, tabelaUrl: null, arquivos: [] };
+    const { capaUrl, galeriaUrls, bookUrl, tabelaUrl } = lote;
+    // Conhecer o ID antes do INSERT permite conferir uma resposta perdida sem
+    // procurar por nome e arriscar remover um cadastro anterior com o mesmo slug.
+    const idCriacao = randomUUID();
+    let empreendimento = null;
 
-    const empreendimento = await this.empreendimentoRepository.criar({
-      nome: dados.nome,
-      slug,
-      construtora_id: dados.construtoraId || null,
-      status: dados.status,
-      descricao: dados.descricao || null,
-      uf: dados.uf,
-      cidade: dados.cidade,
-      bairro: dados.bairro,
-      endereco: dados.endereco || null,
-      latitude: dados.latitude ?? null,
-      longitude: dados.longitude ?? null,
-      quartos_min: dados.quartosMin ?? null,
-      quartos_max: dados.quartosMax ?? null,
-      vagas_min: dados.vagasMin ?? null,
-      vagas_max: dados.vagasMax ?? null,
-      area_min: dados.areaMin ?? null,
-      area_max: dados.areaMax ?? null,
-      preco_min: dados.precoMin ?? null,
-      preco_max: dados.precoMax ?? null,
-      lazer: dados.lazer ?? [],
-      capa_url: capaUrl,
-      book_url: bookUrl,
-      book_atualizado_em: bookUrl ? new Date().toISOString() : null,
-      tabela_url: tabelaUrl,
-      tabela_atualizado_em: tabelaUrl ? new Date().toISOString() : null,
-      publicado: dados.publicado ?? false,
-      disponivel: dados.disponivel ?? true,
-    });
+    try {
+      empreendimento = await this.empreendimentoRepository.criar({
+        id: idCriacao,
+        nome: dados.nome,
+        slug,
+        construtora_id: dados.construtoraId || null,
+        status: dados.status,
+        descricao: dados.descricao || null,
+        uf: dados.uf,
+        cidade: dados.cidade,
+        bairro: dados.bairro,
+        endereco: dados.endereco || null,
+        latitude: dados.latitude ?? null,
+        longitude: dados.longitude ?? null,
+        quartos_min: dados.quartosMin ?? null,
+        quartos_max: dados.quartosMax ?? null,
+        vagas_min: dados.vagasMin ?? null,
+        vagas_max: dados.vagasMax ?? null,
+        area_min: dados.areaMin ?? null,
+        area_max: dados.areaMax ?? null,
+        preco_min: dados.precoMin ?? null,
+        preco_max: dados.precoMax ?? null,
+        lazer: dados.lazer ?? [],
+        capa_url: capaUrl,
+        book_url: bookUrl,
+        book_atualizado_em: bookUrl ? new Date().toISOString() : null,
+        tabela_url: tabelaUrl,
+        tabela_atualizado_em: tabelaUrl ? new Date().toISOString() : null,
+        publicado: dados.publicado ?? false,
+        disponivel: dados.disponivel ?? true,
+      });
 
-    if (galeriaUrls.length) {
-      await this.empreendimentoRepository.inserirImagens(
-        galeriaUrls.map((url, i) => ({ empreendimento_id: empreendimento.id, url, ordem: i }))
-      );
+      if (galeriaUrls.length) {
+        await this.empreendimentoRepository.inserirImagens(
+          galeriaUrls.map((url, i) => ({ empreendimento_id: empreendimento.id, url, ordem: i }))
+        );
+      }
+
+      this.invalidarCachePublico();
+      return empreendimento;
+    } catch (erro) {
+      this.invalidarCachePublico();
+      const recusadoPeloBanco = !empreendimento && /^(?:22|23|42)[A-Z0-9]{3}$/.test(erro?.code ?? '');
+      if (!recusadoPeloBanco) {
+        // Timeout não prova que o INSERT falhou. Se não for possível confirmar
+        // e desfazer o cadastro desta tentativa, preservar todos os arquivos.
+        let confirmado = empreendimento;
+        if (!confirmado) {
+          try { confirmado = await this.empreendimentoRepository.buscarPorId(idCriacao); }
+          catch { /* a mensagem abaixo exige conferência manual */ }
+        }
+        let removido = null;
+        if (confirmado?.id === idCriacao) {
+          try { removido = await this.empreendimentoRepository.removerCriacaoIncompleta(idCriacao); }
+          catch { /* não apagar arquivos que ainda podem estar em uso */ }
+        }
+        if (removido?.id !== idCriacao) {
+          throw new AppError('CREATE_UNCONFIRMED',
+            'Não foi possível confirmar a conclusão do cadastro. Atualize a lista de empreendimentos e confira se ele já aparece antes de reenviar. Os arquivos foram preservados para conferência.',
+            500, { empreendimentoId: idCriacao });
+        }
+      }
+      if (lote.arquivos.length) {
+        await this.uploadService.limparArquivosNovos(lote.arquivos).catch(() => {
+          console.error('Falha ao limpar arquivos novos após cadastro recusado ou desfeito.');
+        });
+      }
+      if (erro?.code === '23505') {
+        throw new AppError('CONFLICT', 'Já existe um empreendimento com esse nome. Confira o cadastro existente.', 409,
+          { nome: 'Este nome já foi cadastrado.' });
+      }
+      throw erro;
     }
-
-    this.invalidarCachePublico();
-    return empreendimento;
   }
 
   async atualizar(id, mudancas = {}) {
