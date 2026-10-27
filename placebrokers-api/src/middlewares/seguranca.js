@@ -150,4 +150,4 @@ module.exports = {
   cabecalhosDeSeguranca,
   aplicarSeguranca,
   aplicarErros,
-};
+};

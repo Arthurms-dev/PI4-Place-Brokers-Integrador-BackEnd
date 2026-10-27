@@ -1,0 +1,14 @@
+# Fim de linha padronizado: o Git guarda LF e cada um recebe o padrão do seu sistema.
+* text=auto
+
+# Arquivos binários: nunca converter
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.zip binary

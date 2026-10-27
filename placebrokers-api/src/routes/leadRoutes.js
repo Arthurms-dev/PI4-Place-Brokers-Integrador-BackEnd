@@ -30,4 +30,4 @@ router.get('/', authMiddleware, requireRole('admin'), leadController.listar);
 router.patch('/:id/corretor', authMiddleware, requireRole('admin'), leadController.atribuirCorretor);
 router.post('/:id/converter', authMiddleware, requireRole('admin'), leadController.converter);
 
-module.exports = router;
+module.exports = router;

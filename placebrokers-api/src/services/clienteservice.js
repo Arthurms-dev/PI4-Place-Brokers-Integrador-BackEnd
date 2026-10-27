@@ -184,4 +184,4 @@ class ClienteService {
   }
 }
 
-module.exports = { ClienteService, toPublicCliente, validarCliente };
+module.exports = { ClienteService, toPublicCliente, validarCliente };

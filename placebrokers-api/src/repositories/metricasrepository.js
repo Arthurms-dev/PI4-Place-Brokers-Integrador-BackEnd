@@ -110,4 +110,4 @@ class MetricasRepository {
   }
 }
 
-module.exports = { MetricasRepository };
+module.exports = { MetricasRepository };

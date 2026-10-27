@@ -221,4 +221,4 @@ class MetricasService {
   }
 }
 
-module.exports = { MetricasService };
+module.exports = { MetricasService };

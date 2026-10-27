@@ -92,4 +92,4 @@ class LeadController {
   }
 }
 
-module.exports = { LeadController };
+module.exports = { LeadController };

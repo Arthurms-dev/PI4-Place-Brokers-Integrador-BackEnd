@@ -220,4 +220,4 @@ class LeadService {
   }
 }
 
-module.exports = { LeadService, toPublicLead, validarLead };
+module.exports = { LeadService, toPublicLead, validarLead };

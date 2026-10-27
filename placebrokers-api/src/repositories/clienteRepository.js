@@ -172,4 +172,4 @@ class ClienteRepository {
   }
 }
 
-module.exports = { ClienteRepository };
+module.exports = { ClienteRepository };
