@@ -23,10 +23,11 @@ router.get('/:id/atividades', authMiddleware, requireRole('admin', 'corretor'), 
 router.post('/:id/atividades', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.registrar);
 
 router.get('/meus', authMiddleware, requireRole('corretor'), leadController.listarMeus);
+router.post('/:id/cliente', authMiddleware, requireRole('admin', 'corretor'), leadController.garantirCliente);
 router.patch('/:id/status', authMiddleware, requireRole('admin', 'corretor'), leadController.atualizarStatus);
 
 router.get('/', authMiddleware, requireRole('admin'), leadController.listar);
 router.patch('/:id/corretor', authMiddleware, requireRole('admin'), leadController.atribuirCorretor);
 router.post('/:id/converter', authMiddleware, requireRole('admin'), leadController.converter);
 
-module.exports = router;
+module.exports = router;

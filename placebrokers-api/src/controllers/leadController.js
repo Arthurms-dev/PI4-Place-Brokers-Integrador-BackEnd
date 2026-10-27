@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { toPublicCliente } = require('../services/clienteservice');
 
 class LeadController {
   /** @param {{ leadService: import('../services/leadService').LeadService }} deps */
@@ -53,6 +54,15 @@ class LeadController {
       const { corretorId } = req.body;
       const lead = await this.leadService.atribuirCorretor(id, corretorId);
       return res.status(200).json({ lead });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  garantirCliente = async (req, res) => {
+    try {
+      const { cliente, criado } = await this.leadService.garantirCliente(req.params.id, req.user);
+      return res.status(criado ? 201 : 200).json({ cliente: toPublicCliente(cliente), criado });
     } catch (error) {
       return this._handleError(res, error);
     }

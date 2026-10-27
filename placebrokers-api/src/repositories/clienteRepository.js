@@ -80,6 +80,33 @@ class ClienteRepository {
     return data;
   }
 
+  /** @param {string} leadId @returns {Promise<object|null>} */
+  async buscarPorLeadId(leadId) {
+    const { data, error } = await supabaseAdmin
+      .from('clientes')
+      .select(CLIENTE_SELECT)
+      .eq('lead_id', leadId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Liga um cliente já existente ao lead de origem (só se ele ainda não tiver um).
+   * @param {string} clienteId @param {string} leadId @returns {Promise<object|null>}
+   */
+  async vincularLead(clienteId, leadId) {
+    const { data, error } = await supabaseAdmin
+      .from('clientes')
+      .update({ lead_id: leadId })
+      .eq('id', clienteId)
+      .is('lead_id', null)
+      .select(CLIENTE_SELECT)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
   /**
    * Cliente com o mesmo e-mail ou telefone (a mesma pessoa, mesmo que o nome seja outro).
    * @param {{ email?: string|null, telefone?: string|null, ignorarId?: string }} contato

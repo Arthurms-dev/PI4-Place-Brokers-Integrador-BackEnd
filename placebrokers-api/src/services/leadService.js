@@ -140,6 +140,60 @@ class LeadService {
   }
 
   /**
+   * Leva o lead para a carteira do corretor como cliente, para poder agendar visita e lançar venda.
+   * Reaproveita o cliente que já existe (ligado ao lead ou com o mesmo e-mail/telefone).
+   * @param {string} id
+   * @param {{ id: string, cargo: string }} usuario
+   * @returns {Promise<{ cliente: object, criado: boolean }>}
+   */
+  async garantirCliente(id, usuario) {
+    const lead = await this.leadRepository.buscarPorId(id);
+    if (!lead) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+    if (usuario.cargo !== 'admin' && lead.corretor?.id !== usuario.id) {
+      throw new AppError('FORBIDDEN', 'Esse lead não está atribuído a você.', 403);
+    }
+    const corretorId = lead.corretor?.id;
+    if (!corretorId) {
+      throw new AppError('VALIDATION_ERROR', 'Atribua um corretor ao lead antes de agendar.', 400);
+    }
+
+    const jaLigado = await this.clienteRepository.buscarPorLeadId(id);
+    if (jaLigado) return { cliente: jaLigado, criado: false };
+
+    const telefone = normalizarTelefone(lead.telefone).digitos ?? (lead.telefone ?? '').replace(/\D/g, '');
+    const email = lead.email?.trim().toLowerCase() || null;
+    const mesmoContato = await this.clienteRepository.buscarPorContato({ email, telefone: telefone || null });
+    if (mesmoContato) {
+      if (mesmoContato.corretor?.id !== corretorId) {
+        throw new AppError('CONFLICT', 'Este contato já é cliente de outro corretor. Fale com o administrador.', 409);
+      }
+      const ligado = mesmoContato.lead ? null : await this.clienteRepository.vincularLead(mesmoContato.id, id);
+      await this._emAtendimento(lead);
+      return { cliente: ligado ?? mesmoContato, criado: false };
+    }
+
+    let cliente;
+    try {
+      cliente = await this.clienteRepository.criar({
+        nome: lead.nome, email, telefone: telefone || null, corretorId, leadId: id, observacoes: null,
+      });
+    } catch (err) {
+      // Dois cliques ao mesmo tempo: o índice único de clientes.lead_id barra o segundo.
+      if (err?.code !== '23505') throw err;
+      cliente = await this.clienteRepository.buscarPorLeadId(id);
+      if (!cliente) throw err;
+      return { cliente, criado: false };
+    }
+    await this._emAtendimento(lead);
+    return { cliente, criado: true };
+  }
+
+  /** @private */
+  async _emAtendimento(lead) {
+    if (lead.status === 'novo') await this.leadRepository.atualizarStatus(lead.id, 'em_atendimento');
+  }
+
+  /**
    * @param {{ nome: string, email: string, telefone: string, empreendimentoId?: string|null, mensagem?: string|null }} dados
    */
   async criar({ nome, email, telefone, empreendimentoId, mensagem }) {
