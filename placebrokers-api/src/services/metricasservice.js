@@ -46,6 +46,25 @@ class MetricasService {
   // ---------- eventos ----------
 
   /**
+   * Últimos empreendimentos abertos pelo usuário logado (sem repetir), para o Início do corretor.
+   * @param {{ id: string }} usuario
+   * @param {number} [quantidade]
+   * @returns {Promise<{ empreendimentoId: string, acessadoEm: string }[]>}
+   */
+  async meusAcessos(usuario, quantidade = 3) {
+    const linhas = await this.metricasRepository.acessosDoUsuario(usuario.id);
+    const vistos = new Set();
+    const resultado = [];
+    for (const l of linhas) {
+      if (vistos.has(l.empreendimento_id)) continue;
+      vistos.add(l.empreendimento_id);
+      resultado.push({ empreendimentoId: l.empreendimento_id, acessadoEm: l.criado_em });
+      if (resultado.length >= quantidade) break;
+    }
+    return resultado;
+  }
+
+  /**
    * @param {{ tipo?: string, empreendimentoId?: string, sessaoId?: string }} dados
    * @param {{ id: string }|null} usuario
    */
@@ -202,4 +221,4 @@ class MetricasService {
   }
 }
 
-module.exports = { MetricasService };
+module.exports = { MetricasService };

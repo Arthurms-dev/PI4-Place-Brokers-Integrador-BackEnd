@@ -11,6 +11,20 @@ class MetricasRepository {
     if (error) throw error;
   }
 
+  /** Empreendimentos que o usuário abriu, do mais recente para o mais antigo (com repetições). */
+  async acessosDoUsuario(usuarioId, limite = 60) {
+    const { data, error } = await supabaseAdmin
+      .from('eventos_acesso')
+      .select('empreendimento_id, criado_em')
+      .eq('usuario_id', usuarioId)
+      .eq('tipo', 'visualizacao_empreendimento')
+      .not('empreendimento_id', 'is', null)
+      .order('criado_em', { ascending: false })
+      .limit(limite);
+    if (error) throw error;
+    return data ?? [];
+  }
+
   async existeEventoRecente({ tipo, sessao_id, empreendimento_id, desde }) {
     let query = supabaseAdmin
       .from('eventos_acesso')
@@ -96,4 +110,4 @@ class MetricasRepository {
   }
 }
 
-module.exports = { MetricasRepository };
+module.exports = { MetricasRepository };

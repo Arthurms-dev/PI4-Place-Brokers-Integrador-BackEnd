@@ -18,6 +18,14 @@ async function registrarEvento(req, res) {
   }
 }
 
+async function meusAcessos(req, res) {
+  try {
+    return res.status(200).json({ acessos: await metricasService.meusAcessos(req.user) });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 async function dashboard(req, res) {
   try {
     const { de, ate, equipeId, diretoriaId } = req.query;
@@ -35,4 +43,4 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { registrarEvento, dashboard };
+module.exports = { registrarEvento, dashboard, meusAcessos };
