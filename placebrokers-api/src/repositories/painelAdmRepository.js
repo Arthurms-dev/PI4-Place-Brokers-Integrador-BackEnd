@@ -1,6 +1,7 @@
 'use strict';
-
 const { supabaseAdmin } = require('../config/supabase');
+
+const { supabaseAdmin } = require ('../config/supabase');
 
 class PainelAdmRepository {
   async listarAvisosSeguranca(limite = 20) {
@@ -32,6 +33,42 @@ class PainelAdmRepository {
     if (error) throw error;
     return data;
   }
+
+    async listarModificacoes( limite = 20) {
+        const { data, error } = await supabaseAdmin
+        .from('modificacoes')
+        .select('id, titulo, descricao, criado_em, autor:profiles(nome)')
+        .order(limite)
+        if (error) throw error;
+        return data;
+    }
+    async criarAviso ({ titulo, descricao, severidade = 'info'}){
+        const { data, error } = await supabaseAdmin
+        .from('avisos_seguranca')
+        .insert({ titulo, descricao, severidade})
+        .select()
+        .single();
+        if (error ) throw error;
+        return data;
+    }
+    async criarMelhoria({ titulo, descricao, status = 'sugestao'}){
+        const { data, error} = await supabaseAdmin
+        .from('melhorias')
+        .insert({ titulo, descricao, status})
+        .select()
+        .single();
+        if (error ) throw error;
+        return data;
+    }
+    async criarModificacao({ titulo, descricao, autor_id}){
+        const { data, error } = await supabaseAdmin
+        .from('modificacoes')
+        .insert({ titulo, descricao, autor_id})
+        .select()
+        .single();
+        if (error) throw error;
+        return data;
+    }
 }
 
 module.exports = { PainelAdmRepository };

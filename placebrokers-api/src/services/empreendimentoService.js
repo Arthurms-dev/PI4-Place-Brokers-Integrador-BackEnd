@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { painelAdmRepository } = require('../repositories/painelAdmRepository');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 const SEGMENTOS_VALIDOS = ['mcmv', 'medio_padrao', 'alto_padrao', 'litoral'];
@@ -23,9 +24,11 @@ function usuarioPodeVerRascunhos(usuario) {
 }
 
 class EmpreendimentoService {
-  constructor({ empreendimentoRepository, uploadService }) {
+
+  constructor({ empreendimentoRepository, uploadService, painelAdmRepository = null }) {
     this.empreendimentoRepository = empreendimentoRepository;
     this.uploadService = uploadService;
+    this.painelAdmRepository = painelAdmRepository;
     this._catalogoPublico = { value: null, expiresAt: 0, inflight: null, revision: 0 };
   }
 
@@ -133,12 +136,17 @@ class EmpreendimentoService {
     return erros;
   }
 
-  async criar(dados, arquivos) {
+
+  /**
+   * @param {object} dados
+   * @param {{ capa?, galeria?, book?, tabela? }} arquivos
+   * @param {{ id: string } | null } usuario que está cadastrando
+   */
+  async criar(dados, arquivos, usuario = null ) {
     const erros = this.validar(dados);
     if (Object.keys(erros).length) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
     }
-
     const slug = this.uploadService.gerarSlug(dados.nome);
 
     const [capaUrl, galeriaUrls, bookUrl, tabelaUrl] = await Promise.all([
@@ -186,6 +194,12 @@ class EmpreendimentoService {
         galeriaUrls.map((url, i) => ({ empreendimento_id: empreendimento.id, url, ordem: i }))
       );
     }
+    await this.registrarModificacao(
+      'Empreendimento cadastrado',
+      `"${empreendimento.nome}" foi cadastrado.`,
+      usuario,
+    );
+    await this.sugerirMelhorias(empreendimento, galeriaUrls.length);
 
     this.invalidarCachePublico();
     return empreendimento;
@@ -378,6 +392,49 @@ class EmpreendimentoService {
         });
       }
       throw erro;
+    }
+  };
+  pendenciasDe (empreendimento, totalGaleria ){
+    const pendencias = [];
+    if (!empreendimento.capa_url) pendencias.push('imagem de capa');
+    if (!totalGaleria) pendencias.push('fotos na galeria');
+    if (!empreendimento.book_url) pendencias.push('book');
+    if (!empreendimento.tabela_url) pendencias.push('tabela de preços');
+    if (!empreendimento.descricao) pendencias.push('descrição');
+    if (empreendimento.latitude == null || empreendimento.longitude == null) {
+      pendencias.push('localização no mapa');
+    }
+    if (!empreendimento.publicado) pendencias.push('publicação');
+    return pendencias;
+  }
+
+  async sugerirMelhorias (empreendimento, totalGaleria){
+    if ( !this.painelAdmRepository) return;
+
+    const pendencias = this.pendenciasDe(empreendimento, totalGaleria);
+    if(!pendencias.length) return;
+
+    try{
+      await this.painelAdmRepository.criarMelhoria({
+        titulo: `Completar "${empreendimento.nome}"`,
+        descricao: `Ainda falta: ${pendencias.join(', ')}.`,
+        status: 'sugestao',
+      });
+    } catch (err) {
+      console.error('Erro ao registrar melhoria no painel:', err);
+    }
+  }
+  async registrarModificacao(titulo, descricao, usuario ){
+    if (!this.painelAdmRepository) return;
+
+    try {
+      await this.painelAdmRepository.criarModificacao({
+        titulo,
+        descricao,
+        autor_id: usuario?.id ?? null,
+      });
+    } catch (err) {
+      console.error('Erro ao registrar modificação no painel: ', err);
     }
   }
 }

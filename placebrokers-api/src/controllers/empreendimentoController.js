@@ -3,12 +3,14 @@
 const { EmpreendimentoService } = require('../services/empreendimentoService');
 const { EmpreendimentoRepository } = require('../repositories/empreendimentoRepository');
 const { UploadService } = require('../services/uploadService');
+const { painelAdmRepository } = require ('../repositories/painelAdmRepository');
 const { AppError } = require('../errors/AppError');
 const { EmpreendimentoImagensService } = require('../services/empreendimentoImagensService');
 
 const empreendimentoService = new EmpreendimentoService({
   empreendimentoRepository: new EmpreendimentoRepository(),
   uploadService: new UploadService(),
+  painelAdmRepository: new PainelAdmRepository(),
 });
 
 const imagemService = new EmpreendimentoImagensService({

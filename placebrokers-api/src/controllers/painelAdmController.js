@@ -24,12 +24,24 @@ async function melhorias(req, res) {
   }
 }
 
-async function modificacoes(req, res) {
-  try {
-    return res.status(200).json(await painelAdmService.listarModificacoes());
-  } catch (err) {
-    return handleError(res, err);
-  }
+async function  criarMelhoria(req, res) {
+    try {
+        return res.status(201).json(
+            await painelAdmService.criarMelhoria(req.body)
+        );
+    } catch (err) {
+        return handleError(res, err);
+    }
+
+}
+
+async function modificacoes (req, res) {
+    try {
+        return res.status(200).json (await painelAdmService.listarModificacoes());
+    } catch (err) {
+        return handleError(res, err);
+    }
+
 }
 
 function handleError(res, err) {
@@ -44,4 +56,7 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { avisosSeguranca, melhorias, modificacoes };
+
+
+module.exports ={ avisosSeguranca, melhorias, criarMelhoria, modificacoes};
+

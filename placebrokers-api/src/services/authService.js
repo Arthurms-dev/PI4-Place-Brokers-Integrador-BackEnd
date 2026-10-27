@@ -2,12 +2,13 @@
 
 const { AuthError } = require('../errors/AuthError');
 const { normalizarTelefone } = require('../utils/telefone');
+const { JANELA_MINUTOS } = require ('../repositories/loginAttemptRepository');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Viabilizador temporariamente desativado no cadastro publico.
-// Preservamos perfis e rotas legadas para eventual reativacao controlada.
 const VALID_ROLES_CADASTRO = ['corretor'];
+const MAX_FALHAS = 3;
 const UFS_VALIDAS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+
 
 function toPublicUser(profile) {
   return { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo };
@@ -26,11 +27,16 @@ class AuthService {
    * @param {object} deps
    * @param {{ signInWithPassword: Function, createUser: Function }} deps.authClient
    * @param {{ findById: Function, create: Function, atualizar: Function }} deps.profileRepository
+   * @param {object} deps.passwordClient
+   * @param {{object|null}} [deps.loginAttemptRepository]
+   * @param {{object|null}} [deps.painelAdmRepository]
    */
-  constructor({ authClient, profileRepository, passwordClient }) {
-    this.authClient = authClient;
-    this.profileRepository = profileRepository;
-    this.passwordClient = passwordClient;
+  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null,}) {
+  this.authClient = authClient;
+  this.profileRepository = profileRepository;
+  this.passwordClient = passwordClient;
+  this.loginAttemptRepository = loginAttemptRepository;
+  this.painelAdmRepository = painelAdmRepository;
   }
 
   validateLoginInput({ email, password } = {}) {
@@ -46,51 +52,113 @@ class AuthService {
    * @param {{ email: string, password: string }} credentials
    * @returns {Promise<{ user: { id: string, nome: string, email: string, role: string }, token: string|null }>}
    */
-  async login(credentials) {
-    const fieldErrors = this.validateLoginInput(credentials);
-    if (Object.keys(fieldErrors).length > 0) {
-      throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', fieldErrors);
-    }
 
-    const email = credentials.email.trim().toLowerCase();
+async login(credentials) {
+  const fieldErrors = this.validateLoginInput(credentials);
 
-    let authResult;
-    try {
-      authResult = await this.authClient.signInWithPassword({ email, password: credentials.password });
-    } catch (cause) {
-      throw new AuthError('SERVER_ERROR', 'Erro ao conectar à autenticação.', {}, cause);
-    }
-
-    const { data, error } = authResult;
-    if (error || !data?.user) {
-      throw new AuthError('INVALID_CREDENTIALS', 'E-mail ou senha incorretos.', {}, error);
-    }
-
-    let profile;
-    try {
-      profile = await this.profileRepository.findById(data.user.id);
-    } catch (cause) {
-      throw new AuthError('SERVER_ERROR', 'Erro ao buscar o perfil do usuário.', {}, cause);
-    }
-
-    if (!profile) {
-      throw new AuthError('SERVER_ERROR', 'Usuário autenticado, mas sem perfil cadastrado.');
-    }
-    if (!profile.ativo) {
-      throw new AuthError('USER_INACTIVE', 'Este usuário está inativo. Fale com um administrador.');
-    }
-    if (profile.status === 'pendente') {
-      throw new AuthError('ACCOUNT_PENDING', 'Sua conta ainda está aguardando aprovação do administrador.');
-    }
-    if (profile.status === 'recusado') {
-      throw new AuthError('ACCOUNT_REJECTED', 'Seu cadastro não foi aprovado. Fale com o administrador.');
-    }
-
-    return {
-      user: toPublicUser(profile),
-      token: data.session?.access_token ?? null,
-    };
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new AuthError(
+      'VALIDATION_ERROR',
+      'Verifique os campos destacados.',
+      fieldErrors
+    );
   }
+
+  const email = credentials.email.trim().toLowerCase();
+
+  let authResult;
+
+  try {
+    authResult = await this.authClient.signInWithPassword({
+      email,
+      password: credentials.password,
+    });
+  } catch (cause) {
+    throw new AuthError(
+      'SERVER_ERROR',
+      'Erro ao conectar à autenticação.',
+      {},
+      cause
+    );
+  }
+
+  const { data, error } = authResult;
+
+  if (error || !data?.user) {
+    await this.registrarTentativaFalha(email);
+
+    throw new AuthError(
+      'INVALID_CREDENTIALS',
+      'E-mail ou senha incorretos.',
+      {},
+      error
+    );
+  }
+
+  let profile;
+
+  try {
+    profile = await this.profileRepository.findById(data.user.id);
+  } catch (cause) {
+    throw new AuthError(
+      'SERVER_ERROR',
+      'Erro ao buscar o perfil do usuário.',
+      {},
+      cause
+    );
+  }
+
+  if (!profile) {
+    throw new AuthError(
+      'SERVER_ERROR',
+      'Usuário autenticado, mas sem perfil cadastrado.'
+    );
+  }
+
+  if (!profile.ativo) {
+    throw new AuthError(
+      'USER_INACTIVE',
+      'Este usuário está inativo. Fale com um administrador.'
+    );
+  }
+
+  if (profile.status === 'pendente') {
+    throw new AuthError(
+      'ACCOUNT_PENDING',
+      'Sua conta ainda está aguardando aprovação do administrador.'
+    );
+  }
+
+  if (profile.status === 'recusado') {
+    throw new AuthError(
+      'ACCOUNT_REJECTED',
+      'Seu cadastro não foi aprovado. Fale com o administrador.'
+    );
+  }
+
+  return {
+    user: toPublicUser(profile),
+    token: data.session?.access_token ?? null,
+  };
+}
+
+
+  async registrarTentativaFalha (email) {
+    if (!this.loginAttemptRepository || this.painelAdmRepository) return;
+
+    try{
+      await this.loginAttemptRepository.registrarFalha(email);
+      const falhas = await this.loginAttemptRepository.contarFalhasRecentes(email);
+      if ( falhas === MAX_FALHAS + 1) {
+        await this.painelAdmRepository.criarAviso({
+          titulo: 'Tentativas de login falhas',
+          descricao: `Mais de ${MAX_FALHAS} tentativas de login com senha incorreta para ${email} nos últimos ${JANELA_MINUTOS} minutos.`,
+        });
+      }
+    } catch (err){
+      console.error('Erro ao registrar tentativa de login falha: ', err);
+    }
+  };
 
   /**
    * @param {{ nome, email, password, confirmPassword, role, vinculo, creci }} payload
@@ -261,5 +329,6 @@ class AuthService {
     return { ok: true };
   }
 }
+
 
 module.exports = { AuthService };
