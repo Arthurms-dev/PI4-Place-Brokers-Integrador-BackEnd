@@ -129,13 +129,15 @@ function aplicarSeguranca(app) {
   app.use(limitadores.global);
 }
 
+const Sentry = require('@sentry/node');
+
 function aplicarErros(app) {
   app.use((req, res) => res.status(404).json({ code: 'NOT_FOUND', message: 'Rota não encontrada.' }));
-  // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {
     if (err?.type === 'entity.too.large') return res.status(413).json({ code: 'PAYLOAD_TOO_LARGE', message: 'Conteúdo grande demais.' });
     if (err instanceof SyntaxError && 'body' in err) return res.status(400).json({ code: 'INVALID_JSON', message: 'O corpo da requisição não é um JSON válido.' });
     if (err?.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ code: 'FILE_TOO_LARGE', message: 'O arquivo passa de 15 MB.' });
+    Sentry.captureException(err);
     console.error(err);
     return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
   });
