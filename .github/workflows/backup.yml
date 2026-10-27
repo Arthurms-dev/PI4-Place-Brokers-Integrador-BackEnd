@@ -1,0 +1,25 @@
+name: Backup do banco
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    container:
+      image: postgres:17-alpine
+
+    steps:
+      - name: Gerar dump do banco
+        run: pg_dump "$SUPABASE_DB_URL" -F c -f backup.dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Enviar dump como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_id }}
+          path: backup.dump
+          retention-days: 30
