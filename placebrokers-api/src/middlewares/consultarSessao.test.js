@@ -16,7 +16,7 @@ jest.mock('../repositories/profileRepository', () => ({
 
 const { supabaseAuth } = require('../config/supabase');
 const { ProfileRepository } = require('../repositories/profileRepository');
-const { consultarSessao } = require('./consultarSessao');
+const { consultarSessao, TEMPO_CACHE_MS } = require('./consultarSessao');
 
 const findById = ProfileRepository.mock.results[0].value.findById;
 
@@ -89,7 +89,7 @@ describe('consultarSessao', () => {
     expect(supabaseAuth.auth.getUser).toHaveBeenCalledTimes(2);
   });
 
-  test('revalida após a consulta anterior terminar', async () => {
+  test('reaproveita resultado dentro da janela de cache', async () => {
     supabaseAuth.auth.getUser.mockResolvedValue({
       data: { user: usuario },
       error: null,
@@ -97,10 +97,33 @@ describe('consultarSessao', () => {
 
     findById.mockResolvedValue(perfil);
 
-    await consultarSessao('token-revalidar');
-    await consultarSessao('token-revalidar');
+    await consultarSessao('token-cache');
+    await consultarSessao('token-cache');
 
-    expect(supabaseAuth.auth.getUser).toHaveBeenCalledTimes(2);
+    expect(supabaseAuth.auth.getUser).toHaveBeenCalledTimes(1);
+  });
+
+  test('revalida depois que o cache expira', async () => {
+    jest.useFakeTimers();
+
+    try {
+      supabaseAuth.auth.getUser.mockResolvedValue({
+        data: { user: usuario },
+        error: null,
+      });
+
+      findById.mockResolvedValue(perfil);
+
+      await consultarSessao('token-revalidar');
+
+      jest.advanceTimersByTime(TEMPO_CACHE_MS + 1);
+
+      await consultarSessao('token-revalidar');
+
+      expect(supabaseAuth.auth.getUser).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test('rejeita autenticação inválida', async () => {
