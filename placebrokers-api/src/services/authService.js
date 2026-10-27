@@ -1,6 +1,7 @@
 'use strict';
 
 const { AuthError } = require('../errors/AuthError');
+const { normalizarTelefone } = require('../utils/telefone');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Viabilizador temporariamente desativado no cadastro publico.
@@ -205,7 +206,12 @@ class AuthService {
       dados.nome = nome.trim();
     }
     if (telefone !== undefined) {
-      dados.telefone = telefone?.trim() || null;
+      if (!telefone?.trim()) dados.telefone = null;
+      else {
+        const fone = normalizarTelefone(telefone);
+        if (!fone.ok) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { telefone: fone.erro });
+        dados.telefone = fone.digitos;
+      }
     }
     if (Object.keys(dados).length === 0) {
       throw new AuthError('VALIDATION_ERROR', 'Nada para atualizar.');
@@ -256,4 +262,4 @@ class AuthService {
   }
 }
 
-module.exports = { AuthService };
+module.exports = { AuthService };

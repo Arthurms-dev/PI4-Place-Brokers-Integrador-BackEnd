@@ -65,7 +65,7 @@ const corte = (valor, limite) => (typeof valor === 'string' ? valor.replace(SEM_
 function antiSpamLead(req, res, next) {
   const b = req.body && typeof req.body === 'object' ? req.body : {};
   const links = String(b.mensagem ?? '').match(/https?:\/\//gi) ?? [];
-  if (b.website || links.length > 2) return res.status(201).json({ lead: { id: 'ok' } });
+  if (b.website || links.length > 2) return res.status(201).json({ lead: { recebido: true } });
 
   req.body = {
     ...b,
@@ -150,4 +150,4 @@ module.exports = {
   cabecalhosDeSeguranca,
   aplicarSeguranca,
   aplicarErros,
-};
+};

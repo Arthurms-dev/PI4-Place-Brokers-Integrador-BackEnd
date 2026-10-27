@@ -81,6 +81,24 @@ class ClienteRepository {
   }
 
   /**
+   * Cliente com o mesmo e-mail ou telefone (a mesma pessoa, mesmo que o nome seja outro).
+   * @param {{ email?: string|null, telefone?: string|null, ignorarId?: string }} contato
+   * @returns {Promise<object|null>}
+   */
+  async buscarPorContato({ email, telefone, ignorarId } = {}) {
+    const filtros = [];
+    const valor = (v) => `"${String(v).replace(/["\\]/g, '')}"`;
+    if (email) filtros.push(`email.eq.${valor(email)}`);
+    if (telefone) filtros.push(`telefone.eq.${valor(telefone)}`);
+    if (!filtros.length) return null;
+    let consulta = supabaseAdmin.from('clientes').select(CLIENTE_SELECT).or(filtros.join(','));
+    if (ignorarId) consulta = consulta.neq('id', ignorarId);
+    const { data, error } = await consulta.order('criado_em', { ascending: true }).limit(1);
+    if (error) throw error;
+    return data?.[0] ?? null;
+  }
+
+  /**
    * @param {{ nome: string, email: string|null, telefone: string|null, corretorId: string,
    *   leadId?: string|null, observacoes?: string|null }} dados
    * @returns {Promise<object>}
@@ -127,4 +145,4 @@ class ClienteRepository {
   }
 }
 
-module.exports = { ClienteRepository };
+module.exports = { ClienteRepository };

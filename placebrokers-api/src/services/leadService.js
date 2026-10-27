@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { normalizarTelefone } = require('../utils/telefone');
 
 const LEAD_STATUSES = ['novo', 'em_atendimento', 'convertido', 'perdido'];
 const STATUS_PERMITIDOS_AO_CORRETOR = ['novo', 'em_atendimento', 'perdido'];
@@ -16,8 +17,8 @@ function validarLead({ nome, email, telefone } = {}) {
   if (!nome?.trim()) erros.nome = 'Informe o nome.';
   if (!email?.trim() || !EMAIL_REGEX.test(email.trim())) erros.email = 'E-mail inválido.';
 
-  const digitos = (telefone ?? '').replace(/\D/g, '');
-  if (digitos.length < 10 || digitos.length > 11) erros.telefone = 'Telefone inválido.';
+  const fone = normalizarTelefone(telefone);
+  if (!fone.ok) erros.telefone = fone.erro;
 
   return erros;
 }
@@ -147,15 +148,14 @@ class LeadService {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
     }
 
-    let row;
+    // Mesmo e-mail ou mesmo telefone = mesma pessoa: o banco junta no lead que já existe.
     try {
-      row = await this.leadRepository.criar({
+      return await this.leadRepository.registrarDoSite({
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
-        telefone: telefone.trim(),
+        telefone: normalizarTelefone(telefone).digitos,
         empreendimentoId: empreendimentoId ?? null,
         mensagem: mensagem?.trim() || null,
-        origem: 'site',
       });
     } catch (err) {
       if (err?.code === '23503' || err?.code === '22P02') {
@@ -163,8 +163,7 @@ class LeadService {
       }
       throw err;
     }
-    return toPublicLead(row);
   }
 }
 
-module.exports = { LeadService, toPublicLead, validarLead };
+module.exports = { LeadService, toPublicLead, validarLead };

@@ -10,8 +10,9 @@ class LeadController {
 
   criar = async (req, res) => {
     try {
-      const lead = await this.leadService.criar(req.body ?? {});
-      return res.status(201).json({ lead });
+      await this.leadService.criar(req.body ?? {});
+      // Resposta igual para contato novo e repetido: o site não revela se o e-mail/telefone já existe.
+      return res.status(201).json({ lead: { recebido: true } });
     } catch (error) {
       return this._handleError(res, error);
     }
@@ -81,4 +82,4 @@ class LeadController {
   }
 }
 
-module.exports = { LeadController };
+module.exports = { LeadController };

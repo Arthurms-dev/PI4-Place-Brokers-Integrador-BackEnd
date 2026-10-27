@@ -80,6 +80,25 @@ class LeadRepository {
   }
 
   /**
+   * Lead vindo do site: se o e-mail ou o telefone já existir, registra o contato no lead
+   * existente (numa transação no banco) em vez de criar outro.
+   * @param {{ nome: string, email: string, telefone: string, empreendimentoId: string|null, mensagem: string|null }} dados
+   * @returns {Promise<{ leadId: string, repetido: boolean }>}
+   */
+  async registrarDoSite({ nome, email, telefone, empreendimentoId, mensagem }) {
+    const { data, error } = await supabaseAdmin.rpc('registrar_lead_site', {
+      p_nome: nome,
+      p_email: email,
+      p_telefone: telefone,
+      p_empreendimento_id: empreendimentoId ?? null,
+      p_mensagem: mensagem ?? null,
+    });
+    if (error) throw error;
+    const linha = Array.isArray(data) ? data[0] : data;
+    return { leadId: linha?.lead_id, repetido: Boolean(linha?.repetido) };
+  }
+
+  /**
    * @param {{ nome: string, email: string, telefone: string, empreendimentoId: string|null, mensagem: string|null, origem: string }} dados
    * @returns {Promise<object>}
    */
@@ -102,4 +121,4 @@ class LeadRepository {
   }
 }
 
-module.exports = { LeadRepository };
+module.exports = { LeadRepository };
