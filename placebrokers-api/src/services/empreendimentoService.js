@@ -1,7 +1,6 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
-const { painelAdmRepository } = require('../repositories/painelAdmRepository');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 const SEGMENTOS_VALIDOS = ['mcmv', 'medio_padrao', 'alto_padrao', 'litoral'];

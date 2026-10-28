@@ -1,8 +1,6 @@
 'use strict';
 const { supabaseAdmin } = require('../config/supabase');
 
-const { supabaseAdmin } = require ('../config/supabase');
-
 class PainelAdmRepository {
   async listarAvisosSeguranca(limite = 20) {
     const { data, error } = await supabaseAdmin

@@ -2,7 +2,7 @@
 
 const { AuthError } = require('../errors/AuthError');
 const { normalizarTelefone } = require('../utils/telefone');
-const { JANELA_MINUTOS } = require ('../repositories/loginAttemptRepository');
+const { JANELA_MINUTOS } = require ('../utils/loginAttemptConfig');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_ROLES_CADASTRO = ['corretor'];
