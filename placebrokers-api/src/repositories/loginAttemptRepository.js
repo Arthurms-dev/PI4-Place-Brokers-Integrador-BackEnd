@@ -3,7 +3,7 @@
 const { supabaseAdmin } = require('../config/supabase');
 const { JANELA_MINUTOS } = require('../utils/loginAttemptConfig');
 
-class loginAttemptRepository {
+class LoginAttemptRepository {
     async registrarFalha(email) {
         const { error } = await supabaseAdmin
             .from('tentativas_login_falhas')
@@ -29,4 +29,5 @@ class loginAttemptRepository {
     }
 }
 
-module.exports = { loginAttemptRepository, JANELA_MINUTOS };
+// `loginAttemptRepository` (minúsculo) mantido por compatibilidade com quem já importava assim.
+module.exports = { LoginAttemptRepository, loginAttemptRepository: LoginAttemptRepository, JANELA_MINUTOS };

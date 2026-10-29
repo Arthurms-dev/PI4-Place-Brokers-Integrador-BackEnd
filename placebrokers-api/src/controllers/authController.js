@@ -2,8 +2,8 @@
 
 const { AuthService } = require('../services/authService');
 const { ProfileRepository } = require('../repositories/profileRepository');
-const { LoginAttemptRepository } = require ('../repositories/loginAttemptRepository');
-const { painelAdmRepository } = require ('../repositories/painelAdmRepository');
+const { LoginAttemptRepository } = require('../repositories/loginAttemptRepository');
+const { PainelAdmRepository } = require('../repositories/painelAdmRepository');
 const { authClient } = require('../adapters/authClient');
 const { passwordClient } = require('../adapters/passwordclient');
 const { AuthError } = require('../errors/AuthError');
@@ -15,7 +15,7 @@ const authService = new AuthService({
   profileRepository,
   passwordClient,
   loginAttemptRepository: new LoginAttemptRepository(),
-  painelAdmRepository: new painelAdmRepository(),
+  painelAdmRepository: new PainelAdmRepository(),
 
 });
 

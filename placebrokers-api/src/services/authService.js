@@ -144,7 +144,7 @@ async login(credentials) {
 
 
   async registrarTentativaFalha (email) {
-    if (!this.loginAttemptRepository || this.painelAdmRepository) return;
+    if (!this.loginAttemptRepository || !this.painelAdmRepository) return;
 
     try{
       await this.loginAttemptRepository.registrarFalha(email);
