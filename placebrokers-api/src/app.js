@@ -17,6 +17,7 @@ const gerenteRoutes = require('./routes/gerenteroutes');
 const viabilizadorRoutes = require('./routes/viabilizadorroutes');
 const roletaRoutes = require('./routes/roletaRoutes');
 const notificacaoRoutes = require('./routes/notificacaoRoutes');
+const { montarDocs } = require('./docs/openapi');
 
 const app = express();
 
@@ -39,6 +40,9 @@ app.use('/roleta', roletaRoutes);
 app.use('/notificacoes', notificacaoRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Documentação da API: /docs (Swagger UI) e /docs/openapi.json
+montarDocs(app);
 
 aplicarErros(app);
 

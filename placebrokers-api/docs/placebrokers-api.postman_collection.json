@@ -1,0 +1,2330 @@
+{
+  "info": {
+    "name": "Place Brokers API",
+    "description": "Gerada de src/docs/rotas.js. Comece por Autenticação → POST /auth/login: o token fica salvo na variável {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://placebrokers-api.onrender.com"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": ""
+    },
+    {
+      "key": "imagemId",
+      "value": ""
+    },
+    {
+      "key": "tipologiaId",
+      "value": ""
+    },
+    {
+      "key": "tipo",
+      "value": ""
+    },
+    {
+      "key": "docId",
+      "value": ""
+    },
+    {
+      "key": "corretorId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Sistema",
+      "description": "Saúde da API e documentação",
+      "item": [
+        {
+          "name": "GET /health — Verifica se a API está no ar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /docs — Esta documentação (Swagger UI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /docs/openapi.json — Especificação OpenAPI 3 em JSON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/docs/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs",
+                "openapi.json"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autenticação",
+      "description": "Login, cadastro e perfil do usuário logado",
+      "item": [
+        {
+          "name": "POST /auth/login — Entra com e-mail e senha e devolve o token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"corretor@exemplo.com\",\n  \"password\": \"senha-de-teste\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "if (corpo.token) { pm.collectionVariables.set(\"token\", corpo.token); console.log(\"Token salvo\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register — Cadastro de corretor (fica pendente até o admin aprovar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Fulano de Tal\",\n  \"email\": \"fulano@exemplo.com\",\n  \"telefone\": \"81999998888\",\n  \"password\": \"senha-de-teste\",\n  \"confirmPassword\": \"senha-de-teste\",\n  \"role\": \"corretor\",\n  \"vinculo\": \"place\",\n  \"creci\": null,\n  \"uf\": \"PE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me — Dados do usuário logado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Qualquer usuário logado"
+          }
+        },
+        {
+          "name": "PATCH /auth/me — Atualiza nome e telefone",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Qualquer usuário logado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Fulano de Tal\",\n  \"telefone\": \"81999998888\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /auth/senha — Troca a senha (pede a senha atual)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/senha",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "senha"
+              ]
+            },
+            "description": "Qualquer usuário logado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senhaAtual\": \"senha-de-teste\",\n  \"novaSenha\": \"nova-senha-de-teste\",\n  \"confirmarSenha\": \"nova-senha-de-teste\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Empreendimentos",
+      "description": "Catálogo de imóveis, fotos, tipologias e documentos comerciais",
+      "item": [
+        {
+          "name": "GET /empreendimentos — Lista o catálogo (público vê só os publicados; admin vê rascunhos)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /empreendimentos/:id — Detalhe do empreendimento com fotos e tipologias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /empreendimentos — Cria empreendimento (multipart: dados + capa, galeria, book, tabela)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        },
+        {
+          "name": "PATCH /empreendimentos/:id — Atualiza dados do empreendimento",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Residencial Exemplo\",\n  \"status\": \"lancamento\",\n  \"segmento\": \"mcmv\",\n  \"parcela_min\": 499,\n  \"publicado\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /empreendimentos/:id/imagens/capa — Troca a foto de capa (multipart, campo \"imagem\")",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/imagens/capa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "imagens",
+                "capa"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        },
+        {
+          "name": "POST /empreendimentos/:id/imagens/galeria — Adiciona até 5 fotos na galeria (multipart, campo \"imagens\")",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/imagens/galeria",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "imagens",
+                "galeria"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        },
+        {
+          "name": "DELETE /empreendimentos/:id/imagens/:imagemId — Remove uma foto da galeria",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/imagens/{{imagemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "imagens",
+                "{{imagemId}}"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /empreendimentos/:id/tipologias — Cria tipologia (planta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/tipologias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "tipologias"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"2 quartos com suíte\",\n  \"quartos\": 2,\n  \"suites\": 1,\n  \"vagas\": 1,\n  \"area_m2\": 52.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /empreendimentos/:id/tipologias/:tipologiaId — Atualiza tipologia",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/tipologias/{{tipologiaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "tipologias",
+                "{{tipologiaId}}"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"area_m2\": 54\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /empreendimentos/:id/documentos — Lista book e tabelas aprovados e dentro da validade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/documentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "documentos"
+              ]
+            },
+            "description": "Cargos: admin, corretor, gerente"
+          }
+        },
+        {
+          "name": "GET /empreendimentos/:id/documentos/:tipo — Link do book ou da tabela (tipo = book | tabela)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/documentos/{{tipo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "documentos",
+                "{{tipo}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor, gerente"
+          }
+        },
+        {
+          "name": "GET /empreendimentos/:id/documentos/arquivo/:docId — Link de um documento específico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/documentos/arquivo/{{docId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "documentos",
+                "arquivo",
+                "{{docId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor, gerente"
+          }
+        },
+        {
+          "name": "GET /empreendimentos/:id/documentos/admin — Todos os documentos do empreendimento (inclusive pendentes)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/documentos/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "documentos",
+                "admin"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /empreendimentos/:id/documentos/admin — Cadastra documento do Drive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/documentos/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "documentos",
+                "admin"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"tabela\",\n  \"fase\": \"Lançamento\",\n  \"titulo\": \"Tabela outubro\",\n  \"drive_file_id\": \"1AbCdEfGhIjKlMnOp\",\n  \"status\": \"aprovado\",\n  \"validade_ate\": \"2026-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /empreendimentos/:id/documentos/admin/:docId — Atualiza documento",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/{{id}}/documentos/admin/{{docId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "{{id}}",
+                "documentos",
+                "admin",
+                "{{docId}}"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"aprovado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /empreendimentos/documentos/pendencias — Documentos do Drive que ainda precisam de revisão",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/empreendimentos/documentos/pendencias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "empreendimentos",
+                "documentos",
+                "pendencias"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Construtoras",
+      "description": "Construtoras parceiras",
+      "item": [
+        {
+          "name": "GET /construtoras — Lista as construtoras",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/construtoras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "construtoras"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /construtoras — Cadastra construtora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/construtoras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "construtoras"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Construtora Exemplo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "description": "Contatos que chegam pelo site e o atendimento do corretor",
+      "item": [
+        {
+          "name": "POST /leads — Formulário do site: cria o lead (mesmo e-mail ou telefone = mesmo lead) e chama a roleta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Exemplo\",\n  \"email\": \"cliente@exemplo.com\",\n  \"telefone\": \"81999998888\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\",\n  \"mensagem\": \"Interesse em: Residencial Exemplo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /leads — Todos os leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "GET /leads/meus — Leads do corretor logado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/meus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "meus"
+              ]
+            },
+            "description": "Cargos: corretor"
+          }
+        },
+        {
+          "name": "GET /leads/retornos — Lembretes de retorno (atrasados e dos próximos 7 dias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/retornos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "retornos"
+              ]
+            },
+            "description": "Cargos: corretor"
+          }
+        },
+        {
+          "name": "PATCH /leads/:id/status — Muda o status (novo, em_atendimento, perdido; convertido só pelo admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "status"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"em_atendimento\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /leads/:id/corretor — Atribui ou repassa o lead (reinicia o tempo de atendimento)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/corretor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "corretor"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"corretorId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /leads/:id/converter — Converte o lead em cliente (transação no banco)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/converter",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "converter"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /leads/:id/cliente — Leva o lead para a carteira (cria ou reaproveita o cliente) para agendar visita",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "cliente"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "GET /leads/:id/atividades — Histórico do lead (ligações, WhatsApp, observações, lembretes)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/atividades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "atividades"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "POST /leads/:id/atividades — Registra contato ou lembrete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/atividades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "atividades"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"ligacao\",\n  \"descricao\": \"Ligou para o cliente pelo app.\",\n  \"proximoContatoEm\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roleta",
+      "description": "Lista de chegada e distribuição automática de leads",
+      "item": [
+        {
+          "name": "GET /roleta/hoje — Painel da recepção: lista de chegada, quem falta marcar e leads aguardando",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/hoje",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "hoje"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /roleta/chegada — Marca a chegada do corretor (apto se antes das 09h)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/chegada",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "chegada"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"corretorId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /roleta/chegada/:corretorId — Põe ou tira o corretor da roleta do dia",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/chegada/{{corretorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "chegada",
+                "{{corretorId}}"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"apto\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /roleta/chegada/:corretorId — Tira o corretor da lista de hoje",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/chegada/{{corretorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "chegada",
+                "{{corretorId}}"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /roleta/iniciar — Fecha a lista e começa a distribuir (às 09h acontece sozinho)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/iniciar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "iniciar"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /roleta/distribuir — Distribui agora os leads que estão sem corretor",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/distribuir",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "distribuir"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "GET /roleta/minha — Posição do corretor na roleta de hoje",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/minha",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "minha"
+              ]
+            },
+            "description": "Cargos: corretor"
+          }
+        },
+        {
+          "name": "GET /roleta/focos — Focos dos corretores (gerente: só a própria equipe)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/focos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "focos"
+              ]
+            },
+            "description": "Cargos: admin, gerente"
+          }
+        },
+        {
+          "name": "PUT /roleta/focos/:corretorId — Define em quais empreendimentos o corretor recebe leads",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roleta/focos/{{corretorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roleta",
+                "focos",
+                "{{corretorId}}"
+              ]
+            },
+            "description": "Cargos: admin, gerente",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"empreendimentoIds\": [\n    \"00000000-0000-4000-8000-000000000000\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "description": "Carteira de clientes dos corretores",
+      "item": [
+        {
+          "name": "GET /clientes — Clientes (corretor: só a própria carteira)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "GET /clientes/:id — Detalhe do cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "POST /clientes — Cadastra cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Exemplo\",\n  \"telefone\": \"81999998888\",\n  \"email\": \"cliente@exemplo.com\",\n  \"observacoes\": \"Prefere contato à tarde\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /clientes/:id — Atualiza cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacoes\": \"Pediu simulação com FGTS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agendamentos",
+      "description": "Visitas e reuniões",
+      "item": [
+        {
+          "name": "GET /agendamentos — Agendamentos (corretor: só os seus)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "POST /agendamentos — Agenda visita ou reunião para um cliente da carteira",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"visita_imovel\",\n  \"dataHora\": \"2026-11-05T14:00:00-03:00\",\n  \"duracaoMinutos\": 60,\n  \"clienteId\": \"00000000-0000-4000-8000-000000000000\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\",\n  \"local\": null,\n  \"observacoes\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /agendamentos/:id/data — Remarca",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{id}}/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos",
+                "{{id}}",
+                "data"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataHora\": \"2026-11-06T10:00:00-03:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /agendamentos/:id/status — Muda o status (agendado → confirmado → realizado | nao_compareceu | cancelado)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{id}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos",
+                "{{id}}",
+                "status"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"realizado\",\n  \"interesseAposVisita\": \"alto\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendas",
+      "description": "Vendas lançadas pelo corretor e confirmadas pelo gerente (VGV)",
+      "item": [
+        {
+          "name": "POST /vendas — Lança venda (fica aguardando o gerente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendas"
+              ]
+            },
+            "description": "Cargos: corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 189000,\n  \"clienteId\": \"00000000-0000-4000-8000-000000000000\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /vendas — Vendas visíveis para o cargo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendas"
+              ]
+            },
+            "description": "Cargos: admin, gerente, corretor"
+          }
+        },
+        {
+          "name": "PATCH /vendas/:id — Confirma ou recusa a venda",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendas",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, gerente",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /vendas/vgv — Total de VGV confirmado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendas/vgv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendas",
+                "vgv"
+              ],
+              "query": [
+                {
+                  "key": "equipeId",
+                  "value": "",
+                  "description": "filtra por equipe",
+                  "disabled": true
+                },
+                {
+                  "key": "diretoriaId",
+                  "value": "",
+                  "description": "filtra por diretoria",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Cargos: admin, gerente, corretor"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Equipe",
+      "description": "Corretores, gerentes, equipes e diretorias (admin)",
+      "item": [
+        {
+          "name": "GET /equipe — Usuários (filtros por status e cargo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "pendente | aprovado | recusado",
+                  "disabled": true
+                },
+                {
+                  "key": "cargo",
+                  "value": "",
+                  "description": "corretor | gerente | viabilizador",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "PATCH /equipe/:id — Aprova/recusa, ativa/desativa ou muda a equipe do usuário",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"aprovado\",\n  \"ativo\": true,\n  \"equipeId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /equipe/gerentes — Cria gerente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/gerentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "gerentes"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Gerente Exemplo\",\n  \"email\": \"gerente@exemplo.com\",\n  \"password\": \"senha-de-teste\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /equipe/times — Equipes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/times",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "times"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /equipe/times — Cria equipe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/times",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "times"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Time Paulista\",\n  \"gerenteId\": \"00000000-0000-4000-8000-000000000000\",\n  \"diretoriaId\": \"00000000-0000-4000-8000-000000000000\",\n  \"sede\": \"Paulista\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /equipe/times/:id — Atualiza equipe",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/times/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "times",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Time Paulista 2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /equipe/times/:id — Remove equipe",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/times/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "times",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "GET /equipe/diretorias — Diretorias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/diretorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "diretorias"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /equipe/diretorias — Cria diretoria",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/diretorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "diretorias"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Diretoria Norte\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gerente",
+      "description": "Painel do gerente: só a própria equipe",
+      "item": [
+        {
+          "name": "GET /gerente/equipe — Equipes e corretores do gerente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/gerente/equipe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gerente",
+                "equipe"
+              ]
+            },
+            "description": "Cargos: gerente"
+          }
+        },
+        {
+          "name": "GET /gerente/leads — Leads dos corretores da equipe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/gerente/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gerente",
+                "leads"
+              ]
+            },
+            "description": "Cargos: gerente"
+          }
+        },
+        {
+          "name": "GET /gerente/agendamentos — Agendamentos da equipe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/gerente/agendamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gerente",
+                "agendamentos"
+              ]
+            },
+            "description": "Cargos: gerente"
+          }
+        },
+        {
+          "name": "GET /gerente/desempenho — Leads sem atendimento (15 min) e tempo de resposta por corretor (30 dias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/gerente/desempenho",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gerente",
+                "desempenho"
+              ]
+            },
+            "description": "Cargos: gerente"
+          }
+        },
+        {
+          "name": "PATCH /gerente/leads/:id/corretor — Repassa o lead para outro corretor da equipe",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/gerente/leads/{{id}}/corretor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "gerente",
+                "leads",
+                "{{id}}",
+                "corretor"
+              ]
+            },
+            "description": "Cargos: gerente",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"corretorId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Corretores",
+      "description": "Lista de corretores",
+      "item": [
+        {
+          "name": "GET /corretores — Corretores aprovados (para atribuir leads)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/corretores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corretores"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Métricas",
+      "description": "Acessos ao site e dashboard",
+      "item": [
+        {
+          "name": "POST /metricas/eventos — Registra visualização, busca ou contato no site",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metricas/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metricas",
+                "eventos"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"visualizacao_empreendimento\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\",\n  \"sessaoId\": \"sessao-do-navegador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /metricas/meus-acessos — Últimos empreendimentos abertos pelo usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/metricas/meus-acessos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metricas",
+                "meus-acessos"
+              ]
+            },
+            "description": "Qualquer usuário logado"
+          }
+        },
+        {
+          "name": "GET /metricas/dashboard — Números do dashboard do admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/metricas/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metricas",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "de",
+                  "value": "",
+                  "description": "data inicial (AAAA-MM-DD)",
+                  "disabled": true
+                },
+                {
+                  "key": "ate",
+                  "value": "",
+                  "description": "data final (AAAA-MM-DD)",
+                  "disabled": true
+                },
+                {
+                  "key": "equipeId",
+                  "value": "",
+                  "description": "filtra por equipe",
+                  "disabled": true
+                },
+                {
+                  "key": "diretoriaId",
+                  "value": "",
+                  "description": "filtra por diretoria",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Painel",
+      "description": "Feeds do painel do admin",
+      "item": [
+        {
+          "name": "GET /painel/avisos-seguranca — Registros de segurança",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/painel/avisos-seguranca",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "painel",
+                "avisos-seguranca"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "GET /painel/melhorias — Sugestões de melhoria",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/painel/melhorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "painel",
+                "melhorias"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        },
+        {
+          "name": "POST /painel/melhorias — Cadastra sugestão de melhoria",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/painel/melhorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "painel",
+                "melhorias"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Filtro por segmento\",\n  \"descricao\": \"No catálogo do corretor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /painel/modificacoes — Últimas modificações do site",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/painel/modificacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "painel",
+                "modificacoes"
+              ]
+            },
+            "description": "Cargos: admin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notificações",
+      "description": "Aviso de lead novo no celular (Web Push)",
+      "item": [
+        {
+          "name": "GET /notificacoes/chave — Chave pública para o navegador se inscrever (null se desligado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notificacoes/chave",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notificacoes",
+                "chave"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /notificacoes/inscricao — Salva a inscrição de push do aparelho",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notificacoes/inscricao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notificacoes",
+                "inscricao"
+              ]
+            },
+            "description": "Qualquer usuário logado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endpoint\": \"https://fcm.googleapis.com/fcm/send/exemplo\",\n  \"keys\": {\n    \"p256dh\": \"chave-do-navegador\",\n    \"auth\": \"segredo-do-navegador\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /notificacoes/inscricao — Cancela os avisos neste aparelho",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notificacoes/inscricao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notificacoes",
+                "inscricao"
+              ],
+              "query": [
+                {
+                  "key": "endpoint",
+                  "value": "",
+                  "description": "endpoint da inscrição",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Qualquer usuário logado"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Viabilizador",
+      "description": "Área do viabilizador (pós-MVP)",
+      "item": [
+        {
+          "name": "GET /viabilizador/produtos — Produtos do viabilizador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viabilizador/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viabilizador",
+                "produtos"
+              ]
+            },
+            "description": "Cargos: viabilizador"
+          }
+        },
+        {
+          "name": "PATCH /viabilizador/produtos/:id — Atualiza produto",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viabilizador/produtos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viabilizador",
+                "produtos",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: viabilizador",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disponivel\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /viabilizador/produtos/:id/documentos/:tipo — Envia book ou tabela (multipart, campo \"arquivo\")",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viabilizador/produtos/{{id}}/documentos/{{tipo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viabilizador",
+                "produtos",
+                "{{id}}",
+                "documentos",
+                "{{tipo}}"
+              ]
+            },
+            "description": "Cargos: viabilizador",
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        },
+        {
+          "name": "GET /viabilizador/oportunidades — Procura pelos produtos no site",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viabilizador/oportunidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viabilizador",
+                "oportunidades"
+              ],
+              "query": [
+                {
+                  "key": "dias",
+                  "value": "",
+                  "description": "período em dias (padrão 30)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Cargos: viabilizador"
+          }
+        }
+      ]
+    }
+  ]
+}
