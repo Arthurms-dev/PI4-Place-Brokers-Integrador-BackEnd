@@ -24,3 +24,18 @@ jobs:
 
       - run: npm ci
       - run: npm test
+      - name: Servidor sobe sem erro
+        env:
+          SUPABASE_URL: https://exemplo.supabase.co
+          SUPABASE_ANON_KEY: chave-falsa-do-ci
+          SUPABASE_SERVICE_ROLE_KEY: chave-falsa-do-ci
+          PORT: "3999"
+        run: |
+          node src/server.js > servidor.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -fsS http://localhost:3999/health > /dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://localhost:3999/health || { echo "O servidor não subiu:"; cat servidor.log; exit 1; }
+          curl -fsS http://localhost:3999/docs/openapi.json > /dev/null || { cat servidor.log; exit 1; }
+          echo "Servidor subiu e respondeu."
