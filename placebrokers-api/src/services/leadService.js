@@ -53,10 +53,12 @@ class LeadService {
    * @param {object} deps
    * @param {{ listar: Function, listarPorCorretor: Function, buscarPorId: Function, atualizarStatus: Function, atribuirCorretor: Function, criar: Function }} deps.leadRepository
    * @param {{ criar: Function }} deps.clienteRepository
+   * @param {{ distribuirEmSegundoPlano: Function }} [deps.roleta] entrega o lead novo pela roleta do dia
    */
-  constructor({ leadRepository, clienteRepository }) {
+  constructor({ leadRepository, clienteRepository, roleta = null }) {
     this.leadRepository = leadRepository;
     this.clienteRepository = clienteRepository;
+    this.roleta = roleta;
   }
 
   async listar() {
@@ -203,8 +205,9 @@ class LeadService {
     }
 
     // Mesmo e-mail ou mesmo telefone = mesma pessoa: o banco junta no lead que já existe.
+    let registrado;
     try {
-      return await this.leadRepository.registrarDoSite({
+      registrado = await this.leadRepository.registrarDoSite({
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
         telefone: normalizarTelefone(telefone).digitos,
@@ -217,7 +220,10 @@ class LeadService {
       }
       throw err;
     }
+    // Lead novo sem corretor: a roleta do dia entrega (fora do horário, ele espera a próxima).
+    this.roleta?.distribuirEmSegundoPlano();
+    return registrado;
   }
 }
 
-module.exports = { LeadService, toPublicLead, validarLead };
+module.exports = { LeadService, toPublicLead, validarLead };

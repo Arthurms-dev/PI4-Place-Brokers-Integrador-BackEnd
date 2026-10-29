@@ -9,10 +9,11 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
 const leadAtividadeController = require('../controllers/leadAtividadeController');
 const { limitadores, antiSpamLead } = require('../middlewares/seguranca');
+const { roletaService } = require('../services/roletaInstancia');
 
 const leadRepository = new LeadRepository();
 const clienteRepository = new ClienteRepository();
-const leadService = new LeadService({ leadRepository, clienteRepository });
+const leadService = new LeadService({ leadRepository, clienteRepository, roleta: roletaService });
 const leadController = new LeadController({ leadService });
 
 const router = Router();
