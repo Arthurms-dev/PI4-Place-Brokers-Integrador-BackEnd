@@ -16,6 +16,7 @@ const clienteRoutes = require('./routes/clienteroutes');
 const gerenteRoutes = require('./routes/gerenteroutes');
 const viabilizadorRoutes = require('./routes/viabilizadorroutes');
 const roletaRoutes = require('./routes/roletaRoutes');
+const notificacaoRoutes = require('./routes/notificacaoRoutes');
 
 const app = express();
 
@@ -35,9 +36,10 @@ app.use('/clientes', clienteRoutes);
 app.use('/gerente', gerenteRoutes);
 app.use('/viabilizador', viabilizadorRoutes);
 app.use('/roleta', roletaRoutes);
+app.use('/notificacoes', notificacaoRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 aplicarErros(app);
 
-module.exports = app;
+module.exports = app;

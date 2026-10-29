@@ -19,4 +19,6 @@ const PORT = process.env.PORT || 3333;
 
 app.listen(PORT, () => {
   console.log(`placebrokers-api rodando em http://localhost:${PORT}`);
-});
+  // Aviso de lead novo no celular do corretor (só liga se as chaves VAPID estiverem configuradas).
+  require('./services/notificacaoService').notificacoes().iniciar();
+});

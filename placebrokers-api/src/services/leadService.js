@@ -43,6 +43,7 @@ function toPublicLead(row) {
     mensagem: row.mensagem,
     status: row.status,
     criadoEm: row.criado_em,
+    atribuidoEm: row.atribuido_em ?? null,
     corretor: toPublicCorretor(row.corretor),
     empreendimento: toPublicEmpreendimento(row.empreendimento),
   };
@@ -226,4 +227,4 @@ class LeadService {
   }
 }
 
-module.exports = { LeadService, toPublicLead, validarLead };
+module.exports = { LeadService, toPublicLead, validarLead };

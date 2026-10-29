@@ -66,6 +66,20 @@ router.get('/agendamentos', tratar(async (req) => {
   return { agendamentos: await agendamentoService.listarPorCorretores(ids) };
 }));
 
+// Lead parado (sem ligação/WhatsApp há 15 min ou mais) e números de atendimento dos últimos 30 dias.
+router.get('/desempenho', tratar(async (req) => {
+  const { membros } = await contexto(req.user);
+  const { DesempenhoRepository } = require('../repositories/desempenhoRepository');
+  const { calcularDesempenho } = require('../services/desempenhoEquipe');
+  const agora = new Date();
+  const dias = 30;
+  const dados = await new DesempenhoRepository().carregar(
+    membros.map((m) => m.id),
+    new Date(agora.getTime() - dias * 24 * 60 * 60 * 1000).toISOString(),
+  );
+  return calcularDesempenho({ membros, ...dados, agora, dias });
+}));
+
 /**
  */
 router.patch('/leads/:id/corretor', async (req, res) => {
@@ -90,4 +104,4 @@ router.patch('/leads/:id/corretor', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;

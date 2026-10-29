@@ -11,6 +11,7 @@ const LEAD_SELECT = `
   mensagem,
   status,
   criado_em,
+  atribuido_em,
   empreendimento:empreendimentos ( id, nome, bairro, cidade, uf ),
   corretor:profiles ( id, nome )
 `;
@@ -71,7 +72,8 @@ class LeadRepository {
   async atribuirCorretor(id, corretorId) {
     const { data, error } = await supabaseAdmin
       .from('leads')
-      .update({ corretor_id: corretorId })
+      // Repasse reinicia o relógio do atendimento para o novo corretor.
+      .update({ corretor_id: corretorId, atribuido_em: corretorId ? new Date().toISOString() : null })
       .eq('id', id)
       .select(LEAD_SELECT)
       .maybeSingle();
@@ -121,4 +123,4 @@ class LeadRepository {
   }
 }
 
-module.exports = { LeadRepository };
+module.exports = { LeadRepository };
