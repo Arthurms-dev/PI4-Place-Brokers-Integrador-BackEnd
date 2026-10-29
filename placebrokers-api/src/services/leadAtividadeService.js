@@ -45,5 +45,40 @@ class LeadAtividadeService {
       descricao, proximo_contato_em: proximoContato,
     }));
   }
+
+  /**
+   * Retornos marcados pelo corretor (lembretes): o próximo contato mais recente de cada lead
+   * em aberto, de 7 dias atrás até 7 dias à frente. Some quando o corretor registra
+   * qualquer atividade depois do horário marcado (o retorno foi feito).
+   */
+  async retornos(usuario, agora = new Date()) {
+    if (usuario?.cargo !== 'corretor') throw new AppError('FORBIDDEN', 'Disponível apenas para corretores.');
+    const dia = 24 * 60 * 60 * 1000;
+    const desde = new Date(agora.getTime() - 7 * dia).toISOString();
+    const ate = new Date(agora.getTime() + 7 * dia).toISOString();
+    const linhas = await this.atividadeRepository.proximosDoCorretor(usuario.id, desde, ate);
+
+    const porLead = new Map();
+    for (const a of linhas) {
+      if (!a.lead || ['convertido', 'perdido'].includes(a.lead.status)) continue;
+      const atual = porLead.get(a.lead_id);
+      if (!atual || new Date(a.criado_em) > new Date(atual.criado_em)) porLead.set(a.lead_id, a);
+    }
+    const ultima = await this.atividadeRepository.ultimaAtividadePorLead([...porLead.keys()]);
+
+    return [...porLead.values()]
+      .filter((a) => !(ultima[a.lead_id] && new Date(ultima[a.lead_id]) > new Date(a.proximo_contato_em)))
+      .sort((x, y) => new Date(x.proximo_contato_em) - new Date(y.proximo_contato_em))
+      .map((a) => ({
+        atividadeId: a.id,
+        leadId: a.lead_id,
+        nome: a.lead.nome,
+        telefone: a.lead.telefone,
+        empreendimento: a.lead.empreendimento ? { id: a.lead.empreendimento.id, nome: a.lead.empreendimento.nome } : null,
+        nota: a.descricao,
+        proximoContatoEm: a.proximo_contato_em,
+        atrasado: new Date(a.proximo_contato_em) < agora,
+      }));
+  }
 }
 module.exports = { LeadAtividadeService, TIPOS };

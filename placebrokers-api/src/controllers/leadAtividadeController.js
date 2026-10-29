@@ -22,4 +22,8 @@ async function registrar(req,res) {
   try { return res.status(201).json({ atividade: await service.registrar(req.params.id,req.user,req.body) }); }
   catch (e) { return erro(res,e); }
 }
-module.exports = { listar, registrar };
+async function retornos(req,res) {
+  try { return res.json({ retornos: await service.retornos(req.user) }); }
+  catch (e) { return erro(res,e); }
+}
+module.exports = { listar, registrar, retornos };

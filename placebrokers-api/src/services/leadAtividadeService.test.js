@@ -32,3 +32,48 @@ describe('LeadAtividadeService', () => {
     await expect(service.listar('x',{id:'a',cargo:'admin'})).rejects.toMatchObject({code:'NOT_FOUND'});
   });
 });
+
+describe('LeadAtividadeService.retornos (lembretes do corretor)', () => {
+  const agora = new Date('2026-10-29T12:00:00Z');
+  const linha = (id, leadId, proximo, criado, status = 'em_atendimento') => ({
+    id, lead_id: leadId, descricao: 'Retornar', proximo_contato_em: proximo, criado_em: criado,
+    lead: { id: leadId, nome: `Cliente ${leadId}`, telefone: '81999990000', status, corretor_id: 'c1', empreendimento: { id: 'e1', nome: 'Araçá Prime' } },
+  });
+  function montar(linhas, ultima = {}) {
+    const atividadeRepository = {
+      proximosDoCorretor: jest.fn().mockResolvedValue(linhas),
+      ultimaAtividadePorLead: jest.fn().mockResolvedValue(ultima),
+    };
+    return { atividadeRepository, service: new LeadAtividadeService({ leadRepository: {}, atividadeRepository }) };
+  }
+
+  test('só corretor usa', async () => {
+    const { service } = montar([]);
+    await expect(service.retornos({ id: 'a', cargo: 'admin' }, agora)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  test('fica com o lembrete mais recente de cada lead e marca os atrasados', async () => {
+    const { service, atividadeRepository } = montar([
+      linha('a1', 'l1', '2026-10-29T10:00:00Z', '2026-10-28T09:00:00Z'),
+      linha('a2', 'l1', '2026-10-30T09:00:00Z', '2026-10-29T08:00:00Z'),
+      linha('a3', 'l2', '2026-10-29T11:00:00Z', '2026-10-29T07:00:00Z'),
+    ], { l1: '2026-10-29T08:00:00Z', l2: '2026-10-29T07:00:00Z' });
+
+    const r = await service.retornos({ id: 'c1', cargo: 'corretor' }, agora);
+
+    expect(atividadeRepository.proximosDoCorretor.mock.calls[0][0]).toBe('c1');
+    expect(r.map((x) => x.atividadeId)).toEqual(['a3', 'a2']);
+    expect(r[0]).toMatchObject({ leadId: 'l2', atrasado: true, empreendimento: { nome: 'Araçá Prime' } });
+    expect(r[1].atrasado).toBe(false);
+  });
+
+  test('some quando o corretor registrou algo depois do horário marcado', async () => {
+    const { service } = montar([linha('a1', 'l1', '2026-10-29T10:00:00Z', '2026-10-28T09:00:00Z')], { l1: '2026-10-29T10:30:00Z' });
+    await expect(service.retornos({ id: 'c1', cargo: 'corretor' }, agora)).resolves.toEqual([]);
+  });
+
+  test('ignora leads convertidos ou perdidos', async () => {
+    const { service } = montar([linha('a1', 'l1', '2026-10-30T10:00:00Z', '2026-10-29T09:00:00Z', 'perdido')]);
+    await expect(service.retornos({ id: 'c1', cargo: 'corretor' }, agora)).resolves.toEqual([]);
+  });
+});

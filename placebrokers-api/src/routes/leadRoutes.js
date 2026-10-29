@@ -23,6 +23,7 @@ router.get('/:id/atividades', authMiddleware, requireRole('admin', 'corretor'), 
 router.post('/:id/atividades', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.registrar);
 
 router.get('/meus', authMiddleware, requireRole('corretor'), leadController.listarMeus);
+router.get('/retornos', authMiddleware, requireRole('corretor'), leadAtividadeController.retornos);
 router.post('/:id/cliente', authMiddleware, requireRole('admin', 'corretor'), leadController.garantirCliente);
 router.patch('/:id/status', authMiddleware, requireRole('admin', 'corretor'), leadController.atualizarStatus);
 
