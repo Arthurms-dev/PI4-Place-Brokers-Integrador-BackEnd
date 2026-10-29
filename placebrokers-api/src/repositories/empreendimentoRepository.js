@@ -6,6 +6,8 @@ const SELECT_PADRAO = [
   '*',
   'construtora:construtoras(nome)',
   'tipologias:empreendimento_tipologias(id,nome,quartos,suites,vagas,area_m2,ordem)',
+  // Só para saber se há book/tabela aprovados (o serviço tira a lista da resposta).
+  'documentos:empreendimento_documentos(tipo,status,validade_ate)',
 ].join(', ');
 
 class EmpreendimentoRepository {

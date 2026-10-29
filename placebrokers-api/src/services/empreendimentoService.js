@@ -82,7 +82,12 @@ class EmpreendimentoService {
   sanitizar(row) {
     if (!row) return row;
 
-    const { book_url: book, tabela_url: tabela, ...dados } = row;
+    const { book_url: book, tabela_url: tabela, documentos, ...dados } = row;
+    // Book/tabela contam tanto pelo link antigo quanto pelos documentos aprovados e dentro da validade.
+    const hoje = new Date().toISOString().slice(0, 10);
+    const aprovado = (tipo) => (Array.isArray(documentos) ? documentos : []).some(
+      (d) => d.tipo === tipo && d.status === 'aprovado' && (!d.validade_ate || d.validade_ate >= hoje)
+    );
     const tipologias = Array.isArray(dados.tipologias)
       ? [...dados.tipologias].sort(
           (a, b) =>
@@ -94,8 +99,8 @@ class EmpreendimentoService {
     return {
       ...dados,
       tipologias,
-      tem_book: Boolean(book),
-      tem_tabela: Boolean(tabela),
+      tem_book: Boolean(book) || aprovado('book'),
+      tem_tabela: Boolean(tabela) || aprovado('tabela'),
     };
   }
 
