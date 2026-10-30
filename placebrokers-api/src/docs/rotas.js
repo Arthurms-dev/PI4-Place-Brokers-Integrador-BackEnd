@@ -44,6 +44,12 @@ const ROTAS = [
   { metodo: 'patch', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Atualiza nome e telefone', corpo: { nome: 'Fulano de Tal', telefone: '81999998888' } },
   { metodo: 'patch', caminho: '/auth/senha', grupo: 'Autenticação', acesso: 'logado', resumo: 'Troca a senha (pede a senha atual)',
     corpo: { senhaAtual: 'senha-de-teste', novaSenha: 'nova-senha-de-teste', confirmarSenha: 'nova-senha-de-teste' } },
+  { metodo: 'post', caminho: '/auth/esqueci-senha', grupo: 'Autenticação', acesso: 'publico', resumo: 'Esqueci minha senha: manda por e-mail um link para criar senha nova',
+    corpo: { email: 'corretor@exemplo.com' },
+    obs: 'Responde sempre a mesma mensagem, exista ou não o e-mail. O envio é pelo Resend (RESEND_API_KEY). Limite: 3 pedidos por e-mail e 10 por IP a cada hora.' },
+  { metodo: 'post', caminho: '/auth/redefinir-senha', grupo: 'Autenticação', acesso: 'publico', resumo: 'Cria a senha nova com o token do link do e-mail',
+    corpo: { token: 'token-do-link-do-email', novaSenha: 'nova-senha-de-teste', confirmarSenha: 'nova-senha-de-teste' },
+    obs: 'O token vale 1 hora e uma vez só (TOKEN_INVALIDO se vencido). Encerra as outras sessões e registra um aviso de segurança para o admin.' },
 
   // Empreendimentos
   { metodo: 'get', caminho: '/empreendimentos', grupo: 'Empreendimentos', acesso: 'publico', resumo: 'Lista o catálogo (público vê só os publicados; admin vê rascunhos)' },

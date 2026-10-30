@@ -24,6 +24,14 @@ class ProfileRepository {
     return data;
   }
 
+  /** Dados mínimos para o e-mail de "Esqueci minha senha". */
+  async buscarParaRecuperacao(email) {
+    const { data, error } = await supabaseAdmin.from('profiles')
+      .select('id, nome, ativo, status').eq('email', email).limit(1).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
   /**
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
@@ -46,4 +54,4 @@ class ProfileRepository {
   }
 }
 
-module.exports = { ProfileRepository };
+module.exports = { ProfileRepository };

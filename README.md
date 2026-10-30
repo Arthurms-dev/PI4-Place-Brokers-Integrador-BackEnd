@@ -32,6 +32,9 @@ npm test                 # testes com Jest
 | `NODE_ENV` | `production` no Render (liga CORS restrito e cabeçalhos HTTPS) |
 | `CORS_ORIGIN` | sites que podem chamar a API, separados por vírgula (ex.: `https://placebrokers-frontend.vercel.app`) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTATO` | aviso de lead novo no celular; gere com `npx web-push generate-vapid-keys`. Sem elas, o aviso fica desligado e o resto funciona |
+| `RESEND_API_KEY` | envio do e-mail "Esqueci minha senha" pelo [Resend](https://resend.com). Sem ela, em desenvolvimento o link aparece no terminal do back; em produção nada é enviado |
+| `EMAIL_REMETENTE` | remetente dos e-mails, ex.: `Place Brokers <nao-responda@placebrokers.com.br>` (o domínio precisa estar verificado no Resend) |
+| `SITE_URL` | endereço do site usado no link do e-mail (ex.: `https://placebrokers-frontend.vercel.app`). Se faltar, usa o primeiro `CORS_ORIGIN` |
 | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_DRIVE_DOCUMENTOS_FOLDER_IDS` | só para os scripts de sincronização com o Google Drive (`scripts/`), rodados localmente |
 
 ## Documentação da API
@@ -78,7 +81,7 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 
 | Recurso | Rotas | Quem |
 | --- | --- | --- |
-| `/auth` | `POST /login`, `POST /register`, `GET /me`, `PATCH /me`, `PATCH /senha` | público / logado |
+| `/auth` | `POST /login`, `POST /register`, `POST /esqueci-senha`, `POST /redefinir-senha`, `GET /me`, `PATCH /me`, `PATCH /senha` | público / logado |
 | `/empreendimentos` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `POST /:id/imagens/capa`, `POST /:id/imagens/galeria`, `DELETE /:id/imagens/:imagemId`, `POST /:id/tipologias`, `PATCH /:id/tipologias/:tipologiaId`, `GET /:id/documentos`, `GET /:id/documentos/:tipo`, `GET /:id/documentos/arquivo/:docId`, `GET/POST /:id/documentos/admin`, `PATCH /:id/documentos/admin/:docId`, `GET /documentos/pendencias` | catálogo público; documentos para admin, gerente e corretor; edição admin |
 | `/construtoras` | `GET /`, `POST /` | leitura / admin |
 | `/leads` | `POST /` (formulário do site), `GET /`, `GET /meus`, `GET /retornos`, `PATCH /:id/status`, `PATCH /:id/corretor`, `POST /:id/converter`, `POST /:id/cliente`, `GET/POST /:id/atividades` | público (criar) / admin / corretor |
@@ -102,10 +105,23 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 - Regras que precisam ser atômicas ficam em funções no banco (`SECURITY DEFINER`, só o back chama): `registrar_lead_site` (mesmo e-mail ou telefone = mesmo lead), conversão de lead em cliente, `roleta_registrar_chegada` e `roleta_distribuir`.
 - A distribuição da roleta também roda sozinha a cada 2 minutos, de segunda a sábado das 09h às 18h, pelo `pg_cron` do Supabase (`20261029_roleta_agendada.sql`).
 
+## E-mail (Resend)
+
+Configuração feita uma vez por quem administra o projeto. A chave nunca vai para o Git nem para o grupo.
+
+1. Crie a conta em [resend.com](https://resend.com) (plano grátis: 3.000 e-mails/mês, 100 por dia).
+2. Em **Domains**, adicione o domínio da Place (ex.: `placebrokers.com.br`) e crie no DNS os registros que o Resend mostrar (SPF/DKIM). Espere ficar *Verified*.
+3. Em **API Keys**, crie uma chave com permissão *Sending access* e cole direto no Render (Environment) como `RESEND_API_KEY`.
+4. No Render, defina também `EMAIL_REMETENTE` e `SITE_URL` e faça o deploy.
+5. Teste em `/esqueci-senha` no site com um e-mail da equipe.
+
+Antes de verificar o domínio dá para testar com o remetente `onboarding@resend.dev`, mas o Resend só entrega para o e-mail da própria conta.
+
 ## Fluxos principais
 
 - **Lead:** formulário "Falar com especialista" → lead sem corretor → roleta entrega ao próximo corretor apto com foco no empreendimento (ou o admin atribui) → corretor liga/chama no WhatsApp pelo app → converte em cliente (conversão atômica via RPC).
 - **Roleta:** a recepção marca a chegada (lista geral do dia; apto quem chega antes das 09h) → a lista fecha às 09h → cada lead vai para o próximo apto com foco no empreendimento, voltando ao início da lista no fim. Funciona das 07h (08h no sábado) às 18h; domingo e fora do horário o lead espera o próximo dia. Sem corretor com foco, o lead fica com o admin.
 - **Atendimento:** lead novo há 15 min sem ligação nem WhatsApp aparece para o gerente, que repassa manualmente (o repasse reinicia o tempo). O gerente vê o tempo de resposta de cada corretor (`GET /gerente/desempenho`).
+- **Esqueci minha senha:** `POST /auth/esqueci-senha` responde sempre a mesma mensagem (não revela se o e-mail existe) e, em segundo plano, gera o token de recuperação no Supabase Auth e manda o e-mail pelo Resend com o link `SITE_URL/redefinir-senha?token=...` → no site, a pessoa cria a senha nova (`POST /auth/redefinir-senha`). O token vale 1 hora e uma vez só; a troca encerra as outras sessões e cria o aviso de segurança "Senha redefinida por e-mail" no painel do admin.
 - **Agendamento:** `agendado → confirmado → realizado | nao_compareceu | cancelado` (cancelar pede motivo). O corretor só agenda para clientes da própria carteira.
 - **Venda / VGV:** corretor registra → gerente confirma → só então conta no VGV do admin.

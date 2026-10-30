@@ -7,6 +7,9 @@ const { PainelAdmRepository } = require('../repositories/painelAdmRepository');
 const { authClient } = require('../adapters/authClient');
 const { passwordClient } = require('../adapters/passwordclient');
 const { AuthError } = require('../errors/AuthError');
+const { RedefinicaoSenhaService } = require('../services/redefinicaoSenhaService');
+const { recuperacaoClient } = require('../adapters/recuperacaoClient');
+const { emailClient } = require('../adapters/emailClient');
 
 const profileRepository = new ProfileRepository();
 
@@ -17,6 +20,13 @@ const authService = new AuthService({
   loginAttemptRepository: new LoginAttemptRepository(),
   painelAdmRepository: new PainelAdmRepository(),
 
+});
+
+const redefinicaoSenha = new RedefinicaoSenhaService({
+  profileRepository,
+  recuperacao: recuperacaoClient,
+  email: emailClient,
+  painelAdmRepository: new PainelAdmRepository(),
 });
 
 async function login(req, res) {
@@ -91,6 +101,22 @@ async function alterarSenha(req, res) {
   }
 }
 
+async function esqueciSenha(req, res) {
+  try {
+    return res.status(200).json(await redefinicaoSenha.solicitar(req.body));
+  } catch (err) {
+    return handleAuthError(res, err);
+  }
+}
+
+async function redefinirSenha(req, res) {
+  try {
+    return res.status(200).json(await redefinicaoSenha.redefinir(req.body));
+  } catch (err) {
+    return handleAuthError(res, err);
+  }
+}
+
 function handleAuthError(res, err) {
   if (err instanceof AuthError) {
     return res.status(err.statusCode).json({
@@ -114,4 +140,6 @@ module.exports = {
   me,
   atualizarMe,
   alterarSenha,
+  esqueciSenha,
+  redefinirSenha,
 };
