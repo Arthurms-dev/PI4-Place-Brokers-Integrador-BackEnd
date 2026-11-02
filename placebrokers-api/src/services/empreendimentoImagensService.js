@@ -35,8 +35,14 @@ class EmpreendimentoImagensService {
     validarImagem(arquivo);
     await this.buscarOuFalhar(id);
     const novo = await this.uploadService.uploadImagemNova(id, 'capas', arquivo);
+    // Miniatura para os cards. Se falhar, a capa nova vale do mesmo jeito (o card usa a foto grande).
+    const miniatura = this.uploadService.subirMiniatura
+      ? await this.uploadService.subirMiniatura(id, arquivo).catch(() => null)
+      : undefined;
     try {
-      const atualizado = await this.repository.atualizar(id, { capa_url: novo.url });
+      const dados = { capa_url: novo.url };
+      if (miniatura !== undefined) dados.capa_miniatura_url = miniatura;
+      const atualizado = await this.repository.atualizar(id, dados);
       if (!atualizado) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
       this.invalidarCache();
       return { capa_url: novo.url };

@@ -9,6 +9,7 @@ function criarLimitador({
   mensagem = 'Muitas tentativas. Aguarde um pouco e tente de novo.',
   contarSomenteFalhas = false,
   agora = Date.now,
+  aoBloquear = null,
 }) {
   const registros = new Map();
   const faxina = setInterval(() => {
@@ -30,6 +31,10 @@ function criarLimitador({
 
     const segundos = Math.max(1, Math.ceil((r.inicio + janelaMs - t) / 1000));
     if (r.total >= maximo) {
+      if (aoBloquear && !r.avisado) {
+        r.avisado = true;
+        try { aoBloquear(req, k); } catch { /* aviso nunca derruba a requisição */ }
+      }
       res.setHeader('Retry-After', String(segundos));
       return res.status(429).json({ code: 'TOO_MANY_REQUESTS', message: mensagem });
     }
@@ -47,12 +52,20 @@ function criarLimitador({
   };
 }
 
+// Avisos de segurança carregados só quando algo é bloqueado.
+const vigiar = (acao) => (req) => {
+  const { vigia, emSegundoPlano } = require('../services/avisosSeguranca');
+  emSegundoPlano(acao(vigia, req));
+};
+
 const chaveDoEmail = (req) => `${req.ip}|${String(req.body?.email ?? '').trim().toLowerCase()}`;
 
 const limitadores = {
   global: criarLimitador({ janelaMs: MINUTO, maximo: 600 }),
-  loginPorIp: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 30, contarSomenteFalhas: true, mensagem: 'Muitas tentativas de login. Tente de novo em alguns minutos.' }),
-  loginPorEmail: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 5, contarSomenteFalhas: true, chave: chaveDoEmail, mensagem: 'Muitas tentativas de login com este e-mail. Tente de novo em 15 minutos.' }),
+  loginPorIp: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 30, contarSomenteFalhas: true, mensagem: 'Muitas tentativas de login. Tente de novo em alguns minutos.',
+    aoBloquear: vigiar((vigia, req) => vigia.loginBloqueado({ ip: req.ip })) }),
+  loginPorEmail: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 5, contarSomenteFalhas: true, chave: chaveDoEmail, mensagem: 'Muitas tentativas de login com este e-mail. Tente de novo em 15 minutos.',
+    aoBloquear: vigiar((vigia, req) => vigia.loginBloqueado({ email: String(req.body?.email ?? '').trim().toLowerCase(), ip: req.ip })) }),
   cadastro: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 10, mensagem: 'Muitos cadastros a partir desta conexão. Tente de novo mais tarde.' }),
   trocaDeSenha: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 5, contarSomenteFalhas: true, chave: (req) => req.userId ?? req.ip, mensagem: 'Muitas tentativas de trocar a senha. Tente de novo em 15 minutos.' }),
   // Esqueci minha senha: por e-mail (sem o IP) para ninguém lotar a caixa de outra pessoa.
@@ -69,7 +82,10 @@ const corte = (valor, limite) => (typeof valor === 'string' ? valor.replace(SEM_
 function antiSpamLead(req, res, next) {
   const b = req.body && typeof req.body === 'object' ? req.body : {};
   const links = String(b.mensagem ?? '').match(/https?:\/\//gi) ?? [];
-  if (b.website || links.length > 2) return res.status(201).json({ lead: { recebido: true } });
+  if (b.website || links.length > 2) {
+    vigiar((vigia, r) => vigia.spamNoFormulario({ ip: r.ip }))(req);
+    return res.status(201).json({ lead: { recebido: true } });
+  }
 
   req.body = {
     ...b,

@@ -10,6 +10,7 @@ const { AuthError } = require('../errors/AuthError');
 const { RedefinicaoSenhaService } = require('../services/redefinicaoSenhaService');
 const { recuperacaoClient } = require('../adapters/recuperacaoClient');
 const { emailClient } = require('../adapters/emailClient');
+const { vigia } = require('../services/avisosSeguranca');
 
 const profileRepository = new ProfileRepository();
 
@@ -19,7 +20,7 @@ const authService = new AuthService({
   passwordClient,
   loginAttemptRepository: new LoginAttemptRepository(),
   painelAdmRepository: new PainelAdmRepository(),
-
+  vigia,
 });
 
 const redefinicaoSenha = new RedefinicaoSenhaService({

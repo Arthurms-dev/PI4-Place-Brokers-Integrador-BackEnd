@@ -2,13 +2,18 @@
 
 const { AppError } = require('../errors/AppError');
 
-// Aviso de lead novo no celular do corretor (Web Push).
-// Precisa das variáveis VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY e VAPID_CONTATO no servidor
-// (geradas com `npx web-push generate-vapid-keys`) e do pacote web-push instalado.
-// Sem elas o resto do sistema funciona normalmente; só não sai notificação.
+// Aviso de lead novo no celular do corretor.
+// - Site (Web Push): precisa de VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY e VAPID_CONTATO no servidor
+//   (geradas com `npx web-push generate-vapid-keys`) e do pacote web-push instalado.
+// - App React Native (Expo Notifications): o app manda o token do Expo para POST /notificacoes/inscricao
+//   e o back entrega pelo serviço de push do Expo. Não precisa de chave; EXPO_ACCESS_TOKEN é opcional
+//   (só se o projeto do Expo exigir). EXPO_PUSH=false desliga.
+// Sem nada configurado o resto do sistema funciona normalmente; só não sai notificação.
 
 const INTERVALO_MS = 30 * 1000;
 const JANELA_MIN = 30; // só avisa lead que chegou ao corretor nos últimos 30 min
+const URL_EXPO = 'https://exp.host/--/api/v2/push/send';
+const TOKEN_EXPO = /^Expo(?:nent)?PushToken\[[A-Za-z0-9_-]{10,200}\]$/;
 
 function carregarWebPush() {
   try {
@@ -23,22 +28,34 @@ class NotificacaoService {
    * @param {{ repo: import('../repositories/notificacaoRepository').NotificacaoRepository,
    *   env?: NodeJS.ProcessEnv, webpush?: object|null, agora?: () => Date }} deps
    */
-  constructor({ repo, env = process.env, webpush, agora = () => new Date() }) {
+  constructor({ repo, env = process.env, webpush, agora = () => new Date(), fetchImpl = globalThis.fetch }) {
     this.repo = repo;
     this.agora = agora;
+    this.fetchImpl = fetchImpl;
     this.chave = env.VAPID_PUBLIC_KEY || null;
     this.webpush = webpush === undefined ? carregarWebPush() : webpush;
-    this.ativo = Boolean(this.webpush && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
-    if (this.ativo) {
+    this.webAtivo = Boolean(this.webpush && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
+    this.expoAtivo = env.EXPO_PUSH !== 'false' && typeof fetchImpl === 'function';
+    this.expoToken = env.EXPO_ACCESS_TOKEN || null;
+    this.ativo = this.webAtivo || this.expoAtivo;
+    if (this.webAtivo) {
       this.webpush.setVapidDetails(env.VAPID_CONTATO || 'mailto:contato@placebrokers.com.br', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
     }
   }
 
   chavePublica() {
-    return this.ativo ? this.chave : null;
+    return this.webAtivo ? this.chave : null;
   }
 
   async inscrever(usuario, corpo = {}) {
+    // App React Native: { expoToken: 'ExponentPushToken[...]' }
+    if (corpo.expoToken !== undefined) {
+      if (typeof corpo.expoToken !== 'string' || !TOKEN_EXPO.test(corpo.expoToken)) {
+        throw new AppError('VALIDATION_ERROR', 'Token do Expo inválido.', 400);
+      }
+      await this.repo.salvarInscricao(usuario.id, { endpoint: corpo.expoToken, tipo: 'expo' });
+      return { ok: true };
+    }
     const endpoint = corpo.endpoint;
     const p256dh = corpo.keys?.p256dh;
     const auth = corpo.keys?.auth;
@@ -60,8 +77,10 @@ class NotificacaoService {
   async enviarParaUsuario(usuarioId, mensagem) {
     if (!this.ativo) return 0;
     const inscricoes = await this.repo.inscricoesDe(usuarioId);
-    let enviados = 0;
-    for (const i of inscricoes) {
+    const doApp = inscricoes.filter((i) => i.tipo === 'expo');
+    let enviados = doApp.length && this.expoAtivo ? await this.enviarExpo(doApp, mensagem) : 0;
+    if (!this.webAtivo) return enviados;
+    for (const i of inscricoes.filter((x) => x.tipo !== 'expo')) {
       try {
         await this.webpush.sendNotification(
           { endpoint: i.endpoint, keys: { p256dh: i.p256dh, auth: i.auth } },
@@ -77,6 +96,50 @@ class NotificacaoService {
       }
     }
     return enviados;
+  }
+
+  /** Entrega pelo serviço do Expo (app React Native). Devolve quantos aparelhos aceitaram. */
+  async enviarExpo(inscricoes, mensagem) {
+    const corpo = inscricoes.map((i) => ({
+      to: i.endpoint,
+      title: mensagem.titulo,
+      body: mensagem.corpo,
+      data: { url: mensagem.url, tag: mensagem.tag },
+      sound: 'default',
+      priority: mensagem.urgente ? 'high' : 'default',
+      channelId: 'leads',
+      ttl: 15 * 60,
+    }));
+    try {
+      const resposta = await this.fetchImpl(URL_EXPO, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(this.expoToken ? { Authorization: `Bearer ${this.expoToken}` } : {}),
+        },
+        body: JSON.stringify(corpo),
+      });
+      const retorno = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) {
+        console.error('[push] Expo recusou o envio', resposta.status, retorno?.errors?.[0]?.message ?? '');
+        return 0;
+      }
+      let enviados = 0;
+      (retorno.data ?? []).forEach((ticket, n) => {
+        if (ticket?.status === 'ok') {
+          enviados += 1;
+          this.repo.marcarEnvio(inscricoes[n].endpoint).catch(() => {});
+        } else if (ticket?.details?.error === 'DeviceNotRegistered') {
+          // App desinstalado ou notificação desligada: tira da lista.
+          this.repo.removerPorEndpoint(inscricoes[n].endpoint).catch(() => {});
+        }
+      });
+      return enviados;
+    } catch (err) {
+      console.error('[push] falha ao falar com o Expo', err?.message ?? err);
+      return 0;
+    }
   }
 
   /** Procura leads recém-entregues e avisa o corretor de cada um (uma vez por lead). */
@@ -102,9 +165,10 @@ class NotificacaoService {
   /** Liga a verificação periódica (chamado ao subir o servidor). */
   iniciar() {
     if (!this.ativo) {
-      console.log('[push] avisos de lead desligados (falta web-push ou as chaves VAPID).');
+      console.log('[push] avisos de lead desligados (sem chaves VAPID e com EXPO_PUSH=false).');
       return null;
     }
+    if (!this.webAtivo) console.log('[push] avisos pelo site desligados (faltam as chaves VAPID); avisos pelo app (Expo) ligados.');
     const rodar = () => this.avisarLeadsNovos().catch((err) => console.error('[push] verificação falhou', err?.message ?? err));
     rodar();
     const t = setInterval(rodar, INTERVALO_MS);

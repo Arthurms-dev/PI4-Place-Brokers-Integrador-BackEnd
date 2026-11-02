@@ -160,6 +160,10 @@ class EmpreendimentoService {
       arquivos.tabela ? this.uploadService.uploadDocumento(slug, 'tabela', arquivos.tabela) : null,
     ]);
 
+    const capaMiniatura = arquivos.capa && this.uploadService.subirMiniatura
+      ? await this.uploadService.subirMiniatura(slug, arquivos.capa).catch(() => null)
+      : null;
+
     const empreendimento = await this.empreendimentoRepository.criar({
       nome: dados.nome,
       slug,
@@ -185,6 +189,7 @@ class EmpreendimentoService {
       previsao_entrega: dados.previsaoEntrega || null,
       lazer: dados.lazer ?? [],
       capa_url: capaUrl,
+      ...(capaMiniatura ? { capa_miniatura_url: capaMiniatura } : {}),
       book_url: bookUrl,
       book_atualizado_em: bookUrl ? new Date().toISOString() : null,
       tabela_url: tabelaUrl,

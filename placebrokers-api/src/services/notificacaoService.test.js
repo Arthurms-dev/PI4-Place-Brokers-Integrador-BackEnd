@@ -53,3 +53,50 @@ describe('aviso de lead novo no celular', () => {
     expect(repo.removerPorEndpoint).toHaveBeenCalledWith(insc.endpoint);
   });
 });
+
+describe('aviso de lead novo no app (Expo)', () => {
+  const tokenExpo = 'ExponentPushToken[abcdefghij1234567890]';
+
+  function setupExpo({ resposta, inscricoes = [{ endpoint: tokenExpo, tipo: 'expo' }] } = {}) {
+    const fetchImpl = jest.fn().mockResolvedValue(resposta ?? { ok: true, json: async () => ({ data: [{ status: 'ok', id: 't1' }] }) });
+    const repo = {
+      salvarInscricao: jest.fn(), removerPorEndpoint: jest.fn().mockResolvedValue(), marcarEnvio: jest.fn().mockResolvedValue(),
+      inscricoesDe: jest.fn().mockResolvedValue(inscricoes),
+    };
+    const service = new NotificacaoService({ repo, env: {}, webpush: null, fetchImpl });
+    return { service, repo, fetchImpl };
+  }
+
+  test('funciona sem as chaves VAPID e não mexe no aviso do site', () => {
+    const { service } = setupExpo();
+    expect(service.ativo).toBe(true);
+    expect(service.chavePublica()).toBe(null);
+  });
+
+  test('aceita só token do Expo válido', async () => {
+    const { service, repo } = setupExpo();
+    await expect(service.inscrever({ id: 'u1' }, { expoToken: 'qualquer-coisa' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+    await service.inscrever({ id: 'u1' }, { expoToken: tokenExpo });
+    expect(repo.salvarInscricao).toHaveBeenCalledWith('u1', { endpoint: tokenExpo, tipo: 'expo' });
+  });
+
+  test('manda pelo serviço do Expo com prioridade alta', async () => {
+    const { service, fetchImpl } = setupExpo();
+    expect(await service.enviarParaUsuario('c1', { titulo: 'Lead novo: Ana', corpo: 'Ligue agora', url: '/corretor', tag: 'lead-1', urgente: true })).toBe(1);
+    const [url, opcoes] = fetchImpl.mock.calls[0];
+    expect(url).toBe('https://exp.host/--/api/v2/push/send');
+    const [msg] = JSON.parse(opcoes.body);
+    expect(msg).toMatchObject({ to: tokenExpo, title: 'Lead novo: Ana', body: 'Ligue agora', priority: 'high', channelId: 'leads' });
+  });
+
+  test('app desinstalado sai da lista', async () => {
+    const { service, repo } = setupExpo({ resposta: { ok: true, json: async () => ({ data: [{ status: 'error', details: { error: 'DeviceNotRegistered' } }] }) } });
+    expect(await service.enviarParaUsuario('c1', { titulo: 'x', corpo: 'y' })).toBe(0);
+    expect(repo.removerPorEndpoint).toHaveBeenCalledWith(tokenExpo);
+  });
+
+  test('EXPO_PUSH=false desliga', () => {
+    const service = new NotificacaoService({ repo: {}, env: { EXPO_PUSH: 'false' }, webpush: null, fetchImpl: jest.fn() });
+    expect(service.ativo).toBe(false);
+  });
+});

@@ -17,6 +17,13 @@ const {
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
+const { vigia, emSegundoPlano } = require('../services/avisosSeguranca');
+
+// Conta quantos books/tabelas cada usuário abre: muitos em pouco tempo vira aviso de segurança.
+const vigiarDocumento = (req, res, next) => {
+  emSegundoPlano(vigia.documentoAberto({ user: req.user }));
+  next();
+};
 const {
   listar: listarDocsComerciais,
   abrir: abrirDocComercial,
@@ -45,8 +52,8 @@ router.post('/:id/documentos/admin', authMiddleware, requireRole('admin'), criar
 router.patch('/:id/documentos/admin/:docId', authMiddleware, requireRole('admin'), atualizarDocAdmin);
 
 router.get('/:id/documentos', authMiddleware, requireRole('admin', 'corretor', 'gerente'), listarDocsComerciais);
-router.get('/:id/documentos/arquivo/:docId', authMiddleware, requireRole('admin', 'corretor', 'gerente'), abrirDocComercial);
-router.get('/:id/documentos/:tipo', authMiddleware, requireRole('admin', 'corretor', 'gerente'), documento);
+router.get('/:id/documentos/arquivo/:docId', authMiddleware, requireRole('admin', 'corretor', 'gerente'), vigiarDocumento, abrirDocComercial);
+router.get('/:id/documentos/:tipo', authMiddleware, requireRole('admin', 'corretor', 'gerente'), vigiarDocumento, documento);
 
 router.post(
   '/',

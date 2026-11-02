@@ -31,7 +31,8 @@ class AuthService {
    * @param {{object|null}} [deps.loginAttemptRepository]
    * @param {{object|null}} [deps.painelAdmRepository]
    */
-  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null,}) {
+  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null }) {
+  this.vigia = vigia;
   this.authClient = authClient;
   this.profileRepository = profileRepository;
   this.passwordClient = passwordClient;
@@ -116,6 +117,7 @@ async login(credentials) {
   }
 
   if (!profile.ativo) {
+    this.vigia?.contaBloqueadaTentouEntrar({ email, motivo: 'inativo' })?.catch?.(() => {});
     throw new AuthError(
       'USER_INACTIVE',
       'Este usuário está inativo. Fale com um administrador.'
@@ -130,6 +132,7 @@ async login(credentials) {
   }
 
   if (profile.status === 'recusado') {
+    this.vigia?.contaBloqueadaTentouEntrar({ email, motivo: 'recusado' })?.catch?.(() => {});
     throw new AuthError(
       'ACCOUNT_REJECTED',
       'Seu cadastro não foi aprovado. Fale com o administrador.'
@@ -153,6 +156,7 @@ async login(credentials) {
         await this.painelAdmRepository.criarAviso({
           titulo: 'Tentativas de login falhas',
           descricao: `Mais de ${MAX_FALHAS} tentativas de login com senha incorreta para ${email} nos últimos ${JANELA_MINUTOS} minutos.`,
+          severidade: 'atencao',
         });
       }
     } catch (err){
@@ -326,6 +330,7 @@ async login(credentials) {
     } catch (cause) {
       throw new AuthError('SERVER_ERROR', 'Não foi possível alterar a senha agora.', {}, cause);
     }
+    this.vigia?.senhaAlterada({ email: profile.email })?.catch?.(() => {});
     return { ok: true };
   }
 }

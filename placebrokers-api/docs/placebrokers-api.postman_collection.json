@@ -2205,7 +2205,7 @@
     },
     {
       "name": "Notificações",
-      "description": "Aviso de lead novo no celular (Web Push)",
+      "description": "Aviso de lead novo no celular (site e app)",
       "item": [
         {
           "name": "GET /notificacoes/chave — Chave pública para o navegador se inscrever (null se desligado)",
@@ -2229,7 +2229,7 @@
           }
         },
         {
-          "name": "POST /notificacoes/inscricao — Salva a inscrição de push do aparelho",
+          "name": "POST /notificacoes/inscricao — Salva a inscrição de push do aparelho (navegador ou app)",
           "request": {
             "method": "POST",
             "header": [
@@ -2278,7 +2278,7 @@
                 {
                   "key": "endpoint",
                   "value": "",
-                  "description": "endpoint da inscrição",
+                  "description": "endpoint da inscrição (no app, o token do Expo)",
                   "disabled": true
                 }
               ]

@@ -9,6 +9,16 @@ const BUCKET_IMAGENS = 'empreendimentos';
 const BUCKET_DOCUMENTOS = 'documentos';
 const LARGURA_MAXIMA = 1600;
 const QUALIDADE_WEBP = 78;
+// Miniatura da capa para os cards (home, catálogo): bem mais leve que a foto de 1600 px.
+const LARGURA_MINIATURA = 640;
+const QUALIDADE_MINIATURA = 72;
+
+async function gerarMiniatura(buffer) {
+  return sharp(buffer, { limitInputPixels: 40_000_000 })
+    .resize({ width: LARGURA_MINIATURA, withoutEnlargement: true })
+    .webp({ quality: QUALIDADE_MINIATURA })
+    .toBuffer();
+}
 
 function gerarSlug(nome) {
   return nome
@@ -73,6 +83,13 @@ class UploadService {
     return { url: data.publicUrl, caminho };
   }
 
+  /** Sobe a miniatura (640 px) da capa e devolve a URL pública. */
+  async subirMiniatura(empreendimentoId, arquivo) {
+    const buffer = await gerarMiniatura(arquivo.buffer);
+    const caminho = empreendimentoId + '/miniaturas/' + randomUUID() + '.webp';
+    return subir(BUCKET_IMAGENS, caminho, buffer, 'image/webp');
+  }
+
   async limparImagensNovas(caminhos) {
     if (!caminhos.length) return;
     const { error } = await supabaseAdmin.storage.from(BUCKET_IMAGENS).remove(caminhos);
@@ -95,4 +112,4 @@ class UploadService {
   }
 }
 
-module.exports = { UploadService };
+module.exports = { UploadService, gerarMiniatura, LARGURA_MINIATURA, BUCKET_IMAGENS };

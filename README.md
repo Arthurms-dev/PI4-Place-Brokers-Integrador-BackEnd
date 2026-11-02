@@ -31,7 +31,8 @@ npm test                 # testes com Jest
 | `PORT` | opcional, padrão `3333` |
 | `NODE_ENV` | `production` no Render (liga CORS restrito e cabeçalhos HTTPS) |
 | `CORS_ORIGIN` | sites que podem chamar a API, separados por vírgula (ex.: `https://placebrokers-frontend.vercel.app`) |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTATO` | aviso de lead novo no celular; gere com `npx web-push generate-vapid-keys`. Sem elas, o aviso fica desligado e o resto funciona |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTATO` | aviso de lead novo no celular pelo site; gere com `npx web-push generate-vapid-keys`. Sem elas, o aviso pelo site fica desligado e o resto funciona |
+| `EXPO_PUSH`, `EXPO_ACCESS_TOKEN` | aviso de lead novo no app React Native (Expo). Liga sozinho; `EXPO_PUSH=false` desliga. O token de acesso só é preciso se o projeto do Expo exigir |
 | `RESEND_API_KEY` | envio do e-mail "Esqueci minha senha" pelo [Resend](https://resend.com). Sem ela, em desenvolvimento o link aparece no terminal do back; em produção nada é enviado |
 | `EMAIL_REMETENTE` | remetente dos e-mails, ex.: `Place Brokers <nao-responda@placebrokers.com.br>` (o domínio precisa estar verificado no Resend) |
 | `SITE_URL` | endereço do site usado no link do e-mail (ex.: `https://placebrokers-frontend.vercel.app`). Se faltar, usa o primeiro `CORS_ORIGIN` |
@@ -104,6 +105,26 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 - Para mudar o banco, crie `src/db/migrations/AAAAMMDD_descricao.sql`, rode no SQL Editor do Supabase e avise a equipe no Trello.
 - Regras que precisam ser atômicas ficam em funções no banco (`SECURITY DEFINER`, só o back chama): `registrar_lead_site` (mesmo e-mail ou telefone = mesmo lead), conversão de lead em cliente, `roleta_registrar_chegada` e `roleta_distribuir`.
 - A distribuição da roleta também roda sozinha a cada 2 minutos, de segunda a sábado das 09h às 18h, pelo `pg_cron` do Supabase (`20261029_roleta_agendada.sql`).
+- **A API é a única porta do banco** (`20261102_api_unica_porta.sql`): as funções `anon` e `authenticated` do Supabase não leem nem gravam nenhuma tabela. O site e o app falam só com a API, que usa a `service_role` no servidor. Isso impede, por exemplo, ler o link dos books e tabelas ou criar lead sem passar pelo antispam usando a chave pública. Tabela nova criada no SQL Editor deve receber `REVOKE ALL ... FROM anon, authenticated`.
+- Miniatura das capas (640 px) para os cards: gerada no upload da capa; para as antigas, rode `node scripts/gerar-miniaturas.cjs --simular` e depois sem `--simular`.
+
+## Avisos de segurança
+
+Aparecem no painel do admin (aba "Avisos de segurança"). O mesmo aviso não se repete por 30 minutos e o IP aparece mascarado.
+
+| Aviso | Quando | Nível |
+| --- | --- | --- |
+| Tentativas de login falhas | mais de 3 senhas erradas para o mesmo e-mail em 15 min | atenção |
+| Login bloqueado por excesso de tentativas | o limite de 5 erros por e-mail ou 30 por conexão foi atingido | crítico |
+| Conta bloqueada tentou entrar | conta desativada ou recusada acertou a senha | info |
+| Senha alterada / Senha redefinida por e-mail | troca em Configurações ou pelo "Esqueci minha senha" | info |
+| Tentativas de abrir área sem permissão | 5 acessos negados do mesmo usuário em 10 min | atenção |
+| Muitos books e tabelas abertos | 20 documentos comerciais do mesmo usuário em 10 min | atenção |
+| Robô tentando enviar o formulário | 3 envios barrados pelo antispam da mesma conexão em 1 h | info |
+| Novo administrador criado / Usuário virou administrador | direto no banco, por qualquer caminho | crítico |
+| Cargo alterado, Acesso desativado/reativado, Cadastro recusado foi aprovado | direto no banco (`20261102_avisos_seguranca.sql`) | atenção / info |
+
+Código: `src/services/avisosSeguranca.js` (eventos da API) e o gatilho `profiles_avisos_seguranca` (mudanças de cargo e acesso).
 
 ## E-mail (Resend)
 

@@ -24,7 +24,7 @@ const GRUPOS = {
   Corretores: 'Lista de corretores',
   Métricas: 'Acessos ao site e dashboard',
   Painel: 'Feeds do painel do admin',
-  Notificações: 'Aviso de lead novo no celular (Web Push)',
+  Notificações: 'Aviso de lead novo no celular (site e app)',
   Viabilizador: 'Área do viabilizador (pós-MVP)',
 };
 
@@ -159,9 +159,9 @@ const ROTAS = [
 
   // Notificações
   { metodo: 'get', caminho: '/notificacoes/chave', grupo: 'Notificações', acesso: 'publico', resumo: 'Chave pública para o navegador se inscrever (null se desligado)' },
-  { metodo: 'post', caminho: '/notificacoes/inscricao', grupo: 'Notificações', acesso: 'logado', resumo: 'Salva a inscrição de push do aparelho',
+  { metodo: 'post', caminho: '/notificacoes/inscricao', grupo: 'Notificações', acesso: 'logado', resumo: 'Salva a inscrição de push do aparelho (navegador ou app)', obs: 'Navegador (Web Push): { endpoint, keys: { p256dh, auth } }. App React Native (Expo): { expoToken: "ExponentPushToken[...]" }.',
     corpo: { endpoint: 'https://fcm.googleapis.com/fcm/send/exemplo', keys: { p256dh: 'chave-do-navegador', auth: 'segredo-do-navegador' } } },
-  { metodo: 'delete', caminho: '/notificacoes/inscricao', grupo: 'Notificações', acesso: 'logado', resumo: 'Cancela os avisos neste aparelho', consulta: { endpoint: 'endpoint da inscrição' } },
+  { metodo: 'delete', caminho: '/notificacoes/inscricao', grupo: 'Notificações', acesso: 'logado', resumo: 'Cancela os avisos neste aparelho', consulta: { endpoint: 'endpoint da inscrição (no app, o token do Expo)' } },
 
   // Viabilizador
   { metodo: 'get', caminho: '/viabilizador/produtos', grupo: 'Viabilizador', acesso: ['viabilizador'], resumo: 'Produtos do viabilizador' },

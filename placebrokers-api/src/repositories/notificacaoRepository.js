@@ -3,10 +3,11 @@
 const { supabaseAdmin } = require('../config/supabase');
 
 class NotificacaoRepository {
-  async salvarInscricao(usuarioId, { endpoint, p256dh, auth }) {
+  /** Web Push: { endpoint, p256dh, auth }. App (Expo): { endpoint: token do Expo, tipo: 'expo' }. */
+  async salvarInscricao(usuarioId, { endpoint, p256dh = null, auth = null, tipo = 'web' }) {
     const { error } = await supabaseAdmin
       .from('push_inscricoes')
-      .upsert({ usuario_id: usuarioId, endpoint, p256dh, auth }, { onConflict: 'endpoint' });
+      .upsert({ usuario_id: usuarioId, endpoint, p256dh, auth, tipo }, { onConflict: 'endpoint' });
     if (error) throw error;
   }
 
@@ -22,7 +23,7 @@ class NotificacaoRepository {
   }
 
   async inscricoesDe(usuarioId) {
-    const { data, error } = await supabaseAdmin.from('push_inscricoes').select('endpoint, p256dh, auth').eq('usuario_id', usuarioId);
+    const { data, error } = await supabaseAdmin.from('push_inscricoes').select('endpoint, p256dh, auth, tipo').eq('usuario_id', usuarioId);
     if (error) throw error;
     return data ?? [];
   }

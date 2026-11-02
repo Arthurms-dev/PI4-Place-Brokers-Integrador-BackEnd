@@ -63,3 +63,28 @@ test('empreendimento inexistente não aceita capa', async () => {
   await expect(service.trocarCapa('imovel1', img())).rejects.toMatchObject({code:'NOT_FOUND'});
   expect(uploadService.uploadImagemNova).not.toHaveBeenCalled();
 });
+
+test('troca de capa também grava a miniatura dos cards', async () => {
+  const { EmpreendimentoImagensService } = require('./empreendimentoImagensService');
+  const repository = { buscarPorId: jest.fn().mockResolvedValue({ id: 'imovel1' }), atualizar: jest.fn().mockResolvedValue({ id: 'imovel1' }) };
+  const uploadService = {
+    uploadImagemNova: jest.fn().mockResolvedValue({ url: 'https://storage.exemplo/capa.webp', caminho: 'imovel1/capas/capa.webp' }),
+    subirMiniatura: jest.fn().mockResolvedValue('https://storage.exemplo/mini.webp'),
+    limparImagensNovas: jest.fn().mockResolvedValue(),
+  };
+  const service = new EmpreendimentoImagensService({ repository, uploadService });
+  await service.trocarCapa('imovel1', { buffer: Buffer.from('x'), mimetype: 'image/jpeg' });
+  expect(repository.atualizar).toHaveBeenCalledWith('imovel1', { capa_url: 'https://storage.exemplo/capa.webp', capa_miniatura_url: 'https://storage.exemplo/mini.webp' });
+});
+
+test('se a miniatura falhar, a capa nova vale e a miniatura antiga sai', async () => {
+  const { EmpreendimentoImagensService } = require('./empreendimentoImagensService');
+  const repository = { buscarPorId: jest.fn().mockResolvedValue({ id: 'imovel1' }), atualizar: jest.fn().mockResolvedValue({ id: 'imovel1' }) };
+  const uploadService = {
+    uploadImagemNova: jest.fn().mockResolvedValue({ url: 'https://storage.exemplo/capa.webp', caminho: 'c' }),
+    subirMiniatura: jest.fn().mockRejectedValue(new Error('sharp falhou')),
+  };
+  const service = new EmpreendimentoImagensService({ repository, uploadService });
+  await service.trocarCapa('imovel1', { buffer: Buffer.from('x'), mimetype: 'image/jpeg' });
+  expect(repository.atualizar).toHaveBeenCalledWith('imovel1', { capa_url: 'https://storage.exemplo/capa.webp', capa_miniatura_url: null });
+});
