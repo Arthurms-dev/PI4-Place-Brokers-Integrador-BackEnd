@@ -142,8 +142,41 @@ async login(credentials) {
   return {
     user: toPublicUser(profile),
     token: data.session?.access_token ?? null,
+    // O token vale 1 hora; o app (e o site) trocam por um novo em POST /auth/renovar sem pedir a senha de novo.
+    refreshToken: data.session?.refresh_token ?? null,
+    expiraEm: data.session?.expires_at ?? null,
   };
 }
+
+  /**
+   * Troca o refresh token por um token novo, conferindo se a conta continua liberada.
+   * @param {{ refreshToken?: string }} dados
+   */
+  async renovar({ refreshToken } = {}) {
+    if (typeof refreshToken !== 'string' || refreshToken.length < 10 || refreshToken.length > 2000) {
+      throw new AuthError('INVALID_CREDENTIALS', 'Sessão expirada. Entre de novo.');
+    }
+    let resultado;
+    try {
+      resultado = await this.authClient.renovarSessao(refreshToken);
+    } catch (cause) {
+      throw new AuthError('SERVER_ERROR', 'Erro ao conectar à autenticação.', {}, cause);
+    }
+    const sessao = resultado?.data?.session;
+    if (resultado?.error || !sessao?.access_token || !resultado?.data?.user) {
+      throw new AuthError('INVALID_CREDENTIALS', 'Sessão expirada. Entre de novo.');
+    }
+    const profile = await this.profileRepository.findById(resultado.data.user.id);
+    if (!profile || !profile.ativo || profile.status !== 'aprovado') {
+      throw new AuthError('USER_INACTIVE', 'Este acesso não está mais liberado. Fale com um administrador.');
+    }
+    return {
+      user: toPublicUser(profile),
+      token: sessao.access_token,
+      refreshToken: sessao.refresh_token ?? null,
+      expiraEm: sessao.expires_at ?? null,
+    };
+  }
 
 
   async registrarTentativaFalha (email) {

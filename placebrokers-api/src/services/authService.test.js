@@ -158,3 +158,31 @@ describe('AuthService', () => {
     test.todo('perfil inválido (fora de admin/corretor/viabilizador): fieldErrors.role é preenchido');
   });
 });
+
+describe('AuthService.renovar', () => {
+  const perfil = { id: 'u1', nome: 'Ana', email: 'ana@x.com', cargo: 'corretor', ativo: true, status: 'aprovado' };
+  const montar = (resultado, profile = perfil) => new AuthService({
+    authClient: { signInWithPassword: jest.fn(), createUser: jest.fn(), renovarSessao: jest.fn().mockResolvedValue(resultado) },
+    profileRepository: { findById: jest.fn().mockResolvedValue(profile), create: jest.fn() },
+  });
+  const ok = { data: { user: { id: 'u1' }, session: { access_token: 'novo', refresh_token: 'r2', expires_at: 123 } }, error: null };
+
+  test('devolve token e refreshToken novos', async () => {
+    const r = await montar(ok).renovar({ refreshToken: 'refresh-antigo' });
+    expect(r.token).toBe('novo');
+    expect(r.refreshToken).toBe('r2');
+    expect(r.user.role).toBe('corretor');
+  });
+
+  test('refresh token inválido pede login de novo', async () => {
+    let erro;
+    try { await montar({ data: { session: null, user: null }, error: { message: 'Invalid Refresh Token' } }).renovar({ refreshToken: 'refresh-antigo' }); } catch (e) { erro = e; }
+    expect(erro.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  test('conta desativada não renova', async () => {
+    let erro;
+    try { await montar(ok, { ...perfil, ativo: false }).renovar({ refreshToken: 'refresh-antigo' }); } catch (e) { erro = e; }
+    expect(erro.code).toBe('USER_INACTIVE');
+  });
+});

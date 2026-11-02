@@ -82,7 +82,7 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 
 | Recurso | Rotas | Quem |
 | --- | --- | --- |
-| `/auth` | `POST /login`, `POST /register`, `POST /esqueci-senha`, `POST /redefinir-senha`, `GET /me`, `PATCH /me`, `PATCH /senha` | público / logado |
+| `/auth` | `POST /login` (devolve `token` de 1 hora e `refreshToken`), `POST /renovar`, `POST /register`, `POST /esqueci-senha`, `POST /redefinir-senha`, `GET /me`, `PATCH /me`, `PATCH /senha` | público / logado |
 | `/empreendimentos` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `POST /:id/imagens/capa`, `POST /:id/imagens/galeria`, `DELETE /:id/imagens/:imagemId`, `POST /:id/tipologias`, `PATCH /:id/tipologias/:tipologiaId`, `GET /:id/documentos`, `GET /:id/documentos/:tipo`, `GET /:id/documentos/arquivo/:docId`, `GET/POST /:id/documentos/admin`, `PATCH /:id/documentos/admin/:docId`, `GET /documentos/pendencias` | catálogo público; documentos para admin, gerente e corretor; edição admin |
 | `/construtoras` | `GET /`, `POST /` | leitura / admin |
 | `/leads` | `POST /` (formulário do site), `GET /`, `GET /meus`, `GET /retornos`, `PATCH /:id/status`, `PATCH /:id/corretor`, `POST /:id/converter`, `POST /:id/cliente`, `GET/POST /:id/atividades` | público (criar) / admin / corretor |
@@ -101,7 +101,7 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 
 ## Banco de dados
 
-- `src/db/schema.sql` é só **referência** do banco real (18 tabelas, 8 enums, RLS 18/18). Todos os comandos estão comentados de propósito.
+- `src/db/schema.sql` é só **referência**: a fotografia do banco em 26/10 (18 tabelas, 8 enums). Todos os comandos estão comentados de propósito. As migrações de `src/db/migrations/` vieram depois; hoje são 24 tabelas, todas com RLS.
 - Para mudar o banco, crie `src/db/migrations/AAAAMMDD_descricao.sql`, rode no SQL Editor do Supabase e avise a equipe no Trello.
 - Regras que precisam ser atômicas ficam em funções no banco (`SECURITY DEFINER`, só o back chama): `registrar_lead_site` (mesmo e-mail ou telefone = mesmo lead), conversão de lead em cliente, `roleta_registrar_chegada` e `roleta_distribuir`.
 - A distribuição da roleta também roda sozinha a cada 2 minutos, de segunda a sábado das 09h às 18h, pelo `pg_cron` do Supabase (`20261029_roleta_agendada.sql`).

@@ -9,6 +9,7 @@ jest.mock('../controllers/authController', () => ({
   alterarSenha: jest.fn(),
   esqueciSenha: jest.fn(),
   redefinirSenha: jest.fn(),
+  renovar: jest.fn(),
 }));
 
 jest.mock('../middlewares/authMiddleware', () => ({
@@ -24,6 +25,7 @@ jest.mock('../middlewares/seguranca', () => ({
     esqueciSenhaPorIp: jest.fn(),
     esqueciSenhaPorEmail: jest.fn(),
     redefinicaoSenha: jest.fn(),
+    renovacao: jest.fn(),
   },
 }));
 
@@ -68,6 +70,12 @@ describe('limitadores ligados as rotas de autenticacao', () => {
   test('POST /auth/redefinir-senha: limite de tentativas antes de conferir o token', () => {
     expect(funcoesDaRota('post', '/redefinir-senha')).toEqual([
       limitadores.redefinicaoSenha, controller.redefinirSenha,
+    ]);
+  });
+
+  test('POST /auth/renovar: limite de falhas antes de renovar a sessão', () => {
+    expect(funcoesDaRota('post', '/renovar')).toEqual([
+      limitadores.renovacao, controller.renovar,
     ]);
   });
 

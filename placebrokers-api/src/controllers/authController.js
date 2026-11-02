@@ -102,6 +102,14 @@ async function alterarSenha(req, res) {
   }
 }
 
+async function renovar(req, res) {
+  try {
+    return res.status(200).json(await authService.renovar(req.body));
+  } catch (err) {
+    return handleAuthError(res, err);
+  }
+}
+
 async function esqueciSenha(req, res) {
   try {
     return res.status(200).json(await redefinicaoSenha.solicitar(req.body));
@@ -143,4 +151,5 @@ module.exports = {
   alterarSenha,
   esqueciSenha,
   redefinirSenha,
+  renovar,
 };

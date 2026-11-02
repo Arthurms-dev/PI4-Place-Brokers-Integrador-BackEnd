@@ -203,6 +203,41 @@
           }
         },
         {
+          "name": "POST /auth/renovar — Troca o refreshToken do login por um token novo (o token vale 1 hora)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/renovar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "renovar"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"refresh-token-do-login\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "GET /auth/me — Dados do usuário logado",
           "request": {
             "method": "GET",
