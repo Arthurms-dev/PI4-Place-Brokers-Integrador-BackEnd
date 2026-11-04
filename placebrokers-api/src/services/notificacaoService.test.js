@@ -103,6 +103,7 @@ describe('aviso de lead novo no app (Expo)', () => {
 
 describe('aviso de lead novo por e-mail', () => {
   const lead = (aviso) => ({ id: 'l9', nome: 'Carla Souza', corretor_id: 'c1', empreendimento: { nome: 'Mar Azul' },
+    telefone: '81999998888', email: 'carla@email.com', mensagem: 'Interesse em: Mar Azul — via lista da home\nPrefere conversar com um especialista', origem: 'site',
     corretor: { nome: 'Bruno Lima', email: 'bruno@place.com', aviso_lead_email: aviso } });
 
   function setupEmail({ leads, enviar = jest.fn().mockResolvedValue({ enviado: true }), configurado = true } = {}) {
@@ -115,7 +116,7 @@ describe('aviso de lead novo por e-mail', () => {
     return { service, enviar };
   }
 
-  test('manda e-mail só para quem ligou a opção, sem telefone do cliente', async () => {
+  test('manda e-mail com os dados do lead, o que fazer e o rodapé da Place', async () => {
     const { service, enviar } = setupEmail({ leads: [lead(true)] });
     expect(service.ativo).toBe(true);
     expect(await service.avisarLeadsNovos()).toBe(1);
@@ -125,6 +126,12 @@ describe('aviso de lead novo por e-mail', () => {
     expect(email.assunto).toBe('Lead novo: Carla Souza · Mar Azul');
     expect(email.texto.includes('https://site.teste/corretor/leads')).toBe(true);
     expect(email.html.includes('Olá, Bruno!')).toBe(true);
+    expect(email.texto.includes('Telefone / WhatsApp: (81) 99999-8888')).toBe(true);
+    expect(email.texto.includes('- Prefere conversar com um especialista')).toBe(true);
+    expect(email.html.includes('https://wa.me/5581999998888')).toBe(true);
+    expect(email.html.includes('CRECI 18303-J')).toBe(true);
+    expect(email.texto.includes('Este é um e-mail automático')).toBe(true);
+    expect(email.html.includes('https://site.teste/email/logo.png')).toBe(true);
   });
 
   test('quem não ligou a opção não recebe e-mail', async () => {

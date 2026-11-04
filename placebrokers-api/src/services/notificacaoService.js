@@ -180,6 +180,12 @@ class NotificacaoService {
         corretor: corretor.nome,
         cliente: lead.nome,
         empreendimento: lead.empreendimento?.nome ?? null,
+        telefone: lead.telefone,
+        email: lead.email,
+        mensagem: lead.mensagem,
+        origem: lead.origem,
+        chegouEm: lead.atribuido_em,
+        site: this.siteUrl,
         link: `${this.siteUrl}/corretor/leads`,
       });
       const r = await this.email.enviar({ para: corretor.email, ...mensagem });

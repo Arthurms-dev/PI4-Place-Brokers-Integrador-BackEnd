@@ -67,7 +67,7 @@ class RedefinicaoSenhaService {
 
     const token = await this.recuperacao.gerarToken(email);
     const link = `${this.site}/redefinir-senha?token=${encodeURIComponent(token)}`;
-    const conteudo = emailRedefinirSenha({ nome: perfil.nome, link, validadeMinutos: this.validadeMinutos });
+    const conteudo = emailRedefinirSenha({ nome: perfil.nome, link, validadeMinutos: this.validadeMinutos, site: this.site });
 
     return this.email.enviar({ para: email, ...conteudo, linkParaTeste: link });
   }
