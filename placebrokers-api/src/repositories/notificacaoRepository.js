@@ -36,7 +36,7 @@ class NotificacaoRepository {
   async leadsParaAvisar(desdeIso) {
     const { data, error } = await supabaseAdmin
       .from('leads')
-      .select('id, nome, corretor_id, atribuido_em, empreendimento:empreendimentos(nome), corretor:profiles!leads_corretor_id_fkey(nome, email, aviso_lead_email)')
+      .select('id, nome, telefone, email, mensagem, origem, corretor_id, atribuido_em, empreendimento:empreendimentos(nome), corretor:profiles!leads_corretor_id_fkey(nome, email, aviso_lead_email)')
       .is('notificado_em', null)
       .not('corretor_id', 'is', null)
       .eq('status', 'novo')

@@ -154,6 +154,15 @@ describe('modelo do e-mail', () => {
     expect(html.includes('<script>')).toBe(false);
     expect(html.includes('&lt;script&gt;')).toBe(true);
   });
+
+  test('explica os passos e traz a logo e o rodapé da Place', () => {
+    const { html, texto } = emailRedefinirSenha({ nome: 'Ana Lima', link: 'https://s.com/redefinir-senha?token=a', site: 'https://s.com' });
+    expect(html.includes('time.jpg')).toBe(false);
+    expect(html.includes('https://s.com/email/logo.png')).toBe(true);
+    expect(texto.includes('1. Abra o link')).toBe(true);
+    expect(texto.includes('CRECI 18303-J')).toBe(true);
+    expect(texto.includes('Este é um e-mail automático')).toBe(true);
+  });
 });
 
 describe('emailClient (Resend)', () => {
