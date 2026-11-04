@@ -100,3 +100,42 @@ describe('aviso de lead novo no app (Expo)', () => {
     expect(service.ativo).toBe(false);
   });
 });
+
+describe('aviso de lead novo por e-mail', () => {
+  const lead = (aviso) => ({ id: 'l9', nome: 'Carla Souza', corretor_id: 'c1', empreendimento: { nome: 'Mar Azul' },
+    corretor: { nome: 'Bruno Lima', email: 'bruno@place.com', aviso_lead_email: aviso } });
+
+  function setupEmail({ leads, enviar = jest.fn().mockResolvedValue({ enviado: true }), configurado = true } = {}) {
+    const repo = {
+      inscricoesDe: jest.fn().mockResolvedValue([]), marcarEnvio: jest.fn(), removerPorEndpoint: jest.fn(),
+      leadsParaAvisar: jest.fn().mockResolvedValue(leads), reservarAviso: jest.fn().mockResolvedValue(true),
+    };
+    const emailClient = { configurado: () => configurado, enviar };
+    const service = new NotificacaoService({ repo, env: { EXPO_PUSH: 'false', SITE_URL: 'https://site.teste/' }, webpush: null, emailClient, log: { error: jest.fn() }, agora: () => new Date('2026-10-29T12:00:00Z') });
+    return { service, enviar };
+  }
+
+  test('manda e-mail só para quem ligou a opção, sem telefone do cliente', async () => {
+    const { service, enviar } = setupEmail({ leads: [lead(true)] });
+    expect(service.ativo).toBe(true);
+    expect(await service.avisarLeadsNovos()).toBe(1);
+    expect(enviar).toHaveBeenCalledTimes(1);
+    const email = enviar.mock.calls[0][0];
+    expect(email.para).toBe('bruno@place.com');
+    expect(email.assunto).toBe('Lead novo: Carla Souza · Mar Azul');
+    expect(email.texto.includes('https://site.teste/corretor/leads')).toBe(true);
+    expect(email.html.includes('Olá, Bruno!')).toBe(true);
+  });
+
+  test('quem não ligou a opção não recebe e-mail', async () => {
+    const { service, enviar } = setupEmail({ leads: [lead(false)] });
+    await service.avisarLeadsNovos();
+    expect(enviar).not.toHaveBeenCalled();
+  });
+
+  test('falha no e-mail não trava o aviso', async () => {
+    const { service } = setupEmail({ leads: [lead(true)], enviar: jest.fn().mockRejectedValue(new Error('Resend fora')) });
+    expect(await service.avisarLeadsNovos()).toBe(1);
+  });
+});
+

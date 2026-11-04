@@ -11,7 +11,7 @@ const UFS_VALIDAS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS'
 
 
 function toPublicUser(profile) {
-  return { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo };
+  return { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo, avisoLeadEmail: Boolean(profile.aviso_lead_email) };
 }
 
 function isDuplicateEmailError(error) {
@@ -301,10 +301,15 @@ async login(credentials) {
   }
 
   /**
-   * @param {string} userId @param {{ nome?: string, telefone?: string }} dados
+   * @param {string} userId @param {{ nome?: string, telefone?: string, avisoLeadEmail?: boolean }} dados
    */
-  async atualizarPerfil(userId, { nome, telefone } = {}) {
+  async atualizarPerfil(userId, { nome, telefone, avisoLeadEmail } = {}) {
     const dados = {};
+
+    if (avisoLeadEmail !== undefined) {
+      if (typeof avisoLeadEmail !== 'boolean') throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { avisoLeadEmail: 'Use verdadeiro ou falso.' });
+      dados.aviso_lead_email = avisoLeadEmail;
+    }
 
     if (nome !== undefined) {
       if (!nome?.trim()) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { nome: 'Informe o nome.' });

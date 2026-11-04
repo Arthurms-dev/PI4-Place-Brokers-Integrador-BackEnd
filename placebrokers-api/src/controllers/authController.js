@@ -67,6 +67,7 @@ async function me(req, res) {
         nome: profile.nome,
         email: profile.email,
         role: profile.cargo,
+        avisoLeadEmail: Boolean(profile.aviso_lead_email),
       },
     });
   } catch (err) {

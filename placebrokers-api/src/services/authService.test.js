@@ -78,6 +78,7 @@ describe('AuthService', () => {
         nome: 'Arthur Vinícius',
         email: 'arthur@placebrokers.com.br',
         role: 'admin',
+        avisoLeadEmail: false,
       });
       expect(result.token).toBe('fake-jwt-token');
       expect(deps.profileRepository.findById).toHaveBeenCalledWith('auth-user-1');
@@ -186,3 +187,15 @@ describe('AuthService.renovar', () => {
     expect(erro.code).toBe('USER_INACTIVE');
   });
 });
+
+describe('aviso de lead por e-mail no perfil', () => {
+  test('liga e desliga com verdadeiro ou falso; outro valor é recusado', async () => {
+    const atualizar = jest.fn().mockImplementation(async (id, dados) => ({ id, nome: 'Bruno', email: 'b@p.com', cargo: 'corretor', ...dados }));
+    const service = new AuthService({ authClient: {}, passwordClient: {}, profileRepository: { atualizar } });
+    const r = await service.atualizarPerfil('c1', { avisoLeadEmail: true });
+    expect(atualizar).toHaveBeenCalledWith('c1', { aviso_lead_email: true });
+    expect(r.avisoLeadEmail).toBe(true);
+    await expect(service.atualizarPerfil('c1', { avisoLeadEmail: 'sim' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+  });
+});
+

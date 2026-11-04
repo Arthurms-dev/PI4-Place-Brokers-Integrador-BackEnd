@@ -8,11 +8,15 @@ const { AppError } = require('../errors/AppError');
 // - App React Native (Expo Notifications): o app manda o token do Expo para POST /notificacoes/inscricao
 //   e o back entrega pelo serviço de push do Expo. Não precisa de chave; EXPO_ACCESS_TOKEN é opcional
 //   (só se o projeto do Expo exigir). EXPO_PUSH=false desliga.
+// - E-mail (opcional): o corretor que ligar "Receber lead novo por e-mail" no Perfil também recebe
+//   o aviso pelo Resend (RESEND_API_KEY). O link do e-mail usa SITE_URL.
 // Sem nada configurado o resto do sistema funciona normalmente; só não sai notificação.
 
 const INTERVALO_MS = 30 * 1000;
 const JANELA_MIN = 30; // só avisa lead que chegou ao corretor nos últimos 30 min
 const URL_EXPO = 'https://exp.host/--/api/v2/push/send';
+const { emailLeadNovo } = require('../emails/leadNovo');
+
 const TOKEN_EXPO = /^Expo(?:nent)?PushToken\[[A-Za-z0-9_-]{10,200}\]$/;
 
 function carregarWebPush() {
@@ -28,8 +32,12 @@ class NotificacaoService {
    * @param {{ repo: import('../repositories/notificacaoRepository').NotificacaoRepository,
    *   env?: NodeJS.ProcessEnv, webpush?: object|null, agora?: () => Date }} deps
    */
-  constructor({ repo, env = process.env, webpush, agora = () => new Date(), fetchImpl = globalThis.fetch }) {
+  constructor({ repo, env = process.env, webpush, agora = () => new Date(), fetchImpl = globalThis.fetch, emailClient, log = console }) {
     this.repo = repo;
+    this.log = log;
+    this.email = emailClient === undefined ? require('../adapters/emailClient').criarEmailClient({ env }) : emailClient;
+    this.emailAtivo = Boolean(this.email?.configurado?.());
+    this.siteUrl = String(env.SITE_URL || 'http://localhost:5173').replace(/\/+$/, '');
     this.agora = agora;
     this.fetchImpl = fetchImpl;
     this.chave = env.VAPID_PUBLIC_KEY || null;
@@ -37,7 +45,7 @@ class NotificacaoService {
     this.webAtivo = Boolean(this.webpush && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
     this.expoAtivo = env.EXPO_PUSH !== 'false' && typeof fetchImpl === 'function';
     this.expoToken = env.EXPO_ACCESS_TOKEN || null;
-    this.ativo = this.webAtivo || this.expoAtivo;
+    this.ativo = this.webAtivo || this.expoAtivo || this.emailAtivo;
     if (this.webAtivo) {
       this.webpush.setVapidDetails(env.VAPID_CONTATO || 'mailto:contato@placebrokers.com.br', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
     }
@@ -150,6 +158,7 @@ class NotificacaoService {
     let avisados = 0;
     for (const lead of leads) {
       if (!(await this.repo.reservarAviso(lead.id))) continue;
+      await this.enviarEmailDoLead(lead);
       await this.enviarParaUsuario(lead.corretor_id, {
         titulo: `Lead novo: ${lead.nome}`,
         corpo: `${lead.empreendimento?.nome ? `${lead.empreendimento.nome} · ` : ''}Ligue agora: quem retorna primeiro leva o cliente.`,
@@ -160,6 +169,25 @@ class NotificacaoService {
       avisados += 1;
     }
     return avisados;
+  }
+
+  /** E-mail para o corretor que pediu esse aviso no Perfil. Falha no e-mail nunca trava o push. */
+  async enviarEmailDoLead(lead) {
+    const corretor = lead.corretor;
+    if (!this.emailAtivo || !corretor?.aviso_lead_email || !corretor?.email) return false;
+    try {
+      const mensagem = emailLeadNovo({
+        corretor: corretor.nome,
+        cliente: lead.nome,
+        empreendimento: lead.empreendimento?.nome ?? null,
+        link: `${this.siteUrl}/corretor/leads`,
+      });
+      const r = await this.email.enviar({ para: corretor.email, ...mensagem });
+      return Boolean(r?.enviado);
+    } catch (err) {
+      this.log.error('[e-mail] aviso de lead não enviado', err?.message ?? err);
+      return false;
+    }
   }
 
   /** Liga a verificação periódica (chamado ao subir o servidor). */

@@ -44,7 +44,7 @@ const ROTAS = [
     corpo: { refreshToken: 'refresh-token-do-login' },
     obs: 'Usado pelo app para não pedir a senha de novo. Confere se a conta continua ativa e aprovada.' },
   { metodo: 'get', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Dados do usuário logado' },
-  { metodo: 'patch', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Atualiza nome e telefone', corpo: { nome: 'Fulano de Tal', telefone: '81999998888' } },
+  { metodo: 'patch', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Atualiza nome, telefone e o aviso de lead por e-mail', corpo: { nome: 'Fulano de Tal', telefone: '81999998888', avisoLeadEmail: true } },
   { metodo: 'patch', caminho: '/auth/senha', grupo: 'Autenticação', acesso: 'logado', resumo: 'Troca a senha (pede a senha atual)',
     corpo: { senhaAtual: 'senha-de-teste', novaSenha: 'nova-senha-de-teste', confirmarSenha: 'nova-senha-de-teste' } },
   { metodo: 'post', caminho: '/auth/esqueci-senha', grupo: 'Autenticação', acesso: 'publico', resumo: 'Esqueci minha senha: manda por e-mail um link para criar senha nova',
