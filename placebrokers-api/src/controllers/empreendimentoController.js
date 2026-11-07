@@ -103,7 +103,7 @@ async function documento(req, res) {
 
 async function atualizar(req, res) {
   try {
-    return res.status(200).json(await empreendimentoService.atualizar(req.params.id, req.body));
+    return res.status(200).json(await empreendimentoService.atualizar(req.params.id, req.body, req.user));
   } catch (err) {
     return handleError(res, err);
   }

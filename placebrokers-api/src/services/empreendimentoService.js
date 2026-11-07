@@ -36,7 +36,7 @@ class EmpreendimentoService {
 
     if (usuario != null || !apenasPublicados) {
       const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
-      return linhas.map((linha) => this.sanitizar(linha));
+      return linhas.map((linha) => this.sanitizar(linha, {incluirAutor: usuario?.cargo === 'admin'}));
     }
 
     const cache = this._catalogoPublico;
@@ -79,10 +79,10 @@ class EmpreendimentoService {
     return this.sanitizar(empreendimento);
   }
 
-  sanitizar(row) {
+  sanitizar(row, {incluirAutor = false} = {}) {
     if (!row) return row;
 
-    const { book_url: book, tabela_url: tabela, documentos, ...dados } = row;
+    const { book_url: book, tabela_url: tabela, documentos, atualizador, atualizado_por: _atualizadoPor, ...dados } = row;
     // Book/tabela contam tanto pelo link antigo quanto pelos documentos aprovados e dentro da validade.
     const hoje = new Date().toISOString().slice(0, 10);
     const aprovado = (tipo) => (Array.isArray(documentos) ? documentos : []).some(
@@ -101,6 +101,7 @@ class EmpreendimentoService {
       tipologias,
       tem_book: Boolean(book) || aprovado('book'),
       tem_tabela: Boolean(tabela) || aprovado('tabela'),
+      ...AppError(incluirAutor ? { atualizado_por_nome: atualizador?.nome ?? null } : {}),
     };
   }
 
@@ -196,6 +197,7 @@ class EmpreendimentoService {
       tabela_atualizado_em: tabelaUrl ? new Date().toISOString() : null,
       publicado: dados.publicado ?? false,
       disponivel: dados.disponivel ?? true,
+      atualizado_por: usuario?.id ?? null,
     });
 
     if (galeriaUrls.length) {
@@ -214,7 +216,7 @@ class EmpreendimentoService {
     return empreendimento;
   }
 
-  async atualizar(id, mudancas = {}) {
+  async atualizar(id, mudancas = {}, usuario = null) {
     const atual = await this.empreendimentoRepository.buscarPorId(id);
     if (!atual) throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
 
@@ -286,10 +288,18 @@ class EmpreendimentoService {
       throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
     }
 
-    if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
+   if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
+
+    const campos = Object.keys(dados);
+    if (usuario?.id) dados.atualizado_por = usuario.id;
 
     const atualizado = await this.empreendimentoRepository.atualizar(id, dados);
     this.invalidarCachePublico();
+    await this.registrarModificacao(
+      'Empreendimento atualizado',
+      `"${atualizado.nome ?? atual.nome}" foi atualizado (campos: ${campos.join(', ')}).`,
+      usuario,
+    );
     return this.sanitizar(atualizado);
   }
 

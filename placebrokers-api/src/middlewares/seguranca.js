@@ -66,14 +66,17 @@ const limitadores = {
     aoBloquear: vigiar((vigia, req) => vigia.loginBloqueado({ ip: req.ip })) }),
   loginPorEmail: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 5, contarSomenteFalhas: true, chave: chaveDoEmail, mensagem: 'Muitas tentativas de login com este e-mail. Tente de novo em 15 minutos.',
     aoBloquear: vigiar((vigia, req) => vigia.loginBloqueado({ email: String(req.body?.email ?? '').trim().toLowerCase(), ip: req.ip })) }),
-  cadastro: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 10, mensagem: 'Muitos cadastros a partir desta conexão. Tente de novo mais tarde.' }),
-  trocaDeSenha: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 5, contarSomenteFalhas: true, chave: (req) => req.userId ?? req.ip, mensagem: 'Muitas tentativas de trocar a senha. Tente de novo em 15 minutos.' }),
+  cadastro: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 10, mensagem: 'Muitos cadastros a partir desta conexão. Tente de novo mais tarde.',
+    aoBloquear: vigiar((vigia, req) => vigia.cadastrosEmMassa({ ip: req.ip })) }),
+  trocaDeSenha: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 5, contarSomenteFalhas: true, chave: (req) => req.userId ?? req.ip, mensagem: 'Muitas tentativas de trocar a senha. Tente de novo em 15 minutos.',
+    aoBloquear: vigiar((vigia, req) => vigia.trocaDeSenhaBloqueada({ user: req.user, ip: req.ip })) }),
   // Esqueci minha senha: por e-mail (sem o IP) para ninguém lotar a caixa de outra pessoa.
   renovacao: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 60, contarSomenteFalhas: true, mensagem: 'Muitas tentativas de renovar a sessão. Entre de novo em alguns minutos.' }),
   esqueciSenhaPorIp: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 10, mensagem: 'Muitos pedidos de redefinição a partir desta conexão. Tente de novo mais tarde.' }),
   esqueciSenhaPorEmail: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 3, chave: (req) => String(req.body?.email ?? '').trim().toLowerCase() || req.ip, mensagem: 'Já enviamos alguns links para este e-mail. Confira a caixa de entrada e o spam, ou tente de novo em 1 hora.' }),
   redefinicaoSenha: criarLimitador({ janelaMs: 15 * MINUTO, maximo: 10, contarSomenteFalhas: true, mensagem: 'Muitas tentativas. Peça um novo link em alguns minutos.' }),
-  leadPublico: criarLimitador({ janelaMs: 10 * MINUTO, maximo: 8, mensagem: 'Recebemos muitos envios desta conexão. Aguarde alguns minutos e tente de novo.' }),
+  leadPublico: criarLimitador({ janelaMs: 10 * MINUTO, maximo: 8, mensagem: 'Recebemos muitos envios desta conexão. Aguarde alguns minutos e tente de novo.',
+    aoBloquear: vigiar((vigia, req) => vigia.enviosEmMassaNoFormulario({ ip: req.ip })) }),
   eventos: criarLimitador({ janelaMs: MINUTO, maximo: 120 }),
 };
 

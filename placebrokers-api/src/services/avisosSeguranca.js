@@ -160,6 +160,36 @@ class VigiaSeguranca {
       severidade: 'atencao',
     });
   }
+  /** Troca de senha bloqueada: erros repetidos na senha atual. */
+  trocaDeSenhaBloqueaada ({ user, ip}) {
+    const id = user?.id?? ip;
+    return this.avisar({
+      chave: `troca-senha-bloqueada:${id}`,
+      titulo: `Tentativas de trocar a senha bloqueadas`,
+      descricao: `${nomeDe(user)} errou a senha atual 5 vezes em 15 minutos ao tentar trocá-la (conexão ${mascararIp(ip)}) e ficou 15 minutos sem poder tentar. Se não foi a própria pessoa, a conta pode estar em uso por outra pessoa.`,
+      severidade: 'atencao',
+    });
+  }
+  /** Muitos cadastros vindos da mesma conexão */
+  cadastrosEmMassa ({ ip }){
+    return this.avisar({
+      chave: `cadastros-em-massa:${ip}`,
+      titulo: 'Cadastros em massa',
+      descricao: `A conexão ${mascararIp(ip)} chegou a 10 cadastros em 1 hora e foi bloqueada. Pode ser alguém criando contas em série.`,
+      severidade: 'atencao',
+      silencioMs: 6 * 60 * MINUTO,
+    });
+  }
+  /** Muitos envios do formulário do site vindos da mesma conexão. */
+  enviosEmMassaNoFormulario ({ip}){
+    return this.avisar({
+      chave: `envios-em-massa:${ip}`,
+      titulo: 'Envios em massa no formulário',
+      descricao: `A conexão ${mascararIp(ip)} chegou a 8 envios do formulário do site em 10 minutos e foi bloqueada. Pode ser lead falso.`,
+      severidade: 'info',
+      silencioMs: 6 * 60 * MINUTO,
+    });
+  }
 }
 
 const vigia = new VigiaSeguranca();

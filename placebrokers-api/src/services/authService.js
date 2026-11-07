@@ -7,6 +7,8 @@ const { JANELA_MINUTOS } = require ('../utils/loginAttemptConfig');
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_ROLES_CADASTRO = ['corretor'];
 const MAX_FALHAS = 3;
+const LIMITE_FALHAS_POR_IP = 30;
+const LIMITE_TROCA_SENHA = 5;
 const UFS_VALIDAS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 
@@ -30,14 +32,16 @@ class AuthService {
    * @param {object} deps.passwordClient
    * @param {{object|null}} [deps.loginAttemptRepository]
    * @param {{object|null}} [deps.painelAdmRepository]
+   * * @param {{object|null}} [deps.segurancaService]
    */
-  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null }) {
+  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null, segurancaService = null }) {
   this.vigia = vigia;
   this.authClient = authClient;
   this.profileRepository = profileRepository;
   this.passwordClient = passwordClient;
   this.loginAttemptRepository = loginAttemptRepository;
   this.painelAdmRepository = painelAdmRepository;
+  this.segurancaService = segurancaService;
   }
 
   validateLoginInput({ email, password } = {}) {
@@ -54,7 +58,7 @@ class AuthService {
    * @returns {Promise<{ user: { id: string, nome: string, email: string, role: string }, token: string|null }>}
    */
 
-async login(credentials) {
+async login(credentials, contexto = {}) {
   const fieldErrors = this.validateLoginInput(credentials);
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -86,7 +90,7 @@ async login(credentials) {
   const { data, error } = authResult;
 
   if (error || !data?.user) {
-    await this.registrarTentativaFalha(email);
+    await this.registrarTentativaFalha(email, contexto.ip);
 
     throw new AuthError(
       'INVALID_CREDENTIALS',

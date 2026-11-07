@@ -22,17 +22,7 @@ class PainelAdmRepository {
     return data;
   }
 
-  async listarModificacoes(limite = 20) {
-    const { data, error } = await supabaseAdmin
-      .from('modificacoes')
-      .select('id, titulo, descricao, criado_em, autor:profiles(nome)')
-      .order('criado_em', { ascending: false })
-      .limit(limite);
-    if (error) throw error;
-    return data;
-  }
-
-    async listarModificacoes( limite = 20) {
+   async listarModificacoes( limite = 20) {
         const { data, error } = await supabaseAdmin
         .from('modificacoes')
         .select('id, titulo, descricao, criado_em, autor:profiles(nome)')
@@ -40,10 +30,10 @@ class PainelAdmRepository {
         if (error) throw error;
         return data;
     }
-    async criarAviso ({ titulo, descricao, severidade = 'info'}){
+    async criarAviso ({ titulo, descricao, severidade = 'info', chave = null}){
         const { data, error } = await supabaseAdmin
         .from('avisos_seguranca')
-        .insert({ titulo, descricao, severidade})
+        .insert({ titulo, descricao, severidade, chave })
         .select()
         .single();
         if (error ) throw error;

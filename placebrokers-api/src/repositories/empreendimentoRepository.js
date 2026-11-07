@@ -5,6 +5,7 @@ const { supabaseAdmin } = require('../config/supabase');
 const SELECT_PADRAO = [
   '*',
   'construtora:construtoras(nome)',
+  'atualizador:profiles!empreendimentos_atualizados_por_fkey(nome)',
   'tipologias:empreendimento_tipologias(id,nome,quartos,suites,vagas,area_m2,ordem)',
   // Só para saber se há book/tabela aprovados (o serviço tira a lista da resposta).
   'documentos:empreendimento_documentos(tipo,status,validade_ate)',
