@@ -101,7 +101,7 @@ class EmpreendimentoService {
       tipologias,
       tem_book: Boolean(book) || aprovado('book'),
       tem_tabela: Boolean(tabela) || aprovado('tabela'),
-      ...AppError(incluirAutor ? { atualizado_por_nome: atualizador?.nome ?? null } : {}),
+      ...(incluirAutor ? { atualizado_por_nome: atualizador?.nome ?? null } : {}),
     };
   }
 
@@ -288,7 +288,7 @@ class EmpreendimentoService {
       throw new AppError('VALIDATION_ERROR', 'Nada para atualizar.');
     }
 
-   if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
+       if (typeof dados.nome === 'string') dados.nome = dados.nome.trim();
 
     const campos = Object.keys(dados);
     if (usuario?.id) dados.atualizado_por = usuario.id;

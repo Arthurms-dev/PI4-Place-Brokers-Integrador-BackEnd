@@ -32,16 +32,14 @@ class AuthService {
    * @param {object} deps.passwordClient
    * @param {{object|null}} [deps.loginAttemptRepository]
    * @param {{object|null}} [deps.painelAdmRepository]
-   * * @param {{object|null}} [deps.segurancaService]
    */
-  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null, segurancaService = null }) {
+  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null}) {
   this.vigia = vigia;
   this.authClient = authClient;
   this.profileRepository = profileRepository;
   this.passwordClient = passwordClient;
   this.loginAttemptRepository = loginAttemptRepository;
   this.painelAdmRepository = painelAdmRepository;
-  this.segurancaService = segurancaService;
   }
 
   validateLoginInput({ email, password } = {}) {
