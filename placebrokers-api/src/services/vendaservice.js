@@ -19,7 +19,7 @@ class VendaService {
       const membros = await this.equipeRepository.listar({});
       return membros.filter((m) => equipes.some((e) => e.id === m.equipe_id)).map((m) => m.id);
     }
-    return [usuario.id]; // corretor só vê a si mesmo
+    return [usuario.id]; 
   }
 
   async criar({ valor, empreendimentoId, clienteId } = {}, corretor) {
