@@ -121,6 +121,9 @@ class LeadService {
       throw err;
     }
     if (!row) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+    // O cliente ligado ao lead acompanha o repasse; senão o novo corretor não consegue agendar
+    // ("Cliente não encontrado na sua carteira"). Lead sem corretor não mexe na carteira.
+    if (corretorId) await this.clienteRepository.moverDoLeadParaCorretor(id, corretorId);
     return toPublicLead(row);
   }
 

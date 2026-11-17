@@ -108,6 +108,22 @@ class ClienteRepository {
   }
 
   /**
+   * Repasse de lead: o cliente ligado ao lead vai para a carteira do novo corretor.
+   * Sem cliente ligado, ou já na carteira certa, não altera nada.
+   * @param {string} leadId @param {string} corretorId @returns {Promise<number>} quantos mudaram
+   */
+  async moverDoLeadParaCorretor(leadId, corretorId) {
+    const { data, error } = await supabaseAdmin
+      .from('clientes')
+      .update({ corretor_id: corretorId })
+      .eq('lead_id', leadId)
+      .neq('corretor_id', corretorId)
+      .select('id');
+    if (error) throw error;
+    return (data ?? []).length;
+  }
+
+  /**
    * Cliente com o mesmo e-mail ou telefone (a mesma pessoa, mesmo que o nome seja outro).
    * @param {{ email?: string|null, telefone?: string|null, ignorarId?: string }} contato
    * @returns {Promise<object|null>}
