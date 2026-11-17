@@ -18,6 +18,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LINKEDIN_REGEX = /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\/[^\s]+$/i;
 const TAMANHO_MAXIMO_CURRICULO = 5 * 1024 * 1024;
+// Política de privacidade (versão 17/11/2026): candidaturas ficam até 1 ano depois do envio.
+const DIAS_DE_GUARDA = 365;
 
 const texto = (v) => (typeof v === 'string' ? v.trim() : '');
 const opcional = (v) => texto(v) || null;
@@ -111,6 +113,8 @@ class TrabalheConoscoService {
           ...linha,
           ...(caminho && { curriculo_path: caminho }),
           reenvios: (existente.reenvios ?? 0) + 1,
+          // Reenviar conta como envio novo: o prazo de 1 ano recomeça daqui.
+          criado_em: new Date().toISOString(),
         });
         if (caminho && existente.curriculo_path) {
           await this.repo.removerCurriculo(existente.curriculo_path).catch(() => {});
@@ -123,6 +127,24 @@ class TrabalheConoscoService {
       throw err;
     }
     return { recebido: true };
+  }
+
+  /**
+   * Apaga candidaturas (e currículos) com mais de 1 ano, como promete a política de privacidade.
+   * Primeiro os arquivos, depois as linhas: se o Storage falhar, nada some pela metade.
+   * @returns {Promise<number>} quantas foram apagadas
+   */
+  async limparAntigas({ agora = new Date() } = {}) {
+    const limite = new Date(agora.getTime() - DIAS_DE_GUARDA * 24 * 60 * 60 * 1000).toISOString();
+    let total = 0;
+    for (;;) {
+      const antigas = await this.repo.listarAntigas(limite, 500);
+      if (!antigas.length) return total;
+      await this.repo.removerCurriculos(antigas.map((c) => c.curriculo_path).filter(Boolean));
+      await this.repo.removerCandidaturas(antigas.map((c) => c.id));
+      total += antigas.length;
+      if (antigas.length < 500) return total;
+    }
   }
 
   // ---------- RH ----------
@@ -221,4 +243,27 @@ class TrabalheConoscoService {
   }
 }
 
-module.exports = { TrabalheConoscoService, AREAS, UNIDADES, STATUS, ehPdf, TAMANHO_MAXIMO_CURRICULO };
+/**
+ * Roda a limpeza 1 minuto depois de a API subir e depois a cada 24 h (só no Render, que fica ligado).
+ * @param {{ service: TrabalheConoscoService, log?: Console }} deps
+ */
+function agendarLimpezaCandidaturas({ service, log = console }) {
+  const DIA = 24 * 60 * 60 * 1000;
+  const rodar = async () => {
+    try {
+      const n = await service.limparAntigas();
+      if (n) log.log(`Limpeza LGPD: ${n} candidatura(s) com mais de 1 ano apagada(s).`);
+    } catch (err) {
+      log.error('Limpeza das candidaturas antigas falhou:', err?.message ?? err);
+    }
+  };
+  const primeira = setTimeout(rodar, 60 * 1000);
+  const diaria = setInterval(rodar, DIA);
+  primeira.unref?.();
+  diaria.unref?.();
+  return () => { clearTimeout(primeira); clearInterval(diaria); };
+}
+
+module.exports = {
+  TrabalheConoscoService, agendarLimpezaCandidaturas, AREAS, UNIDADES, STATUS, ehPdf, TAMANHO_MAXIMO_CURRICULO, DIAS_DE_GUARDA,
+};

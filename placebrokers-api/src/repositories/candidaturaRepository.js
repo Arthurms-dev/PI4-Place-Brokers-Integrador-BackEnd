@@ -77,6 +77,26 @@ class CandidaturaRepository {
     return data;
   }
 
+  /** Candidaturas enviadas antes da data (para a limpeza de 1 ano da política de privacidade). */
+  async listarAntigas(antesDe, limite = 500) {
+    const { data, error } = await supabaseAdmin.from('candidaturas')
+      .select('id, curriculo_path').lt('criado_em', antesDe).order('criado_em').limit(limite);
+    if (error) throw error;
+    return data;
+  }
+
+  async removerCandidaturas(ids) {
+    if (!ids.length) return;
+    const { error } = await supabaseAdmin.from('candidaturas').delete().in('id', ids);
+    if (error) throw error;
+  }
+
+  async removerCurriculos(caminhos) {
+    if (!caminhos.length) return;
+    const { error } = await supabaseAdmin.storage.from(BUCKET_CURRICULOS).remove(caminhos);
+    if (error) throw error;
+  }
+
   async removerCandidatura(id) {
     const { error } = await supabaseAdmin.from('candidaturas').delete().eq('id', id);
     if (error) throw error;

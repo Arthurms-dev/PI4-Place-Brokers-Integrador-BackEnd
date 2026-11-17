@@ -21,4 +21,8 @@ app.listen(PORT, () => {
   console.log(`placebrokers-api rodando em http://localhost:${PORT}`);
   // Aviso de lead novo no celular do corretor (só liga se as chaves VAPID estiverem configuradas).
   require('./services/notificacaoService').notificacoes().iniciar();
-});
+  // LGPD: candidaturas do Trabalhe conosco com mais de 1 ano são apagadas (registro e currículo).
+  const { TrabalheConoscoService, agendarLimpezaCandidaturas } = require('./services/trabalheConoscoService');
+  const { CandidaturaRepository } = require('./repositories/candidaturaRepository');
+  agendarLimpezaCandidaturas({ service: new TrabalheConoscoService({ candidaturaRepository: new CandidaturaRepository() }) });
+});

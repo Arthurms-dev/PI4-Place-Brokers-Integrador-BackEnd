@@ -1,6 +1,6 @@
 'use strict';
 
-const { TrabalheConoscoService, ehPdf } = require('./trabalheConoscoService');
+const { TrabalheConoscoService, agendarLimpezaCandidaturas, ehPdf } = require('./trabalheConoscoService');
 
 const PDF = { buffer: Buffer.from('%PDF-1.7 conteúdo'), mimetype: 'application/pdf' };
 const VAGA = { id: '11111111-1111-4111-8111-111111111111', titulo: 'Corretor Recife', area: 'corretor', aberta: true };
@@ -21,6 +21,9 @@ function repoFalso() {
     subirCurriculo: jest.fn().mockResolvedValue(),
     removerCurriculo: jest.fn().mockResolvedValue(),
     linkCurriculo: jest.fn().mockResolvedValue('https://assinado'),
+    listarAntigas: jest.fn().mockResolvedValue([]),
+    removerCandidaturas: jest.fn().mockResolvedValue(),
+    removerCurriculos: jest.fn().mockResolvedValue(),
   };
 }
 
@@ -56,7 +59,7 @@ describe('candidatura pelo site', () => {
     repo.buscarMesmaPessoa.mockResolvedValue({ id: CAND_ID, curriculo_path: 'antigo.pdf', reenvios: 1 });
     await expect(service.candidatar(valido(), PDF)).resolves.toEqual({ recebido: true });
     expect(repo.criarCandidatura).not.toHaveBeenCalled();
-    expect(repo.atualizarCandidatura).toHaveBeenCalledWith(CAND_ID, expect.objectContaining({ reenvios: 2 }));
+    expect(repo.atualizarCandidatura).toHaveBeenCalledWith(CAND_ID, expect.objectContaining({ reenvios: 2, criado_em: expect.any(String) }));
     expect(repo.removerCurriculo).toHaveBeenCalledWith('antigo.pdf');
   });
 
@@ -147,4 +150,42 @@ test('ehPdf confere o começo do arquivo', () => {
   expect(ehPdf(PDF)).toBe(true);
   expect(ehPdf({ buffer: Buffer.from('<html>') })).toBe(false);
   expect(ehPdf(undefined)).toBe(false);
+});
+
+describe('limpeza de 1 ano (LGPD)', () => {
+  test('apaga currículos e depois as candidaturas mais antigas que 365 dias', async () => {
+    repo.listarAntigas.mockResolvedValueOnce([{ id: 'c1', curriculo_path: 'a.pdf' }, { id: 'c2', curriculo_path: null }]);
+    const n = await service.limparAntigas({ agora: new Date('2027-11-17T12:00:00Z') });
+    expect(n).toBe(2);
+    expect(repo.listarAntigas).toHaveBeenCalledWith('2026-11-17T12:00:00.000Z', 500);
+    expect(repo.removerCurriculos).toHaveBeenCalledWith(['a.pdf']);
+    expect(repo.removerCandidaturas).toHaveBeenCalledWith(['c1', 'c2']);
+    expect(repo.removerCurriculos.mock.invocationCallOrder[0]).toBeLessThan(repo.removerCandidaturas.mock.invocationCallOrder[0]);
+  });
+
+  test('se o Storage falhar, não apaga as linhas', async () => {
+    repo.listarAntigas.mockResolvedValueOnce([{ id: 'c1', curriculo_path: 'a.pdf' }]);
+    repo.removerCurriculos.mockRejectedValueOnce(new Error('storage fora'));
+    await expect(service.limparAntigas()).rejects.toThrow('storage fora');
+    expect(repo.removerCandidaturas).not.toHaveBeenCalled();
+  });
+
+  test('nada antigo, nada apagado', async () => {
+    await expect(service.limparAntigas()).resolves.toBe(0);
+    expect(repo.removerCandidaturas).not.toHaveBeenCalled();
+  });
+
+  test('agenda 1 min depois de subir e depois todo dia, sem derrubar a API se falhar', async () => {
+    jest.useFakeTimers();
+    const falho = { limparAntigas: jest.fn().mockRejectedValue(new Error('x')) };
+    const log = { log: jest.fn(), error: jest.fn() };
+    const parar = agendarLimpezaCandidaturas({ service: falho, log });
+    await jest.advanceTimersByTimeAsync(60 * 1000);
+    expect(falho.limparAntigas).toHaveBeenCalledTimes(1);
+    expect(log.error).toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
+    expect(falho.limparAntigas).toHaveBeenCalledTimes(2);
+    parar();
+    jest.useRealTimers();
+  });
 });

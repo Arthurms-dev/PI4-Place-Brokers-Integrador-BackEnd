@@ -82,6 +82,8 @@ Os erros seguem o formato `{ error: { code, message, fieldErrors } }` (vendas us
 
 Os cargos `diretor`, `recepcao`, `cadastro` e `rh` vieram da reunião com a diretoria de 17/11/2026 (migrações `20261117_cargos_novos.sql` e `20261117_trabalhe_conosco.sql`, nessa ordem). O admin cria esses acessos em Equipe → Acessos internos (`POST /equipe/usuarios`).
 
+As candidaturas do Trabalhe conosco com mais de 1 ano são apagadas sozinhas (registro e currículo), como diz a política de privacidade: a API roda a limpeza 1 minuto depois de subir e depois a cada 24 h (só no Render; a segunda via da Vercel não roda tarefas).
+
 ## Endpoints
 
 Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A lista completa, com exemplos de corpo, está no Swagger (`/docs`).
