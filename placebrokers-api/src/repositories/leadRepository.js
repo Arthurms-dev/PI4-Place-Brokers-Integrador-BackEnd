@@ -72,8 +72,9 @@ class LeadRepository {
   async atribuirCorretor(id, corretorId) {
     const { data, error } = await supabaseAdmin
       .from('leads')
-      // Repasse reinicia o relógio do atendimento para o novo corretor.
-      .update({ corretor_id: corretorId, atribuido_em: corretorId ? new Date().toISOString() : null })
+      // Repasse reinicia o relógio do atendimento para o novo corretor e libera um novo aviso
+      // (notificado_em nulo), senão quem recebe o lead repassado nunca é avisado.
+      .update({ corretor_id: corretorId, atribuido_em: corretorId ? new Date().toISOString() : null, notificado_em: null })
       .eq('id', id)
       .select(LEAD_SELECT)
       .maybeSingle();

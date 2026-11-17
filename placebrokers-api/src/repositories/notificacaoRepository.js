@@ -32,14 +32,18 @@ class NotificacaoRepository {
     await supabaseAdmin.from('push_inscricoes').update({ ultimo_envio_em: new Date().toISOString() }).eq('endpoint', endpoint);
   }
 
-  /** Leads que chegaram a um corretor (roleta ou repasse) e ainda não geraram aviso. */
+  /**
+   * Leads que chegaram a um corretor (roleta ou repasse) e ainda não geraram aviso.
+   * Vale qualquer status menos "perdido": o lead pode ser convertido ou entrar em atendimento
+   * segundos depois da atribuição, antes da verificação (a cada 30 s) passar por ele.
+   */
   async leadsParaAvisar(desdeIso) {
     const { data, error } = await supabaseAdmin
       .from('leads')
       .select('id, nome, telefone, email, mensagem, origem, corretor_id, atribuido_em, empreendimento:empreendimentos(nome), corretor:profiles!leads_corretor_id_fkey(nome, email, aviso_lead_email)')
       .is('notificado_em', null)
       .not('corretor_id', 'is', null)
-      .eq('status', 'novo')
+      .neq('status', 'perdido')
       .gte('atribuido_em', desdeIso)
       .order('atribuido_em', { ascending: true })
       .limit(50);

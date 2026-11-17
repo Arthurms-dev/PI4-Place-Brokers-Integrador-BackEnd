@@ -1,6 +1,11 @@
 'use strict';
 
+jest.mock('../config/supabase', () => ({ supabaseAdmin: { from: jest.fn() } }));
+
+const { supabaseAdmin } = require('../config/supabase');
 const { NotificacaoService } = require('./notificacaoService');
+const { NotificacaoRepository } = require('../repositories/notificacaoRepository');
+const { LeadRepository } = require('../repositories/leadRepository');
 
 const ENV = { VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv', VAPID_CONTATO: 'mailto:x@y.com' };
 const insc = { endpoint: 'https://push.exemplo/abc', p256dh: 'k', auth: 'a' };
@@ -146,3 +151,82 @@ describe('aviso de lead novo por e-mail', () => {
   });
 });
 
+
+// Daqui para baixo os repositórios são os de verdade, sobre tabelas em memória:
+// o que se testa é o filtro de quem deve ser avisado e o repasse, não só o envio.
+describe('quem é avisado: lead atribuído nos últimos 30 min', () => {
+  const minutosAtras = (min) => new Date(Date.now() - min * 60 * 1000).toISOString();
+
+  function tabelaEmMemoria(linhas) {
+    const filtros = [];
+    let alteracao = null;
+    const filtrar = (teste) => { filtros.push(teste); return consulta; };
+    const consulta = {
+      select: () => consulta,
+      order: () => consulta,
+      limit: () => consulta,
+      update: (campos) => { alteracao = campos; return consulta; },
+      eq: (coluna, valor) => filtrar((l) => l[coluna] === valor),
+      neq: (coluna, valor) => filtrar((l) => l[coluna] !== valor),
+      is: (coluna, valor) => filtrar((l) => (l[coluna] ?? null) === valor),
+      not: (coluna, operador, valor) => filtrar((l) => (l[coluna] ?? null) !== valor),
+      gte: (coluna, valor) => filtrar((l) => l[coluna] >= valor),
+      maybeSingle: () => consulta.then((r) => ({ data: r.data[0] ?? null, error: null })),
+      then: (resolver, rejeitar) => {
+        const achadas = linhas.filter((l) => filtros.every((teste) => teste(l)));
+        if (alteracao) achadas.forEach((l) => Object.assign(l, alteracao));
+        return Promise.resolve({ data: achadas, error: null }).then(resolver, rejeitar);
+      },
+    };
+    return consulta;
+  }
+
+  function montar(leads) {
+    const inscricoes = [
+      { usuario_id: 'c1', endpoint: 'https://push.exemplo/c1', p256dh: 'k', auth: 'a', tipo: 'web' },
+      { usuario_id: 'c2', endpoint: 'https://push.exemplo/c2', p256dh: 'k', auth: 'a', tipo: 'web' },
+    ];
+    supabaseAdmin.from.mockImplementation((tabela) => tabelaEmMemoria(tabela === 'leads' ? leads : inscricoes));
+    const wp = { setVapidDetails: jest.fn(), sendNotification: jest.fn().mockResolvedValue({}) };
+    const service = new NotificacaoService({ repo: new NotificacaoRepository(), env: { ...ENV, EXPO_PUSH: 'false' }, webpush: wp, emailClient: null });
+    const avisos = () => wp.sendNotification.mock.calls.map(([destino, corpo]) => `${JSON.parse(corpo).tag} -> ${destino.endpoint}`);
+    return { service, avisos };
+  }
+
+  const lead = (id, status, extra = {}) => ({ id, nome: `Cliente ${id}`, status, corretor_id: 'c1', atribuido_em: minutosAtras(1), notificado_em: null, ...extra });
+
+  test('convertido ou em atendimento logo após a atribuição também é avisado; perdido, antigo e sem corretor não', async () => {
+    const leads = [
+      lead('novo', 'novo'),
+      lead('atendimento', 'em_atendimento'),
+      lead('convertido', 'convertido'),
+      lead('perdido', 'perdido'),
+      lead('antigo', 'em_atendimento', { atribuido_em: minutosAtras(31) }),
+      lead('sem-corretor', 'novo', { corretor_id: null, atribuido_em: null }),
+    ];
+    const { service, avisos } = montar(leads);
+
+    expect(await service.avisarLeadsNovos()).toBe(3);
+    expect(avisos().sort()).toEqual([
+      'lead-atendimento -> https://push.exemplo/c1',
+      'lead-convertido -> https://push.exemplo/c1',
+      'lead-novo -> https://push.exemplo/c1',
+    ]);
+    expect(leads.filter((l) => l.notificado_em).map((l) => l.id).sort()).toEqual(['atendimento', 'convertido', 'novo']);
+    // Na verificação seguinte (30 s depois) ninguém é avisado de novo.
+    expect(await service.avisarLeadsNovos()).toBe(0);
+  });
+
+  test('repasse avisa o novo corretor, mesmo que o lead já tivesse sido avisado ao antigo', async () => {
+    const leads = [lead('repassado', 'em_atendimento', { atribuido_em: minutosAtras(120), notificado_em: minutosAtras(119) })];
+    const { service, avisos } = montar(leads);
+    expect(await service.avisarLeadsNovos()).toBe(0);
+
+    await new LeadRepository().atribuirCorretor('repassado', 'c2');
+    expect(leads[0]).toMatchObject({ corretor_id: 'c2', notificado_em: null });
+
+    expect(await service.avisarLeadsNovos()).toBe(1);
+    expect(avisos()).toEqual(['lead-repassado -> https://push.exemplo/c2']);
+    expect(await service.avisarLeadsNovos()).toBe(0);
+  });
+});
