@@ -2549,7 +2549,7 @@
                 {
                   "key": "area",
                   "value": "",
-                  "description": "corretor | captacao | administrativo | marketing | tecnologia | outra",
+                  "description": "corretor | captacao | administrativo | marketing | outra",
                   "disabled": true
                 },
                 {

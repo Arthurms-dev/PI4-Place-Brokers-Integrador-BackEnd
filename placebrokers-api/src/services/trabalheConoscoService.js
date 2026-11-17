@@ -9,7 +9,6 @@ const AREAS = {
   captacao: 'Captação de imóveis',
   administrativo: 'Administrativo',
   marketing: 'Marketing',
-  tecnologia: 'Tecnologia',
   outra: 'Outra área',
 };
 const UNIDADES = ['Recife', 'Caruaru', 'Paulista'];

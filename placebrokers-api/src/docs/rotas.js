@@ -177,7 +177,7 @@ const ROTAS = [
   // Trabalhe conosco (site) e painel do RH
   { metodo: 'get', caminho: '/trabalhe-conosco/vagas', grupo: 'Trabalhe conosco', acesso: 'publico', resumo: 'Vagas abertas (sem vaga, a pessoa entra no banco de talentos)' },
   { metodo: 'post', caminho: '/trabalhe-conosco/candidaturas', grupo: 'Trabalhe conosco', acesso: 'publico', resumo: 'Candidatura (multipart: nome, email, telefone, area, unidade, vagaId, creci, linkedin, mensagem, aceite, consentimentoVersao + curriculo em PDF até 5 MB)', multipart: true },
-  { metodo: 'get', caminho: '/rh/candidaturas', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Candidaturas', consulta: { status: 'novo | em_analise | entrevista | aprovado | recusado', vagaId: 'id da vaga ou "banco"', area: 'corretor | captacao | administrativo | marketing | tecnologia | outra', unidade: 'Recife | Caruaru | Paulista' } },
+  { metodo: 'get', caminho: '/rh/candidaturas', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Candidaturas', consulta: { status: 'novo | em_analise | entrevista | aprovado | recusado', vagaId: 'id da vaga ou "banco"', area: 'corretor | captacao | administrativo | marketing | outra', unidade: 'Recife | Caruaru | Paulista' } },
   { metodo: 'patch', caminho: '/rh/candidaturas/:id', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Muda o status ou a anotação', corpo: { status: 'entrevista', notas: 'Entrevista marcada para sexta às 10h.' } },
   { metodo: 'delete', caminho: '/rh/candidaturas/:id', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Apaga a candidatura e o currículo (pedido da pessoa, LGPD)' },
   { metodo: 'get', caminho: '/rh/candidaturas/:id/curriculo', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Link temporário (5 min) para abrir o currículo' },
