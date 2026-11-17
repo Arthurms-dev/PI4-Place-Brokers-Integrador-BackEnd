@@ -8,6 +8,6 @@ const { requireRole } = require('../middlewares/requireRole');
 const router = Router();
 
 router.get('/', listar);
-router.post('/', authMiddleware, requireRole('admin'), criar);
+router.post('/', authMiddleware, requireRole('admin', 'cadastro'), criar);
 
 module.exports = router;

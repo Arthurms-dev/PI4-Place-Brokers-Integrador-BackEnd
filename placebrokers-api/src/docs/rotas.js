@@ -26,6 +26,8 @@ const GRUPOS = {
   Painel: 'Feeds do painel do admin',
   Notificações: 'Aviso de lead novo no celular (site e app)',
   Viabilizador: 'Área do viabilizador (pós-MVP)',
+  'Trabalhe conosco': 'Vagas abertas e candidatura pelo site (público)',
+  RH: 'Painel do RH: candidaturas, currículos e vagas',
 };
 
 const ROTAS = [
@@ -57,27 +59,27 @@ const ROTAS = [
   // Empreendimentos
   { metodo: 'get', caminho: '/empreendimentos', grupo: 'Empreendimentos', acesso: 'publico', resumo: 'Lista o catálogo (público vê só os publicados; admin vê rascunhos)' },
   { metodo: 'get', caminho: '/empreendimentos/:id', grupo: 'Empreendimentos', acesso: 'publico', resumo: 'Detalhe do empreendimento com fotos e tipologias' },
-  { metodo: 'post', caminho: '/empreendimentos', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Cria empreendimento (multipart: dados + capa, galeria, book, tabela)', multipart: true },
-  { metodo: 'patch', caminho: '/empreendimentos/:id', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Atualiza dados do empreendimento',
+  { metodo: 'post', caminho: '/empreendimentos', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Cria empreendimento (multipart: dados + capa, galeria, book, tabela)', multipart: true },
+  { metodo: 'patch', caminho: '/empreendimentos/:id', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Atualiza dados do empreendimento',
     corpo: { nome: 'Residencial Exemplo', status: 'lancamento', segmento: 'mcmv', parcela_min: 499, publicado: true } },
-  { metodo: 'post', caminho: '/empreendimentos/:id/imagens/capa', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Troca a foto de capa (multipart, campo "imagem")', multipart: true },
-  { metodo: 'post', caminho: '/empreendimentos/:id/imagens/galeria', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Adiciona até 5 fotos na galeria (multipart, campo "imagens")', multipart: true },
-  { metodo: 'delete', caminho: '/empreendimentos/:id/imagens/:imagemId', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Remove uma foto da galeria' },
-  { metodo: 'post', caminho: '/empreendimentos/:id/tipologias', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Cria tipologia (planta)',
+  { metodo: 'post', caminho: '/empreendimentos/:id/imagens/capa', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Troca a foto de capa (multipart, campo "imagem")', multipart: true },
+  { metodo: 'post', caminho: '/empreendimentos/:id/imagens/galeria', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Adiciona até 5 fotos na galeria (multipart, campo "imagens")', multipart: true },
+  { metodo: 'delete', caminho: '/empreendimentos/:id/imagens/:imagemId', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Remove uma foto da galeria' },
+  { metodo: 'post', caminho: '/empreendimentos/:id/tipologias', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Cria tipologia (planta)',
     corpo: { nome: '2 quartos com suíte', quartos: 2, suites: 1, vagas: 1, area_m2: 52.4 } },
-  { metodo: 'patch', caminho: '/empreendimentos/:id/tipologias/:tipologiaId', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Atualiza tipologia', corpo: { area_m2: 54 } },
+  { metodo: 'patch', caminho: '/empreendimentos/:id/tipologias/:tipologiaId', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Atualiza tipologia', corpo: { area_m2: 54 } },
   { metodo: 'get', caminho: '/empreendimentos/:id/documentos', grupo: 'Empreendimentos', acesso: ['admin', 'corretor', 'gerente'], resumo: 'Lista book e tabelas aprovados e dentro da validade' },
   { metodo: 'get', caminho: '/empreendimentos/:id/documentos/:tipo', grupo: 'Empreendimentos', acesso: ['admin', 'corretor', 'gerente'], resumo: 'Link do book ou da tabela (tipo = book | tabela)' },
   { metodo: 'get', caminho: '/empreendimentos/:id/documentos/arquivo/:docId', grupo: 'Empreendimentos', acesso: ['admin', 'corretor', 'gerente'], resumo: 'Link de um documento específico' },
-  { metodo: 'get', caminho: '/empreendimentos/:id/documentos/admin', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Todos os documentos do empreendimento (inclusive pendentes)' },
-  { metodo: 'post', caminho: '/empreendimentos/:id/documentos/admin', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Cadastra documento do Drive',
+  { metodo: 'get', caminho: '/empreendimentos/:id/documentos/admin', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Todos os documentos do empreendimento (inclusive pendentes)' },
+  { metodo: 'post', caminho: '/empreendimentos/:id/documentos/admin', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Cadastra documento do Drive',
     corpo: { tipo: 'tabela', fase: 'Lançamento', titulo: 'Tabela outubro', drive_file_id: '1AbCdEfGhIjKlMnOp', status: 'aprovado', validade_ate: '2026-12-31' } },
-  { metodo: 'patch', caminho: '/empreendimentos/:id/documentos/admin/:docId', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Atualiza documento', corpo: { status: 'aprovado' } },
-  { metodo: 'get', caminho: '/empreendimentos/documentos/pendencias', grupo: 'Empreendimentos', acesso: ['admin'], resumo: 'Documentos do Drive que ainda precisam de revisão' },
+  { metodo: 'patch', caminho: '/empreendimentos/:id/documentos/admin/:docId', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Atualiza documento', corpo: { status: 'aprovado' } },
+  { metodo: 'get', caminho: '/empreendimentos/documentos/pendencias', grupo: 'Empreendimentos', acesso: ['admin', 'cadastro'], resumo: 'Documentos do Drive que ainda precisam de revisão' },
 
   // Construtoras
   { metodo: 'get', caminho: '/construtoras', grupo: 'Construtoras', acesso: 'publico', resumo: 'Lista as construtoras' },
-  { metodo: 'post', caminho: '/construtoras', grupo: 'Construtoras', acesso: ['admin'], resumo: 'Cadastra construtora', corpo: { nome: 'Construtora Exemplo' } },
+  { metodo: 'post', caminho: '/construtoras', grupo: 'Construtoras', acesso: ['admin', 'cadastro'], resumo: 'Cadastra construtora', corpo: { nome: 'Construtora Exemplo' } },
 
   // Leads
   { metodo: 'post', caminho: '/leads', grupo: 'Leads', acesso: 'publico', resumo: 'Formulário do site: cria o lead (mesmo e-mail ou telefone = mesmo lead) e chama a roleta',
@@ -95,12 +97,12 @@ const ROTAS = [
     corpo: { tipo: 'ligacao', descricao: 'Ligou para o cliente pelo app.', proximoContatoEm: null } },
 
   // Roleta
-  { metodo: 'get', caminho: '/roleta/hoje', grupo: 'Roleta', acesso: ['admin'], resumo: 'Painel da recepção: lista de chegada, quem falta marcar e leads aguardando' },
-  { metodo: 'post', caminho: '/roleta/chegada', grupo: 'Roleta', acesso: ['admin'], resumo: 'Marca a chegada do corretor (apto se antes das 09h)', corpo: { corretorId: ID } },
-  { metodo: 'patch', caminho: '/roleta/chegada/:corretorId', grupo: 'Roleta', acesso: ['admin'], resumo: 'Põe ou tira o corretor da roleta do dia', corpo: { apto: true } },
-  { metodo: 'delete', caminho: '/roleta/chegada/:corretorId', grupo: 'Roleta', acesso: ['admin'], resumo: 'Tira o corretor da lista de hoje' },
-  { metodo: 'post', caminho: '/roleta/iniciar', grupo: 'Roleta', acesso: ['admin'], resumo: 'Fecha a lista e começa a distribuir (às 09h acontece sozinho)' },
-  { metodo: 'post', caminho: '/roleta/distribuir', grupo: 'Roleta', acesso: ['admin'], resumo: 'Distribui agora os leads que estão sem corretor' },
+  { metodo: 'get', caminho: '/roleta/hoje', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Painel da recepção: lista de chegada, quem falta marcar e leads aguardando' },
+  { metodo: 'post', caminho: '/roleta/chegada', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Marca a chegada do corretor (apto se antes das 09h)', corpo: { corretorId: ID } },
+  { metodo: 'patch', caminho: '/roleta/chegada/:corretorId', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Põe ou tira o corretor da roleta do dia', corpo: { apto: true } },
+  { metodo: 'delete', caminho: '/roleta/chegada/:corretorId', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Tira o corretor da lista de hoje' },
+  { metodo: 'post', caminho: '/roleta/iniciar', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Fecha a lista e começa a distribuir (às 09h acontece sozinho)' },
+  { metodo: 'post', caminho: '/roleta/distribuir', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Distribui agora os leads que estão sem corretor' },
   { metodo: 'get', caminho: '/roleta/minha', grupo: 'Roleta', acesso: ['corretor'], resumo: 'Posição do corretor na roleta de hoje' },
   { metodo: 'get', caminho: '/roleta/focos', grupo: 'Roleta', acesso: ['admin', 'gerente'], resumo: 'Focos dos corretores (gerente: só a própria equipe)' },
   { metodo: 'put', caminho: '/roleta/focos/:corretorId', grupo: 'Roleta', acesso: ['admin', 'gerente'], resumo: 'Define em quais empreendimentos o corretor recebe leads', corpo: { empreendimentoIds: [ID] } },
@@ -122,14 +124,15 @@ const ROTAS = [
 
   // Vendas
   { metodo: 'post', caminho: '/vendas', grupo: 'Vendas', acesso: ['corretor'], resumo: 'Lança venda (fica aguardando o gerente)', corpo: { valor: 189000, clienteId: ID, empreendimentoId: ID } },
-  { metodo: 'get', caminho: '/vendas', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor'], resumo: 'Vendas visíveis para o cargo' },
+  { metodo: 'get', caminho: '/vendas', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Vendas visíveis para o cargo' },
   { metodo: 'patch', caminho: '/vendas/:id', grupo: 'Vendas', acesso: ['admin', 'gerente'], resumo: 'Confirma ou recusa a venda', corpo: { status: 'confirmada' } },
-  { metodo: 'get', caminho: '/vendas/vgv', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor'], resumo: 'Total de VGV confirmado', consulta: { equipeId: 'filtra por equipe', diretoriaId: 'filtra por diretoria' } },
+  { metodo: 'get', caminho: '/vendas/vgv', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Total de VGV confirmado', consulta: { equipeId: 'filtra por equipe', diretoriaId: 'filtra por diretoria' } },
 
   // Equipe
-  { metodo: 'get', caminho: '/equipe', grupo: 'Equipe', acesso: ['admin'], resumo: 'Usuários (filtros por status e cargo)', consulta: { status: 'pendente | aprovado | recusado', cargo: 'corretor | gerente | viabilizador' } },
-  { metodo: 'patch', caminho: '/equipe/:id', grupo: 'Equipe', acesso: ['admin'], resumo: 'Aprova/recusa, ativa/desativa ou muda a equipe do usuário', corpo: { status: 'aprovado', ativo: true, equipeId: ID } },
+  { metodo: 'get', caminho: '/equipe', grupo: 'Equipe', acesso: ['admin'], resumo: 'Usuários (filtros por status e cargo)', consulta: { status: 'pendente | aprovado | recusado', cargo: 'corretor | gerente | viabilizador | rh | recepcao | diretor | cadastro' } },
+  { metodo: 'patch', caminho: '/equipe/:id', grupo: 'Equipe', acesso: ['admin'], resumo: 'Aprova/recusa, ativa/desativa, muda a equipe (corretor) ou a diretoria (diretor)', corpo: { status: 'aprovado', ativo: true, equipeId: ID } },
   { metodo: 'post', caminho: '/equipe/gerentes', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria gerente', corpo: { nome: 'Gerente Exemplo', email: 'gerente@exemplo.com', password: 'senha-de-teste' } },
+  { metodo: 'post', caminho: '/equipe/usuarios', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria usuário interno: gerente, rh, recepcao, diretor (com diretoriaId) ou cadastro', corpo: { nome: 'Diretor Exemplo', email: 'diretor@exemplo.com', password: 'senha-de-teste', cargo: 'diretor', diretoriaId: ID } },
   { metodo: 'get', caminho: '/equipe/times', grupo: 'Equipe', acesso: ['admin'], resumo: 'Equipes' },
   { metodo: 'post', caminho: '/equipe/times', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria equipe', corpo: { nome: 'Time Paulista', gerenteId: ID, diretoriaId: ID, sede: 'Paulista' } },
   { metodo: 'patch', caminho: '/equipe/times/:id', grupo: 'Equipe', acesso: ['admin'], resumo: 'Atualiza equipe', corpo: { nome: 'Time Paulista 2' } },
@@ -151,7 +154,7 @@ const ROTAS = [
   { metodo: 'post', caminho: '/metricas/eventos', grupo: 'Métricas', acesso: 'publico', resumo: 'Registra visualização, busca ou contato no site',
     corpo: { tipo: 'visualizacao_empreendimento', empreendimentoId: ID, sessaoId: 'sessao-do-navegador' } },
   { metodo: 'get', caminho: '/metricas/meus-acessos', grupo: 'Métricas', acesso: 'logado', resumo: 'Últimos empreendimentos abertos pelo usuário' },
-  { metodo: 'get', caminho: '/metricas/dashboard', grupo: 'Métricas', acesso: ['admin'], resumo: 'Números do dashboard do admin',
+  { metodo: 'get', caminho: '/metricas/dashboard', grupo: 'Métricas', acesso: ['admin', 'diretor'], resumo: 'Números do dashboard (diretor: só a própria diretoria)',
     consulta: { de: 'data inicial (AAAA-MM-DD)', ate: 'data final (AAAA-MM-DD)', equipeId: 'filtra por equipe', diretoriaId: 'filtra por diretoria' } },
 
   // Painel
@@ -171,6 +174,16 @@ const ROTAS = [
   { metodo: 'patch', caminho: '/viabilizador/produtos/:id', grupo: 'Viabilizador', acesso: ['viabilizador'], resumo: 'Atualiza produto', corpo: { disponivel: true } },
   { metodo: 'post', caminho: '/viabilizador/produtos/:id/documentos/:tipo', grupo: 'Viabilizador', acesso: ['viabilizador'], resumo: 'Envia book ou tabela (multipart, campo "arquivo")', multipart: true },
   { metodo: 'get', caminho: '/viabilizador/oportunidades', grupo: 'Viabilizador', acesso: ['viabilizador'], resumo: 'Procura pelos produtos no site', consulta: { dias: 'período em dias (padrão 30)' } },
+  // Trabalhe conosco (site) e painel do RH
+  { metodo: 'get', caminho: '/trabalhe-conosco/vagas', grupo: 'Trabalhe conosco', acesso: 'publico', resumo: 'Vagas abertas (sem vaga, a pessoa entra no banco de talentos)' },
+  { metodo: 'post', caminho: '/trabalhe-conosco/candidaturas', grupo: 'Trabalhe conosco', acesso: 'publico', resumo: 'Candidatura (multipart: nome, email, telefone, area, unidade, vagaId, creci, linkedin, mensagem, aceite, consentimentoVersao + curriculo em PDF até 5 MB)', multipart: true },
+  { metodo: 'get', caminho: '/rh/candidaturas', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Candidaturas', consulta: { status: 'novo | em_analise | entrevista | aprovado | recusado', vagaId: 'id da vaga ou "banco"', area: 'corretor | captacao | administrativo | marketing | tecnologia | outra', unidade: 'Recife | Caruaru | Paulista' } },
+  { metodo: 'patch', caminho: '/rh/candidaturas/:id', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Muda o status ou a anotação', corpo: { status: 'entrevista', notas: 'Entrevista marcada para sexta às 10h.' } },
+  { metodo: 'delete', caminho: '/rh/candidaturas/:id', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Apaga a candidatura e o currículo (pedido da pessoa, LGPD)' },
+  { metodo: 'get', caminho: '/rh/candidaturas/:id/curriculo', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Link temporário (5 min) para abrir o currículo' },
+  { metodo: 'get', caminho: '/rh/vagas', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Todas as vagas (abertas e fechadas)' },
+  { metodo: 'post', caminho: '/rh/vagas', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Abre uma vaga', corpo: { titulo: 'Corretor(a) de imóveis — Recife', area: 'corretor', unidade: 'Recife', descricao: 'Atendimento de leads de lançamentos.' } },
+  { metodo: 'patch', caminho: '/rh/vagas/:id', grupo: 'RH', acesso: ['admin', 'rh'], resumo: 'Edita, abre ou fecha a vaga', corpo: { aberta: false } },
 ];
 
 module.exports = { ROTAS, GRUPOS, ID_EXEMPLO: ID };

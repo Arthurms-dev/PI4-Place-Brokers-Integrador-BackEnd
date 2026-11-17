@@ -256,7 +256,7 @@
           }
         },
         {
-          "name": "PATCH /auth/me — Atualiza nome e telefone",
+          "name": "PATCH /auth/me — Atualiza nome, telefone e o aviso de lead por e-mail",
           "request": {
             "method": "PATCH",
             "header": [
@@ -278,7 +278,7 @@
             "description": "Qualquer usuário logado",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Fulano de Tal\",\n  \"telefone\": \"81999998888\"\n}",
+              "raw": "{\n  \"nome\": \"Fulano de Tal\",\n  \"telefone\": \"81999998888\",\n  \"avisoLeadEmail\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -450,7 +450,7 @@
                 "empreendimentos"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "formdata",
               "formdata": []
@@ -477,7 +477,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Residencial Exemplo\",\n  \"status\": \"lancamento\",\n  \"segmento\": \"mcmv\",\n  \"parcela_min\": 499,\n  \"publicado\": true\n}",
@@ -506,7 +506,7 @@
                 "capa"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "formdata",
               "formdata": []
@@ -530,7 +530,7 @@
                 "galeria"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "formdata",
               "formdata": []
@@ -554,7 +554,7 @@
                 "{{imagemId}}"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, cadastro"
           }
         },
         {
@@ -578,7 +578,7 @@
                 "tipologias"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"2 quartos com suíte\",\n  \"quartos\": 2,\n  \"suites\": 1,\n  \"vagas\": 1,\n  \"area_m2\": 52.4\n}",
@@ -612,7 +612,7 @@
                 "{{tipologiaId}}"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"area_m2\": 54\n}",
@@ -701,7 +701,7 @@
                 "admin"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, cadastro"
           }
         },
         {
@@ -726,7 +726,7 @@
                 "admin"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"tipo\": \"tabela\",\n  \"fase\": \"Lançamento\",\n  \"titulo\": \"Tabela outubro\",\n  \"drive_file_id\": \"1AbCdEfGhIjKlMnOp\",\n  \"status\": \"aprovado\",\n  \"validade_ate\": \"2026-12-31\"\n}",
@@ -761,7 +761,7 @@
                 "{{docId}}"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"aprovado\"\n}",
@@ -789,7 +789,7 @@
                 "pendencias"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, cadastro"
           }
         }
       ]
@@ -837,7 +837,7 @@
                 "construtoras"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, cadastro",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Construtora Exemplo\"\n}",
@@ -1119,7 +1119,7 @@
                 "hoje"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, recepcao"
           }
         },
         {
@@ -1142,7 +1142,7 @@
                 "chegada"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, recepcao",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"corretorId\": \"00000000-0000-4000-8000-000000000000\"\n}",
@@ -1175,7 +1175,7 @@
                 "{{corretorId}}"
               ]
             },
-            "description": "Cargos: admin",
+            "description": "Cargos: admin, recepcao",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"apto\": true\n}",
@@ -1203,7 +1203,7 @@
                 "{{corretorId}}"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, recepcao"
           }
         },
         {
@@ -1221,7 +1221,7 @@
                 "iniciar"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, recepcao"
           }
         },
         {
@@ -1239,7 +1239,7 @@
                 "distribuir"
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, recepcao"
           }
         },
         {
@@ -1586,7 +1586,7 @@
                 "vendas"
               ]
             },
-            "description": "Cargos: admin, gerente, corretor"
+            "description": "Cargos: admin, gerente, corretor, diretor"
           }
         },
         {
@@ -1650,7 +1650,7 @@
                 }
               ]
             },
-            "description": "Cargos: admin, gerente, corretor"
+            "description": "Cargos: admin, gerente, corretor, diretor"
           }
         }
       ]
@@ -1682,7 +1682,7 @@
                 {
                   "key": "cargo",
                   "value": "",
-                  "description": "corretor | gerente | viabilizador",
+                  "description": "corretor | gerente | viabilizador | rh | recepcao | diretor | cadastro",
                   "disabled": true
                 }
               ]
@@ -1691,7 +1691,7 @@
           }
         },
         {
-          "name": "PATCH /equipe/:id — Aprova/recusa, ativa/desativa ou muda a equipe do usuário",
+          "name": "PATCH /equipe/:id — Aprova/recusa, ativa/desativa, muda a equipe (corretor) ou a diretoria (diretor)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1746,6 +1746,38 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Gerente Exemplo\",\n  \"email\": \"gerente@exemplo.com\",\n  \"password\": \"senha-de-teste\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /equipe/usuarios — Cria usuário interno: gerente, rh, recepcao, diretor (com diretoriaId) ou cadastro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipe/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipe",
+                "usuarios"
+              ]
+            },
+            "description": "Cargos: admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Diretor Exemplo\",\n  \"email\": \"diretor@exemplo.com\",\n  \"password\": \"senha-de-teste\",\n  \"cargo\": \"diretor\",\n  \"diretoriaId\": \"00000000-0000-4000-8000-000000000000\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2101,7 +2133,7 @@
           }
         },
         {
-          "name": "GET /metricas/dashboard — Números do dashboard do admin",
+          "name": "GET /metricas/dashboard — Números do dashboard (diretor: só a própria diretoria)",
           "request": {
             "method": "GET",
             "header": [],
@@ -2141,7 +2173,7 @@
                 }
               ]
             },
-            "description": "Cargos: admin"
+            "description": "Cargos: admin, diretor"
           }
         }
       ]
@@ -2427,6 +2459,263 @@
               ]
             },
             "description": "Cargos: viabilizador"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trabalhe conosco",
+      "description": "Vagas abertas e candidatura pelo site (público)",
+      "item": [
+        {
+          "name": "GET /trabalhe-conosco/vagas — Vagas abertas (sem vaga, a pessoa entra no banco de talentos)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trabalhe-conosco/vagas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trabalhe-conosco",
+                "vagas"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /trabalhe-conosco/candidaturas — Candidatura (multipart: nome, email, telefone, area, unidade, vagaId, creci, linkedin, mensagem, aceite, consentimentoVersao + curriculo em PDF até 5 MB)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trabalhe-conosco/candidaturas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trabalhe-conosco",
+                "candidaturas"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "RH",
+      "description": "Painel do RH: candidaturas, currículos e vagas",
+      "item": [
+        {
+          "name": "GET /rh/candidaturas — Candidaturas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rh/candidaturas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "candidaturas"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "novo | em_analise | entrevista | aprovado | recusado",
+                  "disabled": true
+                },
+                {
+                  "key": "vagaId",
+                  "value": "",
+                  "description": "id da vaga ou \"banco\"",
+                  "disabled": true
+                },
+                {
+                  "key": "area",
+                  "value": "",
+                  "description": "corretor | captacao | administrativo | marketing | tecnologia | outra",
+                  "disabled": true
+                },
+                {
+                  "key": "unidade",
+                  "value": "",
+                  "description": "Recife | Caruaru | Paulista",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Cargos: admin, rh"
+          }
+        },
+        {
+          "name": "PATCH /rh/candidaturas/:id — Muda o status ou a anotação",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rh/candidaturas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "candidaturas",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, rh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"entrevista\",\n  \"notas\": \"Entrevista marcada para sexta às 10h.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /rh/candidaturas/:id — Apaga a candidatura e o currículo (pedido da pessoa, LGPD)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rh/candidaturas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "candidaturas",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, rh"
+          }
+        },
+        {
+          "name": "GET /rh/candidaturas/:id/curriculo — Link temporário (5 min) para abrir o currículo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rh/candidaturas/{{id}}/curriculo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "candidaturas",
+                "{{id}}",
+                "curriculo"
+              ]
+            },
+            "description": "Cargos: admin, rh"
+          }
+        },
+        {
+          "name": "GET /rh/vagas — Todas as vagas (abertas e fechadas)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rh/vagas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "vagas"
+              ]
+            },
+            "description": "Cargos: admin, rh"
+          }
+        },
+        {
+          "name": "POST /rh/vagas — Abre uma vaga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rh/vagas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "vagas"
+              ]
+            },
+            "description": "Cargos: admin, rh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Corretor(a) de imóveis — Recife\",\n  \"area\": \"corretor\",\n  \"unidade\": \"Recife\",\n  \"descricao\": \"Atendimento de leads de lançamentos.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /rh/vagas/:id — Edita, abre ou fecha a vaga",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rh/vagas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "vagas",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, rh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aberta\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         }
       ]

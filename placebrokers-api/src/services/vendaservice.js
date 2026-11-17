@@ -13,6 +13,14 @@ class VendaService {
   /** @param {{ id: string, cargo: string }} usuario @returns {Promise<string[]>} */
   async corretoresVisiveis(usuario) {
     if (usuario.cargo === 'admin') return null;
+    if (usuario.cargo === 'diretor') {
+      // Só leitura: corretores das equipes da diretoria dele. Sem diretoria, não vê nada.
+      if (!usuario.diretoria_id) return [];
+      const equipes = await this.equipeRepository.listarTimesPorDiretoria(usuario.diretoria_id);
+      if (!equipes.length) return [];
+      const membros = await this.equipeRepository.listar({});
+      return membros.filter((m) => equipes.some((e) => e.id === m.equipe_id)).map((m) => m.id);
+    }
     if (usuario.cargo === 'gerente') {
       const equipes = await this.equipeRepository.listarTimesDoGerente(usuario.id);
       if (!equipes.length) return [];

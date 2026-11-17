@@ -10,6 +10,10 @@ jest.mock('../controllers/corretorController', () => ({
 jest.mock('../repositories/corretorRepository', () => ({
   CorretorRepository: jest.fn(),
 }));
+jest.mock('../services/avisosSeguranca', () => ({
+  vigia: { acessoNegado: jest.fn(() => Promise.resolve()) },
+  emSegundoPlano: jest.fn(),
+}));
 jest.mock('../middlewares/authMiddleware', () => ({
   authMiddleware: jest.fn((req, res, next) => next()),
 }));
@@ -60,13 +64,13 @@ describe('rotas /vendas', () => {
   });
   test.each([
     ['post','/',['corretor']],
-    ['get','/',['admin','gerente','corretor']],
+    ['get','/',['admin','gerente','corretor','diretor']],
     ['patch','/:id',['admin','gerente']],
-    ['get','/vgv',['admin','gerente','corretor']],
+    ['get','/vgv',['admin','gerente','corretor','diretor']],
   ])('%s %s: permite somente %p', (method,path,permitidos) => {
     const stack = middlewareDeRota(vendasRouter,method,path);
     expect(stack).toHaveLength(1);
-    for(const cargo of ['admin','gerente','corretor','viabilizador']) {
+    for(const cargo of ['admin','gerente','corretor','viabilizador','diretor','rh','recepcao','cadastro']) {
       const r = testarPapel(stack[0],cargo);
       expect(r.liberado).toBe(permitidos.includes(cargo));
       if(!permitidos.includes(cargo)) expect(r.status).toBe(403);

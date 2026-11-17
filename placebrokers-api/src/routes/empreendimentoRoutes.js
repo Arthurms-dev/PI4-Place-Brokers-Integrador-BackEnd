@@ -41,15 +41,17 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 const router = Router();
+// Quem mantém o catálogo: admin e o cargo de cadastro (empreendimentos, fotos, books e tabelas).
+const CATALOGO = ['admin', 'cadastro'];
 
-router.get('/documentos/pendencias', authMiddleware, requireRole('admin'), listarPendenciasDrive);
+router.get('/documentos/pendencias', authMiddleware, requireRole(...CATALOGO), listarPendenciasDrive);
 router.get('/', optionalAuthMiddleware, listar);
 router.get('/:id', optionalAuthMiddleware, buscarPorId);
 
 // A ordem evita tratar /documentos/admin como /documentos/:tipo.
-router.get('/:id/documentos/admin', authMiddleware, requireRole('admin'), listarDocsAdmin);
-router.post('/:id/documentos/admin', authMiddleware, requireRole('admin'), criarDocAdmin);
-router.patch('/:id/documentos/admin/:docId', authMiddleware, requireRole('admin'), atualizarDocAdmin);
+router.get('/:id/documentos/admin', authMiddleware, requireRole(...CATALOGO), listarDocsAdmin);
+router.post('/:id/documentos/admin', authMiddleware, requireRole(...CATALOGO), criarDocAdmin);
+router.patch('/:id/documentos/admin/:docId', authMiddleware, requireRole(...CATALOGO), atualizarDocAdmin);
 
 router.get('/:id/documentos', authMiddleware, requireRole('admin', 'corretor', 'gerente'), listarDocsComerciais);
 router.get('/:id/documentos/arquivo/:docId', authMiddleware, requireRole('admin', 'corretor', 'gerente'), vigiarDocumento, abrirDocComercial);
@@ -58,7 +60,7 @@ router.get('/:id/documentos/:tipo', authMiddleware, requireRole('admin', 'corret
 router.post(
   '/',
   authMiddleware,
-  requireRole('admin'),
+  requireRole(...CATALOGO),
   upload.fields([
     { name: 'capa', maxCount: 1 },
     { name: 'galeria', maxCount: 20 },
@@ -67,11 +69,11 @@ router.post(
   ]),
   criar,
 );
-router.patch('/:id', authMiddleware, requireRole('admin'), atualizar);
+router.patch('/:id', authMiddleware, requireRole(...CATALOGO), atualizar);
 // Uploads protegidos: até 15 MB por foto, cinco fotos por envio.
-router.post('/:id/imagens/capa', authMiddleware, requireRole('admin'), upload.single('imagem'), trocarCapa);
-router.post('/:id/imagens/galeria', authMiddleware, requireRole('admin'), upload.array('imagens', 5), adicionarFotos);
-router.delete('/:id/imagens/:imagemId', authMiddleware, requireRole('admin'), removerFoto);
-router.post('/:id/tipologias', authMiddleware, requireRole('admin'), criarTipologia);
-router.patch('/:id/tipologias/:tipologiaId', authMiddleware, requireRole('admin'), atualizarTipologia);
+router.post('/:id/imagens/capa', authMiddleware, requireRole(...CATALOGO), upload.single('imagem'), trocarCapa);
+router.post('/:id/imagens/galeria', authMiddleware, requireRole(...CATALOGO), upload.array('imagens', 5), adicionarFotos);
+router.delete('/:id/imagens/:imagemId', authMiddleware, requireRole(...CATALOGO), removerFoto);
+router.post('/:id/tipologias', authMiddleware, requireRole(...CATALOGO), criarTipologia);
+router.patch('/:id/tipologias/:tipologiaId', authMiddleware, requireRole(...CATALOGO), atualizarTipologia);
 module.exports = router;

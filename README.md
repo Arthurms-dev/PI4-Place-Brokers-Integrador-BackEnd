@@ -75,6 +75,12 @@ Os erros seguem o formato `{ error: { code, message, fieldErrors } }` (vendas us
 | `gerente` | pelo admin | equipe, leads, agendamentos e vendas da sua equipe; confirma vendas |
 | `corretor` | cadastro próprio + aprovação do admin (corretor externo precisa de CRECI) | seus leads, clientes, agendamentos e vendas |
 | `viabilizador` | fora do MVP | produtos e oportunidades |
+| `diretor` | pelo admin, ligado a uma diretoria | dashboard, VGV e vendas das equipes da própria diretoria (só leitura) |
+| `recepcao` | pelo admin | lista de chegada e roleta do dia |
+| `cadastro` | pelo admin | empreendimentos, fotos, tipologias, books, tabelas e construtoras |
+| `rh` | pelo admin | candidaturas do Trabalhe conosco, currículos e vagas |
+
+Os cargos `diretor`, `recepcao`, `cadastro` e `rh` vieram da reunião com a diretoria de 17/11/2026 (migrações `20261117_cargos_novos.sql` e `20261117_trabalhe_conosco.sql`, nessa ordem). O admin cria esses acessos em Equipe → Acessos internos (`POST /equipe/usuarios`).
 
 ## Endpoints
 
@@ -83,20 +89,22 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 | Recurso | Rotas | Quem |
 | --- | --- | --- |
 | `/auth` | `POST /login` (devolve `token` de 1 hora e `refreshToken`), `POST /renovar`, `POST /register`, `POST /esqueci-senha`, `POST /redefinir-senha`, `GET /me`, `PATCH /me`, `PATCH /senha` | público / logado |
-| `/empreendimentos` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `POST /:id/imagens/capa`, `POST /:id/imagens/galeria`, `DELETE /:id/imagens/:imagemId`, `POST /:id/tipologias`, `PATCH /:id/tipologias/:tipologiaId`, `GET /:id/documentos`, `GET /:id/documentos/:tipo`, `GET /:id/documentos/arquivo/:docId`, `GET/POST /:id/documentos/admin`, `PATCH /:id/documentos/admin/:docId`, `GET /documentos/pendencias` | catálogo público; documentos para admin, gerente e corretor; edição admin |
-| `/construtoras` | `GET /`, `POST /` | leitura / admin |
+| `/empreendimentos` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `POST /:id/imagens/capa`, `POST /:id/imagens/galeria`, `DELETE /:id/imagens/:imagemId`, `POST /:id/tipologias`, `PATCH /:id/tipologias/:tipologiaId`, `GET /:id/documentos`, `GET /:id/documentos/:tipo`, `GET /:id/documentos/arquivo/:docId`, `GET/POST /:id/documentos/admin`, `PATCH /:id/documentos/admin/:docId`, `GET /documentos/pendencias` | catálogo público; documentos para admin, gerente e corretor; edição admin e cadastro |
+| `/construtoras` | `GET /`, `POST /` | leitura / admin e cadastro |
 | `/leads` | `POST /` (formulário do site), `GET /`, `GET /meus`, `GET /retornos`, `PATCH /:id/status`, `PATCH /:id/corretor`, `POST /:id/converter`, `POST /:id/cliente`, `GET/POST /:id/atividades` | público (criar) / admin / corretor |
-| `/roleta` | `GET /hoje`, `POST /chegada`, `PATCH/DELETE /chegada/:corretorId`, `POST /iniciar`, `POST /distribuir`, `GET /minha`, `GET /focos`, `PUT /focos/:corretorId` | recepção (admin) / corretor / gerente (focos da equipe) |
+| `/roleta` | `GET /hoje`, `POST /chegada`, `PATCH/DELETE /chegada/:corretorId`, `POST /iniciar`, `POST /distribuir`, `GET /minha`, `GET /focos`, `PUT /focos/:corretorId` | recepção e admin / corretor / gerente (focos da equipe) |
 | `/clientes` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id` | admin, corretor (só a própria carteira) |
 | `/agendamentos` | `GET /`, `POST /`, `PATCH /:id/data`, `PATCH /:id/status` | admin, corretor (só os seus) |
-| `/vendas` | `POST /`, `GET /`, `PATCH /:id`, `GET /vgv` | corretor registra; gerente/admin confirmam |
-| `/equipe` | `GET /`, `PATCH /:id`, `POST /gerentes`, `GET/POST /times`, `PATCH/DELETE /times/:id`, `GET/POST /diretorias` | admin |
+| `/vendas` | `POST /`, `GET /`, `PATCH /:id`, `GET /vgv` | corretor registra; gerente/admin confirmam; diretor só lê a própria diretoria |
+| `/equipe` | `GET /`, `PATCH /:id`, `POST /gerentes`, `POST /usuarios`, `GET/POST /times`, `PATCH/DELETE /times/:id`, `GET/POST /diretorias` | admin |
 | `/gerente` | `GET /equipe`, `GET /leads`, `GET /agendamentos`, `GET /desempenho`, `PATCH /leads/:id/corretor` | gerente (só a própria equipe) |
 | `/corretores` | `GET /` | admin |
-| `/metricas` | `POST /eventos`, `GET /meus-acessos`, `GET /dashboard` | público (eventos) / logado / admin |
+| `/metricas` | `POST /eventos`, `GET /meus-acessos`, `GET /dashboard` | público (eventos) / logado / admin e diretor (dashboard) |
 | `/painel` | `GET /avisos-seguranca`, `GET/POST /melhorias`, `GET /modificacoes` | admin |
 | `/notificacoes` | `GET /chave`, `POST /inscricao`, `DELETE /inscricao` | público (chave) / logado |
 | `/viabilizador` | `GET /produtos`, `PATCH /produtos/:id`, `POST /produtos/:id/documentos/:tipo`, `GET /oportunidades` | viabilizador (pós-MVP) |
+| `/trabalhe-conosco` | `GET /vagas`, `POST /candidaturas` (multipart, currículo em PDF até 5 MB) | público |
+| `/rh` | `GET /candidaturas`, `PATCH/DELETE /candidaturas/:id`, `GET /candidaturas/:id/curriculo`, `GET/POST /vagas`, `PATCH /vagas/:id` | rh e admin |
 | sistema | `GET /health`, `GET /docs`, `GET /docs/openapi.json` | público |
 
 ## Banco de dados

@@ -37,6 +37,14 @@ async function criarGerente(req, res) {
   }
 }
 
+async function criarUsuario(req, res) {
+  try {
+    return res.status(201).json(await equipeService.criarUsuarioInterno(req.body));
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 async function listarTimes(req, res) {
   try {
     return res.status(200).json(await equipeService.listarTimes());
@@ -95,6 +103,7 @@ function handleError(res, err) {
 }
 
 module.exports = {
+  criarUsuario,
   listar, atualizar, criarGerente,
   listarTimes, criarTime, atualizarTime, removerTime,
   listarDiretorias, criarDiretoria,

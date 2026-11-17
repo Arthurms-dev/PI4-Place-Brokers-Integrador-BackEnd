@@ -78,6 +78,9 @@ const limitadores = {
   leadPublico: criarLimitador({ janelaMs: 10 * MINUTO, maximo: 8, mensagem: 'Recebemos muitos envios desta conexão. Aguarde alguns minutos e tente de novo.',
     aoBloquear: vigiar((vigia, req) => vigia.enviosEmMassaNoFormulario({ ip: req.ip })) }),
   eventos: criarLimitador({ janelaMs: MINUTO, maximo: 120 }),
+  // Trabalhe conosco: currículo pesa mais que um lead, então o limite é menor.
+  candidatura: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 5, mensagem: 'Recebemos muitas candidaturas desta conexão. Tente de novo mais tarde.',
+    aoBloquear: vigiar((vigia, req) => vigia.enviosEmMassaNoFormulario({ ip: req.ip })) }),
 };
 
 const SEM_CONTROLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
@@ -97,6 +100,27 @@ function antiSpamLead(req, res, next) {
     email: corte(b.email, 160),
     telefone: corte(b.telefone, 20),
     mensagem: corte(b.mensagem, 1000),
+  };
+  delete req.body.website;
+  return next();
+}
+
+// Mesmo filtro de robô do formulário de contato, para o Trabalhe conosco.
+function antiSpamCandidatura(req, res, next) {
+  const b = req.body && typeof req.body === 'object' ? req.body : {};
+  const links = String(b.mensagem ?? '').match(/https?:\/\//gi) ?? [];
+  if (b.website || links.length > 2) {
+    vigiar((vigia, r) => vigia.spamNoFormulario({ ip: r.ip }))(req);
+    return res.status(201).json({ candidatura: { recebido: true } });
+  }
+  req.body = {
+    ...b,
+    nome: corte(b.nome, 120),
+    email: corte(b.email, 160),
+    telefone: corte(b.telefone, 20),
+    creci: corte(b.creci, 30),
+    linkedin: corte(b.linkedin, 200),
+    mensagem: corte(b.mensagem, 1500),
   };
   delete req.body.website;
   return next();
@@ -171,6 +195,7 @@ module.exports = {
   criarLimitador,
   limitadores,
   antiSpamLead,
+  antiSpamCandidatura,
   origensPermitidas,
   origemPermitida,
   cabecalhosDeSeguranca,

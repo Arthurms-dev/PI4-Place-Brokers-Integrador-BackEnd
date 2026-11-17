@@ -4,7 +4,9 @@ const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['pendente', 'aprovado', 'recusado'];
 const SEDES_VALIDAS = ['Paulista', 'Recife', 'Caruaru'];
-const CARGOS_VALIDOS = ['admin', 'corretor', 'viabilizador', 'gerente'];
+const CARGOS_VALIDOS = ['admin', 'corretor', 'viabilizador', 'gerente', 'rh', 'recepcao', 'diretor', 'cadastro'];
+// Cargos internos que só o admin cria (sem cadastro público). Admin continua só pelo Supabase.
+const CARGOS_CRIADOS_PELO_ADMIN = ['gerente', 'rh', 'recepcao', 'diretor', 'cadastro'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function erroDeCampo(campo, mensagem) {
@@ -75,6 +77,12 @@ class EquipeService {
       dados.equipe_id = equipeId;
     }
 
+    if (mudancas.diretoriaId !== undefined) {
+      if (membro.cargo !== 'diretor') throw erroDeCampo('diretoriaId', 'Só diretores têm diretoria.');
+      if (!mudancas.diretoriaId) throw erroDeCampo('diretoriaId', 'Escolha a diretoria do diretor.');
+      dados.diretoria_id = await this.validarDiretoria(mudancas.diretoriaId);
+    }
+
     if (mudancas.construtoraId !== undefined) {
       const construtoraId = mudancas.construtoraId === '' ? null : mudancas.construtoraId;
       if (construtoraId && !(await this.equipeRepository.construtoraExiste(construtoraId))) {
@@ -93,16 +101,25 @@ class EquipeService {
   }
 
 
+  /** Atalho mantido para a rota antiga POST /equipe/gerentes. */
+  async criarGerente(dados = {}) {
+    return this.criarUsuarioInterno({ ...dados, cargo: 'gerente' });
+  }
+
   /**
-   * @param {{ nome?: string, email?: string, password?: string }} dados
+   * Cria gerente, RH, recepção, diretor ou cadastro. Já entra aprovado e só faz login.
+   * @param {{ nome?: string, email?: string, password?: string, cargo?: string, diretoriaId?: string }} dados
    */
-  async criarGerente({ nome, email, password } = {}) {
+  async criarUsuarioInterno({ nome, email, password, cargo, diretoriaId } = {}) {
     const erros = {};
+    if (!CARGOS_CRIADOS_PELO_ADMIN.includes(cargo)) erros.cargo = 'Escolha um cargo válido.';
     if (!nome?.trim()) erros.nome = 'Informe o nome.';
     if (!email?.trim() || !EMAIL_REGEX.test(email.trim())) erros.email = 'E-mail inválido.';
     if (!password || password.length < 6) erros.password = 'A senha deve ter pelo menos 6 caracteres.';
+    if (cargo === 'diretor' && !diretoriaId) erros.diretoriaId = 'Escolha a diretoria do diretor.';
     if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
 
+    const diretoria_id = cargo === 'diretor' ? await this.validarDiretoria(diretoriaId) : null;
     const emailNormalizado = email.trim().toLowerCase();
 
     let resultado;
@@ -125,10 +142,14 @@ class EquipeService {
         id: data.user.id,
         nome: nome.trim(),
         email: emailNormalizado,
-        cargo: 'gerente',
+        cargo,
         status: 'aprovado',
+        diretoriaId: diretoria_id,
       });
-      return { id: perfil.id, nome: perfil.nome, email: perfil.email, cargo: perfil.cargo, status: perfil.status };
+      return {
+        id: perfil.id, nome: perfil.nome, email: perfil.email, cargo: perfil.cargo,
+        status: perfil.status, diretoria_id: perfil.diretoria_id ?? null,
+      };
     } catch (cause) {
       throw new AppError('SERVER_ERROR', 'Usuário criado, mas houve erro ao salvar o perfil.', {}, cause);
     }
@@ -243,4 +264,4 @@ class EquipeService {
   }
 }
 
-module.exports = { EquipeService };
+module.exports = { EquipeService, CARGOS_CRIADOS_PELO_ADMIN };

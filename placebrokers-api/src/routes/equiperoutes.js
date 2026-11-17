@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const {
-  listar, atualizar, criarGerente,
+  listar, atualizar, criarGerente, criarUsuario,
   listarTimes, criarTime, atualizarTime, removerTime,
   listarDiretorias, criarDiretoria,
 } = require('../controllers/equipecontroller');
@@ -17,6 +17,8 @@ router.get('/', listar);
 
 router.patch('/:id', atualizar);
 router.post('/gerentes', criarGerente);
+// Gerente, RH, recepção, diretor ou cadastro (o cargo vai no corpo).
+router.post('/usuarios', criarUsuario);
 
 router.get('/times', listarTimes);
 router.post('/times', criarTime);

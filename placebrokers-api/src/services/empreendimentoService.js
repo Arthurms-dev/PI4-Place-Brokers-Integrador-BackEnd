@@ -4,7 +4,8 @@ const { AppError } = require('../errors/AppError');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 const SEGMENTOS_VALIDOS = ['mcmv', 'medio_padrao', 'alto_padrao', 'litoral'];
-const CARGOS_INTERNOS = new Set(['admin', 'corretor', 'gerente']);
+const CARGOS_INTERNOS = new Set(['admin', 'corretor', 'gerente', 'cadastro']);
+const CARGOS_DO_CATALOGO = new Set(['admin', 'cadastro']);
 const CAMPOS_TIPOLOGIA = {
   quartos: 'quartos',
   suites: 'suites',
@@ -36,7 +37,7 @@ class EmpreendimentoService {
 
     if (usuario != null || !apenasPublicados) {
       const linhas = await this.empreendimentoRepository.listar({ apenasPublicados });
-      return linhas.map((linha) => this.sanitizar(linha, {incluirAutor: usuario?.cargo === 'admin'}));
+      return linhas.map((linha) => this.sanitizar(linha, {incluirAutor: CARGOS_DO_CATALOGO.has(usuario?.cargo)}));
     }
 
     const cache = this._catalogoPublico;

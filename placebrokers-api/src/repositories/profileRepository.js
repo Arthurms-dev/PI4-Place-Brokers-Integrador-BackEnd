@@ -36,10 +36,13 @@ class ProfileRepository {
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
    */
-  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, construtoraId = null, status = 'pendente' }) {
+  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, construtoraId = null, status = 'pendente', diretoriaId = null }) {
+    const linha = { id, nome, email, cargo, vinculo, creci, uf, construtora_id: construtoraId, status };
+    // Só manda a coluna quando há diretoria: assim o cadastro de corretor segue igual.
+    if (diretoriaId) linha.diretoria_id = diretoriaId;
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .insert({ id, nome, email, cargo, vinculo, creci, uf, construtora_id: construtoraId, status })
+      .insert(linha)
       .select()
       .single();
     if (error) throw error;
@@ -54,4 +57,4 @@ class ProfileRepository {
   }
 }
 
-module.exports = { ProfileRepository };
+module.exports = { ProfileRepository };

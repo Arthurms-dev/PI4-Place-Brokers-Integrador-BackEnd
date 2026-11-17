@@ -13,6 +13,7 @@ router.post('/eventos', limitadores.eventos, optionalAuthMiddleware, registrarEv
 
 router.get('/meus-acessos', authMiddleware, meusAcessos);
 
-router.get('/dashboard', authMiddleware, requireRole('admin'), dashboard);
+// Diretor: o controller força a diretoria dele.
+router.get('/dashboard', authMiddleware, requireRole('admin', 'diretor'), dashboard);
 
 module.exports = router;

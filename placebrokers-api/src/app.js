@@ -17,6 +17,8 @@ const gerenteRoutes = require('./routes/gerenteroutes');
 const viabilizadorRoutes = require('./routes/viabilizadorroutes');
 const roletaRoutes = require('./routes/roletaRoutes');
 const notificacaoRoutes = require('./routes/notificacaoRoutes');
+const trabalheConoscoRoutes = require('./routes/trabalheConoscoRoutes');
+const rhRoutes = require('./routes/rhRoutes');
 const { montarDocs } = require('./docs/openapi');
 
 const app = express();
@@ -38,6 +40,8 @@ app.use('/gerente', gerenteRoutes);
 app.use('/viabilizador', viabilizadorRoutes);
 app.use('/roleta', roletaRoutes);
 app.use('/notificacoes', notificacaoRoutes);
+app.use('/trabalhe-conosco', trabalheConoscoRoutes);
+app.use('/rh', rhRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

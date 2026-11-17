@@ -28,8 +28,21 @@ async function meusAcessos(req, res) {
 
 async function dashboard(req, res) {
   try {
-    const { de, ate, equipeId, diretoriaId } = req.query;
-    return res.status(200).json(await metricasService.dashboard({ de, ate, equipeId, diretoriaId }));
+    const { de, ate } = req.query;
+    let { equipeId, diretoriaId } = req.query;
+    const ehDiretor = req.user?.cargo === 'diretor';
+    if (ehDiretor) {
+      // O diretor só vê a própria diretoria, mesmo que mande outro filtro na URL.
+      if (!req.user.diretoria_id) {
+        throw new AppError('FORBIDDEN', 'Sua conta ainda não tem diretoria. Peça ao administrador para vincular.');
+      }
+      equipeId = undefined;
+      diretoriaId = req.user.diretoria_id;
+    }
+    const dados = await metricasService.dashboard({ de, ate, equipeId, diretoriaId });
+    // Os últimos leads são da Place toda (nome e telefone de cliente): ficam só com o admin.
+    if (ehDiretor && dados?.leads) dados.leads = { ...dados.leads, recentes: [] };
+    return res.status(200).json(dados);
   } catch (err) {
     return handleError(res, err);
   }

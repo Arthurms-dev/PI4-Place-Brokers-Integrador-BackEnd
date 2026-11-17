@@ -387,3 +387,27 @@ describe('VendaService.vgv', () => {
     expect(resultado).toEqual({ total: 70, quantidade: 1 });
   });
 });
+describe('diretor (só leitura da própria diretoria)', () => {
+  test('vê as vendas e o VGV só das equipes da diretoria dele', async () => {
+    const diretor = { id: 'dir-1', cargo: 'diretor', diretoria_id: 'dir-norte' };
+    mocks.equipeRepository.listarTimesPorDiretoria.mockResolvedValue([{ id: 'eq-1' }, { id: 'eq-2' }]);
+    mocks.equipeRepository.listar.mockResolvedValue(MEMBROS);
+    mocks.vendaRepository.listarPorCorretores.mockResolvedValue([
+      { status: 'confirmada', valor: 100 }, { status: 'pendente', valor: 50 },
+    ]);
+    await expect(service.vgv(diretor, { diretoriaId: 'outra' })).resolves.toEqual({ total: 100, quantidade: 1 });
+    expect(mocks.equipeRepository.listarTimesPorDiretoria).toHaveBeenCalledWith('dir-norte');
+    expect(mocks.vendaRepository.listarPorCorretores).toHaveBeenCalledWith(['cor-1', 'cor-2', 'cor-3']);
+    expect(mocks.vendaRepository.listarTodas).not.toHaveBeenCalled();
+  });
+
+  test('sem diretoria vinculada não vê nada', async () => {
+    await service.listar({ id: 'dir-2', cargo: 'diretor', diretoria_id: null });
+    expect(mocks.vendaRepository.listarPorCorretores).toHaveBeenCalledWith([]);
+    expect(mocks.vendaRepository.listarTodas).not.toHaveBeenCalled();
+  });
+
+  test('não confirma venda', async () => {
+    await expect(service.decidir('v1', 'confirmada', { id: 'dir-1', cargo: 'diretor' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+});
