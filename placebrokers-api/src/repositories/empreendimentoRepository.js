@@ -37,6 +37,18 @@ class EmpreendimentoRepository {
     return data;
   }
 
+  /** Fotos de preço do empreendimento, da mais antiga para a mais nova. */
+  async historicoDePreco(id) {
+    const { data, error } = await supabaseAdmin
+      .from('empreendimento_precos_historico')
+      .select('preco_min, registrado_em')
+      .eq('empreendimento_id', id)
+      .order('registrado_em', { ascending: true })
+      .limit(500);
+    if (error) throw error;
+    return data ?? [];
+  }
+
   async criar(dados) {
     const { data, error } = await supabaseAdmin
       .from('empreendimentos')

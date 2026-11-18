@@ -2,6 +2,8 @@
 
 const { AppError } = require('../errors/AppError');
 const { validarAndamento } = require('../utils/andamentoObra');
+const { validarFatos } = require('../utils/fatosMercado');
+const { evolucaoDoPreco } = require('../utils/evolucaoPreco');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 const SEGMENTOS_VALIDOS = ['mcmv', 'medio_padrao', 'alto_padrao', 'litoral'];
@@ -78,7 +80,13 @@ class EmpreendimentoService {
     if (!empreendimento.publicado && !usuarioPodeVerRascunhos(usuario)) {
       throw new AppError('NOT_FOUND', 'Empreendimento não encontrado.');
     }
-    return this.sanitizar(empreendimento);
+    // Evolução do "a partir de" (dado próprio da Place). Se o histórico falhar, o detalhe sai sem ela.
+    let evolucao = null;
+    if (this.empreendimentoRepository.historicoDePreco) {
+      const historico = await this.empreendimentoRepository.historicoDePreco(id).catch(() => []);
+      evolucao = evolucaoDoPreco(historico, empreendimento.preco_min);
+    }
+    return { ...this.sanitizar(empreendimento), evolucao_preco: evolucao };
   }
 
   sanitizar(row, {incluirAutor = false} = {}) {
@@ -155,7 +163,9 @@ class EmpreendimentoService {
     if (dados.andamentoObra !== undefined) andamento.andamento_obra = dados.andamentoObra;
     if (dados.andamentoReferencia !== undefined) andamento.andamento_referencia = dados.andamentoReferencia || null;
     if (dados.andamentoFonteUrl !== undefined) andamento.andamento_fonte_url = dados.andamentoFonteUrl || null;
+    if (dados.fatosMercado !== undefined) andamento.fatos_mercado = dados.fatosMercado;
     validarAndamento(andamento, erros);
+    validarFatos(andamento, erros);
     if (Object.keys(erros).length) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
     }
@@ -253,6 +263,7 @@ class EmpreendimentoService {
       andamentoObra: 'andamento_obra',
       andamentoReferencia: 'andamento_referencia',
       andamentoFonteUrl: 'andamento_fonte_url',
+      fatosMercado: 'fatos_mercado',
       lazer: 'lazer',
       publicado: 'publicado',
       disponivel: 'disponivel',
@@ -275,6 +286,7 @@ class EmpreendimentoService {
     }
 
     validarAndamento(dados, erros, atual);
+    validarFatos(dados, erros);
 
     for (const campo of ['uf', 'cidade', 'bairro']) {
       if (campo in dados && !String(dados[campo] ?? '').trim()) {

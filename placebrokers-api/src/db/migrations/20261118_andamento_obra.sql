@@ -1,7 +1,7 @@
 -- Place Brokers PI4: andamento da obra por módulo/torre (ex.: "Módulo 01 – 86,29%"), com o mês da medição.
 -- Quem atualiza é o cadastro, uma vez por mês, junto com a tabela (as construtoras publicam assim).
 -- Por enquanto só o corretor vê (o público fica para a futura área do comprador); com mais de 60 dias aparece como desatualizado.
--- Aditivo: não apaga nada. AINDA NÃO APLICADA (rodar no SQL Editor do Supabase com o ok do João).
+-- Aditivo: não apaga nada. Aplicada no Supabase em 18/11/2026.
 BEGIN;
 
 ALTER TABLE public.empreendimentos
