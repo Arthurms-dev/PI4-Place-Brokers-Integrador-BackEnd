@@ -30,4 +30,4 @@ class LoginAttemptRepository {
 }
 
 // `loginAttemptRepository` (minúsculo) mantido por compatibilidade com quem já importava assim.
-module.exports = { LoginAttemptRepository, loginAttemptRepository: LoginAttemptRepository, JANELA_MINUTOS };
+module.exports = { LoginAttemptRepository, loginAttemptRepository: LoginAttemptRepository, JANELA_MINUTOS };

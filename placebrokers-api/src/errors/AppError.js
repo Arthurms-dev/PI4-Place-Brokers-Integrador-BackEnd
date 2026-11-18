@@ -25,4 +25,4 @@ class AppError extends Error {
   }
 }
 
-module.exports = { AppError, STATUS_BY_CODE };
+module.exports = { AppError, STATUS_BY_CODE };

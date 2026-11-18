@@ -249,4 +249,4 @@ class MetricasService {
   }
 }
 
-module.exports = { MetricasService, MINIMO_PROCURA };
+module.exports = { MetricasService, MINIMO_PROCURA };

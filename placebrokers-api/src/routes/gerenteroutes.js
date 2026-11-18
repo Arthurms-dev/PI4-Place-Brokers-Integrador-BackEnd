@@ -104,4 +104,4 @@ router.patch('/leads/:id/corretor', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;

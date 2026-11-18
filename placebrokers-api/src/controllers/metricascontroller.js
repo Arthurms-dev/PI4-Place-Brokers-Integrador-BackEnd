@@ -65,4 +65,4 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { registrarEvento, dashboard, meusAcessos, procura };
+module.exports = { registrarEvento, dashboard, meusAcessos, procura };

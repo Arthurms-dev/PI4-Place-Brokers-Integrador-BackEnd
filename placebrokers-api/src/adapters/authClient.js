@@ -22,4 +22,4 @@ const authClient = {
   createUser: (payload) => supabaseAdmin.auth.admin.createUser({ ...payload, email_confirm: true }),
 };
 
-module.exports = { authClient };
+module.exports = { authClient };
