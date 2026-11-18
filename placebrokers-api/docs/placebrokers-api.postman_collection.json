@@ -2606,6 +2606,25 @@
           }
         },
         {
+          "name": "GET /rh/candidaturas/resumo — Quantas candidaturas novas ainda não foram vistas (número no menu)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rh/candidaturas/resumo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rh",
+                "candidaturas",
+                "resumo"
+              ]
+            },
+            "description": "Cargos: admin, rh"
+          }
+        },
+        {
           "name": "PATCH /rh/candidaturas/:id — Muda o status ou a anotação",
           "request": {
             "method": "PATCH",

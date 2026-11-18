@@ -80,6 +80,7 @@ describe('AuthService', () => {
         role: 'admin',
         avisoLeadEmail: false,
         avatarUrl: null,
+        trocarSenha: false,
       });
       expect(result.token).toBe('fake-jwt-token');
       expect(deps.profileRepository.findById).toHaveBeenCalledWith('auth-user-1');

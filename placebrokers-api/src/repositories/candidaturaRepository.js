@@ -59,6 +59,14 @@ class CandidaturaRepository {
     return data;
   }
 
+  /** Quantas candidaturas ainda estão como "novo" (número no menu do RH). */
+  async contarNovas() {
+    const { count, error } = await supabaseAdmin.from('candidaturas')
+      .select('id', { count: 'exact', head: true }).eq('status', 'novo');
+    if (error) throw error;
+    return count ?? 0;
+  }
+
   async buscarCandidatura(id) {
     const { data, error } = await supabaseAdmin.from('candidaturas').select(CAMPOS_CANDIDATURA).eq('id', id).maybeSingle();
     if (error) throw error;

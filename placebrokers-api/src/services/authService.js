@@ -16,6 +16,7 @@ function toPublicUser(profile) {
   return {
     id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo,
     avisoLeadEmail: Boolean(profile.aviso_lead_email), avatarUrl: profile.avatar_url ?? null,
+    trocarSenha: profile.trocar_senha === true,
   };
 }
 
@@ -372,6 +373,14 @@ async login(credentials, contexto = {}) {
       if (error) throw error;
     } catch (cause) {
       throw new AuthError('SERVER_ERROR', 'Não foi possível alterar a senha agora.', {}, cause);
+    }
+    // Senha temporária trocada: libera o resto do sistema.
+    if (profile.trocar_senha === true) {
+      try {
+        await this.profileRepository.atualizar(userId, { trocar_senha: false });
+      } catch (cause) {
+        throw new AuthError('SERVER_ERROR', 'A senha foi trocada, mas não foi possível liberar o acesso. Tente de novo.', {}, cause);
+      }
     }
     this.vigia?.senhaAlterada({ email: profile.email })?.catch?.(() => {});
     return { ok: true };

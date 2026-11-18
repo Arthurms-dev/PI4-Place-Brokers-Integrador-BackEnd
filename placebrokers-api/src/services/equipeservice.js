@@ -145,10 +145,12 @@ class EquipeService {
         cargo,
         status: 'aprovado',
         diretoriaId: diretoria_id,
+        trocarSenha: true,
       });
       return {
         id: perfil.id, nome: perfil.nome, email: perfil.email, cargo: perfil.cargo,
         status: perfil.status, diretoria_id: perfil.diretoria_id ?? null,
+        trocarSenha: Boolean(perfil.trocar_senha ?? true),
       };
     } catch (cause) {
       throw new AppError('SERVER_ERROR', 'Usuário criado, mas houve erro ao salvar o perfil.', {}, cause);

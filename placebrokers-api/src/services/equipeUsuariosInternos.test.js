@@ -22,7 +22,8 @@ describe('usuários internos criados pelo admin', () => {
     const { service, profileRepository } = montar();
     const r = await service.criarUsuarioInterno({ ...base, cargo });
     expect(r).toMatchObject({ cargo, status: 'aprovado', email: 'fulana@place.com' });
-    expect(profileRepository.create).toHaveBeenCalledWith(expect.objectContaining({ cargo, status: 'aprovado', diretoriaId: null }));
+    expect(profileRepository.create).toHaveBeenCalledWith(expect.objectContaining({ cargo, status: 'aprovado', diretoriaId: null, trocarSenha: true }));
+    expect(r.trocarSenha).toBe(true);
   });
 
   test('diretor precisa de diretoria', async () => {

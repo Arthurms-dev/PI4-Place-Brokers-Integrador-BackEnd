@@ -15,6 +15,7 @@ function repoFalso() {
     buscarMesmaPessoa: jest.fn().mockResolvedValue(null),
     criarCandidatura: jest.fn().mockResolvedValue({ id: CAND_ID }),
     atualizarCandidatura: jest.fn(async (id, d) => ({ id, curriculo_path: 'a.pdf', ...d })),
+    contarNovas: jest.fn().mockResolvedValue(3),
     listarCandidaturas: jest.fn().mockResolvedValue([{ id: CAND_ID, curriculo_path: 'x.pdf', nome: 'Ana' }]),
     buscarCandidatura: jest.fn().mockResolvedValue({ id: CAND_ID, curriculo_path: '2026-11/x.pdf' }),
     removerCandidatura: jest.fn().mockResolvedValue(),
@@ -106,6 +107,10 @@ describe('painel do RH', () => {
   test('lista sem o caminho do arquivo', async () => {
     const [c] = await service.listarCandidaturas({});
     expect(c).toEqual({ id: CAND_ID, nome: 'Ana', temCurriculo: true });
+  });
+
+  test('resumo conta as candidaturas novas para o menu', async () => {
+    await expect(service.resumo()).resolves.toEqual({ novas: 3 });
   });
 
   test('filtro inválido', async () => {

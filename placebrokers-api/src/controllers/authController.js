@@ -106,6 +106,7 @@ async function alterarSenha(req, res) {
       req.userId,
       req.body
     );
+    esquecerSessaoDaRequisicao(req);
 
     return res.status(200).json(resultado);
   } catch (err) {

@@ -159,6 +159,11 @@ class TrabalheConoscoService {
     return linhas.map(paraRh);
   }
 
+  /** Número do menu: candidaturas que ninguém do RH abriu ainda (status "novo"). */
+  async resumo() {
+    return { novas: await this.repo.contarNovas() };
+  }
+
   async buscar(id) {
     if (!UUID_REGEX.test(String(id))) throw new AppError('NOT_FOUND', 'Candidatura não encontrada.');
     const c = await this.repo.buscarCandidatura(id);

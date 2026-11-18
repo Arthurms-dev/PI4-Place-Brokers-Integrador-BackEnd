@@ -102,6 +102,12 @@ class RedefinicaoSenhaService {
     }
 
     // Daqui para baixo nada impede a troca: só registra.
+    // Quem redefiniu pelo e-mail já escolheu a própria senha: não pede de novo a troca da temporária.
+    try {
+      await this.profileRepository?.atualizar?.(usuario.id, { trocar_senha: false });
+    } catch (err) {
+      this.log.error('Senha redefinida, mas não foi possível liberar a troca obrigatória:', err?.message ?? err);
+    }
     try {
       await this.recuperacao.encerrarSessoes(usuario.accessToken);
     } catch (err) {

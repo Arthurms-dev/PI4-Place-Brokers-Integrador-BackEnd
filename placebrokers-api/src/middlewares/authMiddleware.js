@@ -2,6 +2,14 @@
 
 const { consultarSessao } = require('./consultarSessao');
 
+// Com a senha temporária, só dá para ver o próprio perfil e trocar a senha.
+const ROTAS_LIBERADAS_NA_TROCA = new Set(['GET /auth/me', 'PATCH /auth/senha']);
+
+function rotaLiberadaNaTroca(req) {
+  const caminho = `${req.baseUrl ?? ''}${req.path ?? ''}`.replace(/\/+$/, '');
+  return ROTAS_LIBERADAS_NA_TROCA.has(`${req.method} ${caminho}`);
+}
+
 async function authMiddleware(req, res, next) {
   const header = req.headers.authorization ?? '';
 
@@ -43,6 +51,13 @@ async function authMiddleware(req, res, next) {
       });
     }
 
+    if (profile.trocar_senha === true && !rotaLiberadaNaTroca(req)) {
+      return res.status(403).json({
+        code: 'PASSWORD_CHANGE_REQUIRED',
+        message: 'Troque a senha temporária para continuar.',
+      });
+    }
+
     req.userId = profile.id;
     req.user = profile;
 
@@ -52,4 +67,4 @@ async function authMiddleware(req, res, next) {
   }
 }
 
-module.exports = { authMiddleware };
+module.exports = { authMiddleware, rotaLiberadaNaTroca };

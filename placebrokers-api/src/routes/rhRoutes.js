@@ -11,6 +11,7 @@ const router = Router();
 router.use(authMiddleware, requireRole('admin', 'rh'));
 
 router.get('/candidaturas', c.listarCandidaturas);
+router.get('/candidaturas/resumo', c.resumoCandidaturas);
 router.patch('/candidaturas/:id', c.atualizarCandidatura);
 router.delete('/candidaturas/:id', c.removerCandidatura);
 router.get('/candidaturas/:id/curriculo', c.curriculo);
