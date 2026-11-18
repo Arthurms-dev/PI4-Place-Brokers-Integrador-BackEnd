@@ -27,10 +27,11 @@ function quando(iso) {
 
 /**
  * @param {{ corretor?: string, cliente: string, empreendimento?: string|null, link: string, site?: string,
- *   telefone?: string|null, email?: string|null, mensagem?: string|null, origem?: string|null, chegouEm?: string|null }} dados
+ *   telefone?: string|null, email?: string|null, mensagem?: string|null, origem?: string|null, chegouEm?: string|null,
+ *   voltou?: boolean }} dados  voltou: cliente que já era do corretor e entrou em contato de novo pelo site
  * @returns {{ assunto: string, html: string, texto: string }}
  */
-function emailLeadNovo({ corretor, cliente, empreendimento, link, site, telefone, email, mensagem, origem, chegouEm }) {
+function emailLeadNovo({ corretor, cliente, empreendimento, link, site, telefone, email, mensagem, origem, chegouEm, voltou = false }) {
   const base = site || new URL(link).origin;
   const primeiroNome = String(corretor ?? '').trim().split(/\s+/)[0] || '';
   const saudacao = primeiroNome ? `Olá, ${primeiroNome}!` : 'Olá!';
@@ -41,7 +42,7 @@ function emailLeadNovo({ corretor, cliente, empreendimento, link, site, telefone
   const hora = quando(chegouEm);
   const fonte = ORIGENS[origem] ?? origem ?? '';
 
-  const assunto = `Lead novo: ${nomeCliente}${empreendimento ? ` · ${empreendimento}` : ''}`;
+  const assunto = `${voltou ? 'Cliente voltou pelo site' : 'Lead novo'}: ${nomeCliente}${empreendimento ? ` · ${empreendimento}` : ''}`;
 
   const ficha = [
     ['Cliente', nomeCliente],
@@ -49,13 +50,13 @@ function emailLeadNovo({ corretor, cliente, empreendimento, link, site, telefone
     tel && ['Telefone / WhatsApp', tel],
     email && ['E-mail', email],
     fonte && ['Origem', fonte],
-    hora && ['Chegou em', hora],
+    hora && [voltou ? 'Recebido por você em' : 'Chegou em', hora],
   ].filter(Boolean);
 
   const texto = [
     saudacao,
     '',
-    'Chegou um lead novo para você na Place Brokers.',
+    voltou ? 'Um cliente seu voltou a entrar em contato pelo site da Place Brokers.' : 'Chegou um lead novo para você na Place Brokers.',
     '',
     ...ficha.map(([k, v]) => `${k}: ${v}`),
     ...(linhasMensagem.length ? ['', 'O que o cliente escreveu:', ...linhasMensagem.map((l) => `- ${l}`)] : []),
@@ -75,9 +76,11 @@ function emailLeadNovo({ corretor, cliente, empreendimento, link, site, telefone
   const linhaFicha = ([k, v], i) => `<tr><td style="padding:9px 14px;font-size:12px;color:#516783;width:42%;${i ? 'border-top:1px solid #e3e9f1;' : ''}">${escapar(k)}</td><td style="padding:9px 14px;font-size:14px;font-weight:bold;color:#0b203b;${i ? 'border-top:1px solid #e3e9f1;' : ''}">${escapar(v)}</td></tr>`;
 
   const conteudoHtml = `
-          <p style="margin:0 0 6px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#986827;font-weight:bold">Lead novo</p>
+          <p style="margin:0 0 6px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#986827;font-weight:bold">${voltou ? 'Cliente voltou' : 'Lead novo'}</p>
           <h1 style="margin:0 0 14px;font-size:22px;color:#0b203b">${escapar(saudacao)}</h1>
-          ${paragrafo('Chegou um lead novo para você. <b>Quem retorna primeiro leva o cliente</b>, então vale ligar agora.')}
+          ${paragrafo(voltou
+            ? 'Um cliente seu voltou a falar com a Place pelo site. <b>Ele está procurando de novo</b>, então vale ligar agora.'
+            : 'Chegou um lead novo para você. <b>Quem retorna primeiro leva o cliente</b>, então vale ligar agora.')}
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px;border:1px solid #e3e9f1;border-radius:10px">
             ${ficha.map(linhaFicha).join('\n            ')}
           </table>

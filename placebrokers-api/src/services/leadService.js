@@ -56,10 +56,11 @@ class LeadService {
    * @param {{ criar: Function }} deps.clienteRepository
    * @param {{ distribuirEmSegundoPlano: Function }} [deps.roleta] entrega o lead novo pela roleta do dia
    */
-  constructor({ leadRepository, clienteRepository, roleta = null }) {
+  constructor({ leadRepository, clienteRepository, roleta = null, avisos = null }) {
     this.leadRepository = leadRepository;
     this.clienteRepository = clienteRepository;
     this.roleta = roleta;
+    this.avisos = avisos;
   }
 
   async listar() {
@@ -226,6 +227,13 @@ class LeadService {
     }
     // Lead novo sem corretor: a roleta do dia entrega (fora do horário, ele espera a próxima).
     this.roleta?.distribuirEmSegundoPlano();
+    // Mesma pessoa voltando: se o lead já tem corretor, ele é avisado. Em segundo plano, para o
+    // formulário responder na hora; o próprio aviso registra no log se não chegar.
+    if (registrado.repetido && this.avisos) {
+      Promise.resolve()
+        .then(() => this.avisos.avisarClienteVoltou(registrado.leadId))
+        .catch((err) => console.error('[aviso] cliente voltou pelo site', err?.message ?? err));
+    }
     return registrado;
   }
 }

@@ -14,6 +14,9 @@ const { AppError } = require('../errors/AppError');
 
 const INTERVALO_MS = 30 * 1000;
 const JANELA_MIN = 30; // só avisa lead que chegou ao corretor nos últimos 30 min
+// Aviso que não chegou por nenhum canal volta para a fila. Nova tentativa em 30 s, 1, 2, 4 e 8 min
+// (cabe na janela de 30 min); depois da última o lead fica como avisado e o erro vai para o log.
+const MAX_TENTATIVAS = 6;
 const URL_EXPO = 'https://exp.host/--/api/v2/push/send';
 const { emailLeadNovo } = require('../emails/leadNovo');
 
@@ -46,6 +49,7 @@ class NotificacaoService {
     this.expoAtivo = env.EXPO_PUSH !== 'false' && typeof fetchImpl === 'function';
     this.expoToken = env.EXPO_ACCESS_TOKEN || null;
     this.ativo = this.webAtivo || this.expoAtivo || this.emailAtivo;
+    this.tentativas = new Map(); // lead|atribuição -> { feitas, proximaEm } dos avisos que não chegaram
     if (this.webAtivo) {
       this.webpush.setVapidDetails(env.VAPID_CONTATO || 'mailto:contato@placebrokers.com.br', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
     }
@@ -83,12 +87,18 @@ class NotificacaoService {
 
   /** Manda a notificação para todos os aparelhos do usuário. Devolve quantos receberam. */
   async enviarParaUsuario(usuarioId, mensagem) {
-    if (!this.ativo) return 0;
+    return (await this.entregarParaUsuario(usuarioId, mensagem)).enviados;
+  }
+
+  /** Igual a enviarParaUsuario, mas diz também para quantos aparelhos tentou mandar. */
+  async entregarParaUsuario(usuarioId, mensagem) {
+    if (!this.ativo) return { aparelhos: 0, enviados: 0 };
     const inscricoes = await this.repo.inscricoesDe(usuarioId);
-    const doApp = inscricoes.filter((i) => i.tipo === 'expo');
-    let enviados = doApp.length && this.expoAtivo ? await this.enviarExpo(doApp, mensagem) : 0;
-    if (!this.webAtivo) return enviados;
-    for (const i of inscricoes.filter((x) => x.tipo !== 'expo')) {
+    const doApp = this.expoAtivo ? inscricoes.filter((i) => i.tipo === 'expo') : [];
+    const doSite = this.webAtivo ? inscricoes.filter((i) => i.tipo !== 'expo') : [];
+    const aparelhos = doApp.length + doSite.length;
+    let enviados = doApp.length ? await this.enviarExpo(doApp, mensagem) : 0;
+    for (const i of doSite) {
       try {
         await this.webpush.sendNotification(
           { endpoint: i.endpoint, keys: { p256dh: i.p256dh, auth: i.auth } },
@@ -103,7 +113,7 @@ class NotificacaoService {
         else console.error('[push] falha ao enviar', err?.statusCode ?? err?.message);
       }
     }
-    return enviados;
+    return { aparelhos, enviados };
   }
 
   /** Entrega pelo serviço do Expo (app React Native). Devolve quantos aparelhos aceitaram. */
@@ -150,31 +160,96 @@ class NotificacaoService {
     }
   }
 
-  /** Procura leads recém-entregues e avisa o corretor de cada um (uma vez por lead). */
+  /**
+   * Procura leads recém-entregues e avisa o corretor de cada um (uma vez por lead).
+   * O lead é reservado antes do envio (dois processos não avisam em dobro), mas a reserva só fica
+   * se algum canal aceitou: push num aparelho ou e-mail. Se nada chegou, ela é desfeita e o lead
+   * volta na próxima verificação, até MAX_TENTATIVAS. Devolve quantos leads foram avisados.
+   */
   async avisarLeadsNovos() {
     if (!this.ativo) return 0;
-    const desde = new Date(this.agora().getTime() - JANELA_MIN * 60 * 1000).toISOString();
+    const agora = this.agora().getTime();
+    const desde = new Date(agora - JANELA_MIN * 60 * 1000).toISOString();
     const leads = await this.repo.leadsParaAvisar(desde);
+    const { tentativas } = this;
+    const vistos = new Set();
     let avisados = 0;
     for (const lead of leads) {
-      if (!(await this.repo.reservarAviso(lead.id))) continue;
-      await this.enviarEmailDoLead(lead);
-      await this.enviarParaUsuario(lead.corretor_id, {
+      // A chave inclui a atribuição: um repasse para outro corretor começa a contagem do zero.
+      const chave = `${lead.id}|${lead.atribuido_em ?? ''}`;
+      vistos.add(chave);
+      const anterior = tentativas.get(chave);
+      if (anterior && anterior.proximaEm > agora) continue;
+
+      const reserva = await this.repo.reservarAviso(lead.id);
+      if (!reserva) continue;
+      const email = await this.enviarEmailDoLead(lead);
+      const push = await this.entregarParaUsuario(lead.corretor_id, {
         titulo: `Lead novo: ${lead.nome}`,
         corpo: `${lead.empreendimento?.nome ? `${lead.empreendimento.nome} · ` : ''}Ligue agora: quem retorna primeiro leva o cliente.`,
         url: '/corretor',
         tag: `lead-${lead.id}`,
         urgente: true,
       });
-      avisados += 1;
+
+      if (email || push.enviados > 0) {
+        tentativas.delete(chave);
+        avisados += 1;
+        continue;
+      }
+
+      const feitas = (anterior?.feitas ?? 0) + 1;
+      const motivo = push.aparelhos === 0 && !this.emailDisponivel(lead) ? 'corretor sem aparelho inscrito nem e-mail ligado' : 'nenhum canal aceitou o envio';
+      if (feitas >= MAX_TENTATIVAS) {
+        tentativas.delete(chave);
+        this.log.error(`[aviso] lead ${lead.id} sem aviso após ${feitas} tentativas: ${motivo}`);
+        continue;
+      }
+      // typeof: a reserva antiga (true) não tem o horário; sem ele não dá para desfazer com segurança.
+      if (typeof reserva === 'string') await this.repo.liberarAviso(lead.id, reserva);
+      tentativas.set(chave, { feitas, proximaEm: agora + INTERVALO_MS * 2 ** (feitas - 1) });
     }
+    // Tira da memória quem saiu da janela, foi avisado em outro processo ou mudou de corretor.
+    for (const chave of tentativas.keys()) if (!vistos.has(chave)) tentativas.delete(chave);
     return avisados;
   }
 
+  /**
+   * Cliente que já tinha corretor voltou pelo site (lead em atendimento, ou perdido e reaberto):
+   * avisa o corretor dono do lead por push e e-mail. O relógio do atendimento (atribuido_em) não muda.
+   * Lead sem corretor ou convertido não gera aviso aqui (o convertido vira lead novo e vai para a roleta).
+   * Nunca lança erro: quem chama é o formulário do site, que não pode falhar por causa do aviso.
+   */
+  async avisarClienteVoltou(leadId) {
+    if (!this.ativo || !leadId) return false;
+    try {
+      const lead = await this.repo.leadParaAviso(leadId);
+      if (!lead?.corretor_id || lead.status === 'convertido') return false;
+      const email = await this.enviarEmailDoLead(lead, { voltou: true });
+      const push = await this.entregarParaUsuario(lead.corretor_id, {
+        titulo: `Cliente voltou pelo site: ${lead.nome}`,
+        corpo: `${lead.empreendimento?.nome ? `${lead.empreendimento.nome} · ` : ''}Ele está procurando de novo. Ligue agora.`,
+        url: '/corretor',
+        tag: `lead-${lead.id}-voltou`,
+        urgente: true,
+      });
+      const chegou = email || push.enviados > 0;
+      if (!chegou) this.log.error(`[aviso] lead ${lead.id} voltou pelo site, mas o aviso ao corretor não chegou por nenhum canal`);
+      return chegou;
+    } catch (err) {
+      this.log.error('[aviso] cliente voltou pelo site: falha ao avisar', err?.message ?? err);
+      return false;
+    }
+  }
+
+  emailDisponivel(lead) {
+    return Boolean(this.emailAtivo && lead.corretor?.aviso_lead_email && lead.corretor?.email);
+  }
+
   /** E-mail para o corretor que pediu esse aviso no Perfil. Falha no e-mail nunca trava o push. */
-  async enviarEmailDoLead(lead) {
+  async enviarEmailDoLead(lead, { voltou = false } = {}) {
     const corretor = lead.corretor;
-    if (!this.emailAtivo || !corretor?.aviso_lead_email || !corretor?.email) return false;
+    if (!this.emailDisponivel(lead)) return false;
     try {
       const mensagem = emailLeadNovo({
         corretor: corretor.nome,
@@ -187,6 +262,7 @@ class NotificacaoService {
         chegouEm: lead.atribuido_em,
         site: this.siteUrl,
         link: `${this.siteUrl}/corretor/leads`,
+        voltou,
       });
       const r = await this.email.enviar({ para: corretor.email, ...mensagem });
       return Boolean(r?.enviado);

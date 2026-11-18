@@ -10,10 +10,13 @@ const { requireRole } = require('../middlewares/requireRole');
 const leadAtividadeController = require('../controllers/leadAtividadeController');
 const { limitadores, antiSpamLead } = require('../middlewares/seguranca');
 const { roletaService } = require('../services/roletaInstancia');
+const { notificacoes } = require('../services/notificacaoService');
 
 const leadRepository = new LeadRepository();
 const clienteRepository = new ClienteRepository();
-const leadService = new LeadService({ leadRepository, clienteRepository, roleta: roletaService });
+// O serviço de avisos só é criado na primeira vez que um cliente volta pelo site.
+const avisos = { avisarClienteVoltou: (leadId) => notificacoes().avisarClienteVoltou(leadId) };
+const leadService = new LeadService({ leadRepository, clienteRepository, roleta: roletaService, avisos });
 const leadController = new LeadController({ leadService });
 
 const router = Router();

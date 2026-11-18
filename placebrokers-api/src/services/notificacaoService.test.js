@@ -145,9 +145,69 @@ describe('aviso de lead novo por e-mail', () => {
     expect(enviar).not.toHaveBeenCalled();
   });
 
-  test('falha no e-mail não trava o aviso', async () => {
-    const { service } = setupEmail({ leads: [lead(true)], enviar: jest.fn().mockRejectedValue(new Error('Resend fora')) });
+  test('falha no e-mail não trava o push: se o push chegou, o lead conta como avisado', async () => {
+    const { service, repo } = setup({ repo: { leadsParaAvisar: jest.fn().mockResolvedValue([lead(true)]), reservarAviso: jest.fn().mockResolvedValue('2026-10-29T12:00:00.000Z'), liberarAviso: jest.fn() } });
+    service.email = { configurado: () => true, enviar: jest.fn().mockRejectedValue(new Error('Resend fora')) };
+    service.emailAtivo = true;
+    service.log = { error: jest.fn() };
     expect(await service.avisarLeadsNovos()).toBe(1);
+    expect(repo.liberarAviso).not.toHaveBeenCalled();
+  });
+});
+
+describe('aviso que não chegou volta para a fila', () => {
+  const RESERVA = '2026-10-29T12:00:00.000Z';
+  const leadNovo = { id: 'l5', nome: 'Paula', corretor_id: 'c1', atribuido_em: '2026-10-29T11:59:00.000Z' };
+
+  function setupFalha({ sendNotification = jest.fn().mockRejectedValue(Object.assign(new Error('fora'), { statusCode: 503 })), inscricoes = [insc] } = {}) {
+    let agora = new Date('2026-10-29T12:00:00Z').getTime();
+    const repo = {
+      inscricoesDe: jest.fn().mockResolvedValue(inscricoes), marcarEnvio: jest.fn().mockResolvedValue(), removerPorEndpoint: jest.fn().mockResolvedValue(),
+      leadsParaAvisar: jest.fn().mockResolvedValue([leadNovo]), reservarAviso: jest.fn().mockResolvedValue(RESERVA), liberarAviso: jest.fn().mockResolvedValue(),
+    };
+    const log = { error: jest.fn() };
+    const wp = { setVapidDetails: jest.fn(), sendNotification };
+    const service = new NotificacaoService({ repo, env: { ...ENV, EXPO_PUSH: 'false' }, webpush: wp, emailClient: null, log, agora: () => new Date(agora) });
+    const passar = (segundos) => { agora += segundos * 1000; };
+    return { service, repo, wp, log, passar };
+  }
+
+  test('serviço de push fora: desfaz a reserva e tenta de novo depois', async () => {
+    const { service, repo, wp, passar } = setupFalha();
+    expect(await service.avisarLeadsNovos()).toBe(0);
+    expect(repo.liberarAviso).toHaveBeenCalledWith('l5', RESERVA);
+
+    // 30 s depois o serviço voltou: o aviso sai e a reserva fica.
+    wp.sendNotification.mockResolvedValue({});
+    passar(30);
+    expect(await service.avisarLeadsNovos()).toBe(1);
+    expect(repo.liberarAviso).toHaveBeenCalledTimes(1);
+    expect(service.tentativas.size).toBe(0);
+  });
+
+  test('espera cada vez mais entre as tentativas e para no limite, deixando o erro no log', async () => {
+    const { service, repo, log, passar } = setupFalha({ inscricoes: [] });
+    await service.avisarLeadsNovos(); // 1ª
+    passar(10);
+    await service.avisarLeadsNovos(); // cedo demais: nem reserva
+    expect(repo.reservarAviso).toHaveBeenCalledTimes(1);
+    for (const espera of [30, 60, 120, 240, 480]) {
+      passar(espera);
+      await service.avisarLeadsNovos();
+    }
+    expect(repo.reservarAviso).toHaveBeenCalledTimes(6);
+    expect(repo.liberarAviso).toHaveBeenCalledTimes(5); // a 6ª reserva fica
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining('lead l5 sem aviso após 6 tentativas: corretor sem aparelho inscrito nem e-mail ligado'));
+    expect(service.tentativas.size).toBe(0);
+  });
+
+  test('repasse no meio das tentativas começa a contagem do zero para o novo corretor', async () => {
+    const { service, repo, wp } = setupFalha();
+    await service.avisarLeadsNovos();
+    repo.leadsParaAvisar.mockResolvedValue([{ ...leadNovo, corretor_id: 'c2', atribuido_em: '2026-10-29T12:00:10.000Z' }]);
+    wp.sendNotification.mockResolvedValue({});
+    expect(await service.avisarLeadsNovos()).toBe(1); // não espera o intervalo do corretor anterior
+    expect(service.tentativas.size).toBe(0);
   });
 });
 
@@ -190,7 +250,7 @@ describe('quem é avisado: lead atribuído nos últimos 30 min', () => {
     const wp = { setVapidDetails: jest.fn(), sendNotification: jest.fn().mockResolvedValue({}) };
     const service = new NotificacaoService({ repo: new NotificacaoRepository(), env: { ...ENV, EXPO_PUSH: 'false' }, webpush: wp, emailClient: null });
     const avisos = () => wp.sendNotification.mock.calls.map(([destino, corpo]) => `${JSON.parse(corpo).tag} -> ${destino.endpoint}`);
-    return { service, avisos };
+    return { service, avisos, wp };
   }
 
   const lead = (id, status, extra = {}) => ({ id, nome: `Cliente ${id}`, status, corretor_id: 'c1', atribuido_em: minutosAtras(1), notificado_em: null, ...extra });
@@ -215,6 +275,14 @@ describe('quem é avisado: lead atribuído nos últimos 30 min', () => {
     expect(leads.filter((l) => l.notificado_em).map((l) => l.id).sort()).toEqual(['atendimento', 'convertido', 'novo']);
     // Na verificação seguinte (30 s depois) ninguém é avisado de novo.
     expect(await service.avisarLeadsNovos()).toBe(0);
+  });
+
+  test('push recusado: o lead não fica marcado como avisado no banco', async () => {
+    const leads = [lead('falhou', 'novo')];
+    const { service, wp } = montar(leads);
+    wp.sendNotification.mockRejectedValue(Object.assign(new Error('fora'), { statusCode: 500 }));
+    expect(await service.avisarLeadsNovos()).toBe(0);
+    expect(leads[0].notificado_em).toBe(null);
   });
 
   test('repasse avisa o novo corretor, mesmo que o lead já tivesse sido avisado ao antigo', async () => {
