@@ -2,6 +2,7 @@
 
 const { AuthError } = require('../errors/AuthError');
 const { emailRedefinirSenha } = require('../emails/redefinirSenha');
+const { conferirSenhaVazada } = require('./senhaVazada');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TOKEN_REGEX = /^[A-Za-z0-9_-]{20,200}$/;
@@ -31,8 +32,9 @@ class RedefinicaoSenhaService {
    * @param {number} [deps.validadeMinutos]
    * @param {Console} [deps.log]
    */
-  constructor({ profileRepository, recuperacao, email, painelAdmRepository = null, agendar = emSegundoPlano, site = urlDoSite(), validadeMinutos = 60, log = console }) {
+  constructor({ profileRepository, recuperacao, email, painelAdmRepository = null, agendar = emSegundoPlano, site = urlDoSite(), validadeMinutos = 60, log = console, senhasVazadas = null }) {
     this.profileRepository = profileRepository;
+    this.senhasVazadas = senhasVazadas;
     this.recuperacao = recuperacao;
     this.email = email;
     this.painelAdmRepository = painelAdmRepository;
@@ -86,6 +88,9 @@ class RedefinicaoSenhaService {
     else if (String(novaSenha).length > 72) erros.novaSenha = 'A senha pode ter no máximo 72 caracteres.';
     if (confirmarSenha !== novaSenha) erros.confirmarSenha = 'As senhas não coincidem.';
     if (Object.keys(erros).length) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    // Confere antes de usar o link: o token vale uma vez só e não pode ser gasto com uma senha recusada.
+    const senhaVazada = await conferirSenhaVazada(this.senhasVazadas, String(novaSenha), this.log);
+    if (senhaVazada) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { novaSenha: senhaVazada });
 
     let usuario;
     try {

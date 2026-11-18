@@ -4,12 +4,14 @@ const { EquipeService } = require('../services/equipeservice');
 const { EquipeRepository } = require('../repositories/equiperepository');
 const { ProfileRepository } = require('../repositories/profileRepository');
 const { authClient } = require('../adapters/authClient');
+const { senhasVazadasClient } = require('../adapters/senhasVazadasClient');
 const { AppError } = require('../errors/AppError');
 
 const equipeService = new EquipeService({
   equipeRepository: new EquipeRepository(),
   profileRepository: new ProfileRepository(),
   authClient,
+  senhasVazadas: senhasVazadasClient,
 });
 
 async function listar(req, res) {

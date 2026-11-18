@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { conferirSenhaVazada } = require('./senhaVazada');
 
 const STATUS_VALIDOS = ['pendente', 'aprovado', 'recusado'];
 const SEDES_VALIDAS = ['Paulista', 'Recife', 'Caruaru'];
@@ -24,8 +25,9 @@ class EquipeService {
    * @param {{ create: Function }} deps.profileRepository
    * @param {{ createUser: Function }} deps.authClient
    */
-  constructor({ equipeRepository, profileRepository, authClient }) {
+  constructor({ equipeRepository, profileRepository, authClient, senhasVazadas = null }) {
     this.equipeRepository = equipeRepository;
+    this.senhasVazadas = senhasVazadas;
     this.profileRepository = profileRepository;
     this.authClient = authClient;
   }
@@ -118,6 +120,9 @@ class EquipeService {
     if (!password || password.length < 6) erros.password = 'A senha deve ter pelo menos 6 caracteres.';
     if (cargo === 'diretor' && !diretoriaId) erros.diretoriaId = 'Escolha a diretoria do diretor.';
     if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
+    // A senha temporária também não pode ser uma das que já vazaram.
+    const senhaVazada = await conferirSenhaVazada(this.senhasVazadas, password);
+    if (senhaVazada) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', { password: senhaVazada });
 
     const diretoria_id = cargo === 'diretor' ? await this.validarDiretoria(diretoriaId) : null;
     const emailNormalizado = email.trim().toLowerCase();

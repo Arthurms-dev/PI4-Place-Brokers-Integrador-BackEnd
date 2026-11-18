@@ -6,6 +6,7 @@ const { LoginAttemptRepository } = require('../repositories/loginAttemptReposito
 const { PainelAdmRepository } = require('../repositories/painelAdmRepository');
 const { authClient } = require('../adapters/authClient');
 const { passwordClient } = require('../adapters/passwordclient');
+const { senhasVazadasClient } = require('../adapters/senhasVazadasClient');
 const { AuthError } = require('../errors/AuthError');
 const { RedefinicaoSenhaService } = require('../services/redefinicaoSenhaService');
 const { recuperacaoClient } = require('../adapters/recuperacaoClient');
@@ -23,6 +24,7 @@ const authService = new AuthService({
   loginAttemptRepository: new LoginAttemptRepository(),
   painelAdmRepository: new PainelAdmRepository(),
   vigia,
+  senhasVazadas: senhasVazadasClient,
 });
 
 const redefinicaoSenha = new RedefinicaoSenhaService({
@@ -30,6 +32,7 @@ const redefinicaoSenha = new RedefinicaoSenhaService({
   recuperacao: recuperacaoClient,
   email: emailClient,
   painelAdmRepository: new PainelAdmRepository(),
+  senhasVazadas: senhasVazadasClient,
 });
 
 async function login(req, res) {

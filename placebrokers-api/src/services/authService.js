@@ -3,6 +3,7 @@
 const { AuthError } = require('../errors/AuthError');
 const { normalizarTelefone } = require('../utils/telefone');
 const { JANELA_MINUTOS } = require ('../utils/loginAttemptConfig');
+const { conferirSenhaVazada } = require('./senhaVazada');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_ROLES_CADASTRO = ['corretor'];
@@ -37,8 +38,9 @@ class AuthService {
    * @param {{object|null}} [deps.loginAttemptRepository]
    * @param {{object|null}} [deps.painelAdmRepository]
    */
-  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null}) {
+  constructor({ authClient, profileRepository, passwordClient, loginAttemptRepository = null, painelAdmRepository = null, vigia = null, senhasVazadas = null }) {
   this.vigia = vigia;
+  this.senhasVazadas = senhasVazadas;
   this.authClient = authClient;
   this.profileRepository = profileRepository;
   this.passwordClient = passwordClient;
@@ -242,6 +244,8 @@ async login(credentials, contexto = {}) {
     if (Object.keys(fieldErrors).length > 0) {
       throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', fieldErrors);
     }
+    const senhaVazada = await conferirSenhaVazada(this.senhasVazadas, payload.password);
+    if (senhaVazada) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { password: senhaVazada });
 
     if (payload.role === 'viabilizador') {
       let existe;
@@ -349,6 +353,8 @@ async login(credentials, contexto = {}) {
     if (Object.keys(erros).length > 0) {
       throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
     }
+    const senhaVazada = await conferirSenhaVazada(this.senhasVazadas, novaSenha);
+    if (senhaVazada) throw new AuthError('VALIDATION_ERROR', 'Verifique os campos destacados.', { novaSenha: senhaVazada });
 
     let profile;
     try {
