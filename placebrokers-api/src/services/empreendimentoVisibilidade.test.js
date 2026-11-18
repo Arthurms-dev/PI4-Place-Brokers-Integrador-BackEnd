@@ -138,3 +138,23 @@ describe('visibilidade comercial de empreendimentos', () => {
     });
   });
 });
+
+describe('andamento da obra no PATCH', () => {
+  test('salva o andamento normalizado e recusa percentual inválido', async () => {
+    const row = { id: 'imovel-1', nome: 'Belém', publicado: true, andamento_obra: [], andamento_referencia: null };
+    const empreendimentoRepository = {
+      buscarPorId: jest.fn().mockResolvedValue(row),
+      atualizar: jest.fn().mockImplementation(async (_id, dados) => ({ ...row, ...dados })),
+    };
+    const servico = new EmpreendimentoService({ empreendimentoRepository, uploadService: {} });
+
+    await servico.atualizar('imovel-1', { andamentoObra: [{ modulo: 'Módulo 01', percentual: 86.29 }], andamentoReferencia: '2020-08' }, admin);
+    expect(empreendimentoRepository.atualizar).toHaveBeenCalledWith('imovel-1', expect.objectContaining({
+      andamento_obra: [{ modulo: 'Módulo 01', percentual: 86.29 }],
+      andamento_referencia: '2020-08-01',
+    }));
+
+    await expect(servico.atualizar('imovel-1', { andamentoObra: [{ modulo: 'X', percentual: 150 }] }, admin))
+      .rejects.toMatchObject({ fieldErrors: expect.objectContaining({ andamentoObra: expect.any(String) }) });
+  });
+});

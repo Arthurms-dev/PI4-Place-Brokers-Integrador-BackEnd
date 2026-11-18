@@ -46,6 +46,10 @@
     {
       "key": "corretorId",
       "value": ""
+    },
+    {
+      "key": "empreendimentoId",
+      "value": ""
     }
   ],
   "item": [
@@ -2153,6 +2157,28 @@
                   "language": "json"
                 }
               }
+            }
+          }
+        },
+        {
+          "name": "GET /metricas/procura/:empreendimentoId — Quantas pessoas viram o empreendimento (só a partir de 20; senão null)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/metricas/procura/{{empreendimentoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metricas",
+                "procura",
+                "{{empreendimentoId}}"
+              ]
+            },
+            "description": "Público",
+            "auth": {
+              "type": "noauth"
             }
           }
         },

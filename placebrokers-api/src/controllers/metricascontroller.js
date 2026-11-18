@@ -18,6 +18,15 @@ async function registrarEvento(req, res) {
   }
 }
 
+async function procura(req, res) {
+  try {
+    res.set('Cache-Control', 'public, max-age=600');
+    return res.status(200).json({ procura: await metricasService.procura(req.params.empreendimentoId) });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 async function meusAcessos(req, res) {
   try {
     return res.status(200).json({ acessos: await metricasService.meusAcessos(req.user) });
@@ -56,4 +65,4 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { registrarEvento, dashboard, meusAcessos };
+module.exports = { registrarEvento, dashboard, meusAcessos, procura };

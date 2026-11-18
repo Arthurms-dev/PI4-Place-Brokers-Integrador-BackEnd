@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { validarAndamento } = require('../utils/andamentoObra');
 
 const STATUS_VALIDOS = ['lancamento', 'obras', 'pronto', 'outros'];
 const SEGMENTOS_VALIDOS = ['mcmv', 'medio_padrao', 'alto_padrao', 'litoral'];
@@ -150,6 +151,11 @@ class EmpreendimentoService {
    */
   async criar(dados, arquivos, usuario = null ) {
     const erros = this.validar(dados);
+    const andamento = {};
+    if (dados.andamentoObra !== undefined) andamento.andamento_obra = dados.andamentoObra;
+    if (dados.andamentoReferencia !== undefined) andamento.andamento_referencia = dados.andamentoReferencia || null;
+    if (dados.andamentoFonteUrl !== undefined) andamento.andamento_fonte_url = dados.andamentoFonteUrl || null;
+    validarAndamento(andamento, erros);
     if (Object.keys(erros).length) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
     }
@@ -189,6 +195,7 @@ class EmpreendimentoService {
       segmento: dados.segmento || null,
       parcela_min: dados.parcelaMin ?? null,
       previsao_entrega: dados.previsaoEntrega || null,
+      ...andamento,
       lazer: dados.lazer ?? [],
       capa_url: capaUrl,
       ...(capaMiniatura ? { capa_miniatura_url: capaMiniatura } : {}),
@@ -243,6 +250,9 @@ class EmpreendimentoService {
       segmento: 'segmento',
       parcelaMin: 'parcela_min',
       previsaoEntrega: 'previsao_entrega',
+      andamentoObra: 'andamento_obra',
+      andamentoReferencia: 'andamento_referencia',
+      andamentoFonteUrl: 'andamento_fonte_url',
       lazer: 'lazer',
       publicado: 'publicado',
       disponivel: 'disponivel',
@@ -263,6 +273,8 @@ class EmpreendimentoService {
     if (dados.previsao_entrega != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(dados.previsao_entrega))) {
       erros.previsaoEntrega = 'Use o formato AAAA-MM-DD.';
     }
+
+    validarAndamento(dados, erros, atual);
 
     for (const campo of ['uf', 'cidade', 'bairro']) {
       if (campo in dados && !String(dados[campo] ?? '').trim()) {

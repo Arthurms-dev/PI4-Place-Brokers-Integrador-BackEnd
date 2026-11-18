@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { registrarEvento, dashboard, meusAcessos } = require('../controllers/metricascontroller');
+const { registrarEvento, dashboard, meusAcessos, procura } = require('../controllers/metricascontroller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { optionalAuthMiddleware } = require('../middlewares/optionalAuthMiddleware');
 const { requireRole } = require('../middlewares/requireRole');
@@ -10,6 +10,9 @@ const { limitadores } = require('../middlewares/seguranca');
 const router = Router();
 
 router.post('/eventos', limitadores.eventos, optionalAuthMiddleware, registrarEvento);
+
+// Público: quantas pessoas viram o empreendimento (agregado, com mínimo; nada de dado pessoal).
+router.get('/procura/:empreendimentoId', limitadores.eventos, procura);
 
 router.get('/meus-acessos', authMiddleware, meusAcessos);
 

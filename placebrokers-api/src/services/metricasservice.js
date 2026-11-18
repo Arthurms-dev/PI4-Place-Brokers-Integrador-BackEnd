@@ -7,6 +7,9 @@ const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DIA_MS = 24 * 60 * 60 * 1000;
 const MAX_DIAS = 366;
+// Procura mostrada ao cliente: só número real e só a partir deste mínimo (número baixo queima o produto).
+const MINIMO_PROCURA = 20;
+const CACHE_PROCURA_MS = 10 * 60 * 1000;
 
 function hojeEmSaoPaulo() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
@@ -62,6 +65,31 @@ class MetricasService {
       if (resultado.length >= quantidade) break;
     }
     return resultado;
+  }
+
+  /**
+   * Quantas pessoas viram o empreendimento (só visitantes, sem corretor logado).
+   * Mostra a semana se passar do mínimo; senão o mês; senão nada.
+   * @returns {Promise<{ pessoas: number, periodo: 'semana'|'mes' } | null>}
+   */
+  async procura(empreendimentoId, agora = Date.now()) {
+    if (!UUID_REGEX.test(String(empreendimentoId ?? ''))) {
+      throw new AppError('VALIDATION_ERROR', 'Empreendimento inválido.', { empreendimentoId: 'Empreendimento inválido.' });
+    }
+    this._cacheProcura ??= new Map();
+    const guardado = this._cacheProcura.get(empreendimentoId);
+    if (guardado && agora - guardado.em < CACHE_PROCURA_MS) return guardado.valor;
+
+    const desde = (dias) => new Date(agora - dias * DIA_MS).toISOString();
+    const semana = await this.metricasRepository.contarVisitasPublicas(empreendimentoId, desde(7));
+    let valor = null;
+    if (semana >= MINIMO_PROCURA) valor = { pessoas: semana, periodo: 'semana' };
+    else {
+      const mes = await this.metricasRepository.contarVisitasPublicas(empreendimentoId, desde(30));
+      if (mes >= MINIMO_PROCURA) valor = { pessoas: mes, periodo: 'mes' };
+    }
+    this._cacheProcura.set(empreendimentoId, { em: agora, valor });
+    return valor;
   }
 
   /**
@@ -221,4 +249,4 @@ class MetricasService {
   }
 }
 
-module.exports = { MetricasService };
+module.exports = { MetricasService, MINIMO_PROCURA };

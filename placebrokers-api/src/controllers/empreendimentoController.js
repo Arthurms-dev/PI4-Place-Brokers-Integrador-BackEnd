@@ -41,6 +41,14 @@ function paraNumero(valor) {
   return Number.isNaN(n) ? null : n;
 }
 
+function lerJson(texto) {
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return 'invalido';
+  }
+}
+
 async function listar(req, res) {
   try {
     return res.status(200).json(await empreendimentoService.listar(req.user));
@@ -64,6 +72,8 @@ async function criar(req, res) {
     const dados = {
       ...b,
       lazer: b.lazer ? JSON.parse(b.lazer) : [],
+      // No cadastro com arquivos (multipart) a lista chega como texto JSON; inválida vira erro de validação.
+      ...(b.andamentoObra !== undefined ? { andamentoObra: lerJson(b.andamentoObra) } : {}),
       publicado: b.publicado === 'true',
       disponivel: b.disponivel !== 'false',
       quartosMin: paraNumero(b.quartosMin),

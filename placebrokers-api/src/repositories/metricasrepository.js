@@ -40,6 +40,22 @@ class MetricasRepository {
   }
 
 
+  /**
+   * Visitas de público (sem login) a um empreendimento desde a data.
+   * O registro já é 1 por sessão a cada 24 h, então é "quantas pessoas viram" por dia.
+   */
+  async contarVisitasPublicas(empreendimentoId, desdeISO) {
+    const { count, error } = await supabaseAdmin
+      .from('eventos_acesso')
+      .select('id', { count: 'exact', head: true })
+      .eq('tipo', 'visualizacao_empreendimento')
+      .eq('empreendimento_id', empreendimentoId)
+      .is('usuario_id', null)
+      .gte('criado_em', desdeISO);
+    if (error) throw error;
+    return count ?? 0;
+  }
+
   /** @param {string} de YYYY-MM-DD @param {string} ate */
   async acessosPorDia(de, ate) {
     const { data, error } = await supabaseAdmin.rpc('dashboard_acessos_por_dia', { p_de: de, p_ate: ate });
@@ -110,4 +126,4 @@ class MetricasRepository {
   }
 }
 
-module.exports = { MetricasRepository };
+module.exports = { MetricasRepository };

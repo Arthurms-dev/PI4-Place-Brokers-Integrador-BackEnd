@@ -156,6 +156,7 @@ const ROTAS = [
   // Métricas
   { metodo: 'post', caminho: '/metricas/eventos', grupo: 'Métricas', acesso: 'publico', resumo: 'Registra visualização, busca ou contato no site',
     corpo: { tipo: 'visualizacao_empreendimento', empreendimentoId: ID, sessaoId: 'sessao-do-navegador' } },
+  { metodo: 'get', caminho: '/metricas/procura/:empreendimentoId', grupo: 'Métricas', acesso: 'publico', resumo: 'Quantas pessoas viram o empreendimento (só a partir de 20; senão null)' },
   { metodo: 'get', caminho: '/metricas/meus-acessos', grupo: 'Métricas', acesso: 'logado', resumo: 'Últimos empreendimentos abertos pelo usuário' },
   { metodo: 'get', caminho: '/metricas/dashboard', grupo: 'Métricas', acesso: ['admin', 'diretor'], resumo: 'Números do dashboard (diretor: só a própria diretoria)',
     consulta: { de: 'data inicial (AAAA-MM-DD)', ate: 'data final (AAAA-MM-DD)', equipeId: 'filtra por equipe', diretoriaId: 'filtra por diretoria' } },
