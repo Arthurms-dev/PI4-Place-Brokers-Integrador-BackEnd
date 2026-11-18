@@ -78,6 +78,8 @@ const limitadores = {
   leadPublico: criarLimitador({ janelaMs: 10 * MINUTO, maximo: 8, mensagem: 'Recebemos muitos envios desta conexão. Aguarde alguns minutos e tente de novo.',
     aoBloquear: vigiar((vigia, req) => vigia.enviosEmMassaNoFormulario({ ip: req.ip })) }),
   eventos: criarLimitador({ janelaMs: MINUTO, maximo: 120 }),
+  // Foto de perfil: 10 trocas por hora por conexão já sobram.
+  fotoPerfil: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 10, mensagem: 'Muitas trocas de foto. Tente de novo mais tarde.' }),
   // Trabalhe conosco: currículo pesa mais que um lead, então o limite é menor.
   candidatura: criarLimitador({ janelaMs: 60 * MINUTO, maximo: 5, mensagem: 'Recebemos muitas candidaturas desta conexão. Tente de novo mais tarde.',
     aoBloquear: vigiar((vigia, req) => vigia.enviosEmMassaNoFormulario({ ip: req.ip })) }),

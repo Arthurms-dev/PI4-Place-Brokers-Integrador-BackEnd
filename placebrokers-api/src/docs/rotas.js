@@ -47,6 +47,8 @@ const ROTAS = [
     obs: 'Usado pelo app para não pedir a senha de novo. Confere se a conta continua ativa e aprovada.' },
   { metodo: 'get', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Dados do usuário logado' },
   { metodo: 'patch', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Atualiza nome, telefone e o aviso de lead por e-mail', corpo: { nome: 'Fulano de Tal', telefone: '81999998888', avisoLeadEmail: true } },
+  { metodo: 'put', caminho: '/auth/me/foto', grupo: 'Autenticação', acesso: 'logado', resumo: 'Troca a própria foto de perfil (multipart: foto JPG/PNG/WebP até 5 MB; vira quadrado de 256 px em WebP)', multipart: true },
+  { metodo: 'delete', caminho: '/auth/me/foto', grupo: 'Autenticação', acesso: 'logado', resumo: 'Remove a própria foto de perfil (volta às iniciais)' },
   { metodo: 'patch', caminho: '/auth/senha', grupo: 'Autenticação', acesso: 'logado', resumo: 'Troca a senha (pede a senha atual)',
     corpo: { senhaAtual: 'senha-de-teste', novaSenha: 'nova-senha-de-teste', confirmarSenha: 'nova-senha-de-teste' } },
   { metodo: 'post', caminho: '/auth/esqueci-senha', grupo: 'Autenticação', acesso: 'publico', resumo: 'Esqueci minha senha: manda por e-mail um link para criar senha nova',

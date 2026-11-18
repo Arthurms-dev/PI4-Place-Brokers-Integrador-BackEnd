@@ -2,7 +2,7 @@
 
 const { supabaseAdmin } = require('../config/supabase');
 
-const CAMPOS = 'id, nome, email, telefone, cargo, vinculo, creci, uf, construtora_id, status, ativo, equipe_id, diretoria_id, criado_em, aprovado_em';
+const CAMPOS = 'id, nome, email, telefone, cargo, vinculo, creci, uf, construtora_id, status, ativo, equipe_id, diretoria_id, avatar_url, criado_em, aprovado_em';
 
 class EquipeRepository {
 

@@ -79,6 +79,7 @@ describe('AuthService', () => {
         email: 'arthur@placebrokers.com.br',
         role: 'admin',
         avisoLeadEmail: false,
+        avatarUrl: null,
       });
       expect(result.token).toBe('fake-jwt-token');
       expect(deps.profileRepository.findById).toHaveBeenCalledWith('auth-user-1');

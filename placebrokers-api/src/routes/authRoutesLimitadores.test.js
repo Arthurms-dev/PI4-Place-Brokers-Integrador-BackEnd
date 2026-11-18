@@ -10,6 +10,8 @@ jest.mock('../controllers/authController', () => ({
   esqueciSenha: jest.fn(),
   redefinirSenha: jest.fn(),
   renovar: jest.fn(),
+  trocarFoto: jest.fn(),
+  removerFoto: jest.fn(),
 }));
 
 jest.mock('../middlewares/authMiddleware', () => ({
@@ -26,6 +28,7 @@ jest.mock('../middlewares/seguranca', () => ({
     esqueciSenhaPorEmail: jest.fn(),
     redefinicaoSenha: jest.fn(),
     renovacao: jest.fn(),
+    fotoPerfil: jest.fn(),
   },
 }));
 

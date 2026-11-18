@@ -94,3 +94,13 @@ describe('Trabalhe conosco (site)', () => {
     expect(envio.map((f) => f.name)).toEqual(['limitador', 'receberCurriculo', 'antiSpamCandidatura']);
   });
 });
+
+describe('foto de perfil', () => {
+  const auth = require('./authRoutes');
+  test('só logado troca ou remove a própria foto, com limite de trocas', () => {
+    const troca = middlewaresDaRota(auth, 'put', '/me/foto');
+    expect(troca).toContain(authMiddleware);
+    expect(troca.map((f) => f.name)).toEqual(expect.arrayContaining(['limitador', 'receberFoto']));
+    expect(middlewaresDaRota(auth, 'delete', '/me/foto')).toContain(authMiddleware);
+  });
+});

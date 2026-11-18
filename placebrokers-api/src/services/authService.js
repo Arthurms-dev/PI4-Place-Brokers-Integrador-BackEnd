@@ -13,7 +13,10 @@ const UFS_VALIDAS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS'
 
 
 function toPublicUser(profile) {
-  return { id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo, avisoLeadEmail: Boolean(profile.aviso_lead_email) };
+  return {
+    id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo,
+    avisoLeadEmail: Boolean(profile.aviso_lead_email), avatarUrl: profile.avatar_url ?? null,
+  };
 }
 
 function isDuplicateEmailError(error) {
