@@ -124,6 +124,52 @@ class ClienteRepository {
   }
 
   /**
+   * Venda pendente de algum cliente ligado ao lead, lançada por outro corretor que não `corretorId`.
+   * Usada para barrar o repasse: a venda ficaria com quem lançou e o cliente com outro corretor.
+   * @param {string} leadId @param {string} corretorId @returns {Promise<{ id: string, corretorNome: string|null }|null>}
+   */
+  async vendaPendenteDoLead(leadId, corretorId) {
+    const { data: clientes, error } = await supabaseAdmin.from('clientes').select('id').eq('lead_id', leadId);
+    if (error) throw error;
+    const ids = (clientes ?? []).map((c) => c.id);
+    if (!ids.length) return null;
+    const { data: vendas, error: erroVenda } = await supabaseAdmin
+      .from('vendas')
+      .select('id, corretor_id')
+      .in('cliente_id', ids)
+      .eq('status', 'pendente')
+      .neq('corretor_id', corretorId)
+      .limit(1);
+    if (erroVenda) throw erroVenda;
+    const venda = (vendas ?? [])[0];
+    if (!venda) return null;
+    const { data: perfil } = await supabaseAdmin.from('profiles').select('nome').eq('id', venda.corretor_id).maybeSingle();
+    return { id: venda.id, corretorNome: perfil?.nome ?? null };
+  }
+
+  /**
+   * Repasse: visitas ainda por acontecer (agendadas ou confirmadas) dos clientes do lead vão para o
+   * novo corretor. Visita que já passou, cancelada ou realizada fica com quem atendeu.
+   * @param {string} leadId @param {string} corretorId @param {string} agoraIso @returns {Promise<number>} quantas mudaram
+   */
+  async moverVisitasFuturasDoLead(leadId, corretorId, agoraIso) {
+    const { data: clientes, error } = await supabaseAdmin.from('clientes').select('id').eq('lead_id', leadId);
+    if (error) throw error;
+    const ids = (clientes ?? []).map((c) => c.id);
+    if (!ids.length) return 0;
+    const { data, error: erroAgenda } = await supabaseAdmin
+      .from('agendamentos')
+      .update({ corretor_id: corretorId })
+      .in('cliente_id', ids)
+      .in('status', ['agendado', 'confirmado'])
+      .gte('data_hora', agoraIso)
+      .neq('corretor_id', corretorId)
+      .select('id');
+    if (erroAgenda) throw erroAgenda;
+    return (data ?? []).length;
+  }
+
+  /**
    * Cliente com o mesmo e-mail ou telefone (a mesma pessoa, mesmo que o nome seja outro).
    * @param {{ email?: string|null, telefone?: string|null, ignorarId?: string }} contato
    * @returns {Promise<object|null>}
@@ -188,4 +234,4 @@ class ClienteRepository {
   }
 }
 
-module.exports = { ClienteRepository };
+module.exports = { ClienteRepository };

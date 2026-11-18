@@ -5,6 +5,7 @@ const STATUS_BY_CODE = {
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
+  CONFLICT: 409,
   SERVER_ERROR: 500,
 };
 
@@ -24,4 +25,4 @@ class AppError extends Error {
   }
 }
 
-module.exports = { AppError, STATUS_BY_CODE };
+module.exports = { AppError, STATUS_BY_CODE };

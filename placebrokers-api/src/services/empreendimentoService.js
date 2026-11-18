@@ -1,6 +1,7 @@
 'use strict';
 
 const { AppError } = require('../errors/AppError');
+const { CAMPOS_FICHA, extrairFicha, validarFicha } = require('../utils/fichaTecnica');
 const { validarAndamento } = require('../utils/andamentoObra');
 const { validarFatos } = require('../utils/fatosMercado');
 const { evolucaoDoPreco } = require('../utils/evolucaoPreco');
@@ -166,6 +167,8 @@ class EmpreendimentoService {
     if (dados.fatosMercado !== undefined) andamento.fatos_mercado = dados.fatosMercado;
     validarAndamento(andamento, erros);
     validarFatos(andamento, erros);
+    const ficha = extrairFicha(dados);
+    validarFicha(ficha, erros);
     if (Object.keys(erros).length) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
     }
@@ -206,6 +209,7 @@ class EmpreendimentoService {
       parcela_min: dados.parcelaMin ?? null,
       previsao_entrega: dados.previsaoEntrega || null,
       ...andamento,
+      ...ficha,
       lazer: dados.lazer ?? [],
       capa_url: capaUrl,
       ...(capaMiniatura ? { capa_miniatura_url: capaMiniatura } : {}),
@@ -268,6 +272,7 @@ class EmpreendimentoService {
       publicado: 'publicado',
       disponivel: 'disponivel',
       destaque: 'destaque',
+      ...CAMPOS_FICHA,
     };
 
     const dados = {};
@@ -287,6 +292,7 @@ class EmpreendimentoService {
 
     validarAndamento(dados, erros, atual);
     validarFatos(dados, erros);
+    validarFicha(dados, erros);
 
     for (const campo of ['uf', 'cidade', 'bairro']) {
       if (campo in dados && !String(dados[campo] ?? '').trim()) {

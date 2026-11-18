@@ -112,6 +112,15 @@ class LeadService {
    * @param {string|null} corretorId
    */
   async atribuirCorretor(id, corretorId) {
+    // Venda pendente de outro corretor barra o repasse (decisão de 18/11): primeiro o gerente
+    // confirma ou recusa a venda; senão o cliente iria para um corretor e a venda ficaria com outro.
+    if (corretorId && this.clienteRepository.vendaPendenteDoLead) {
+      const pendente = await this.clienteRepository.vendaPendenteDoLead(id, corretorId);
+      if (pendente) {
+        const de = pendente.corretorNome ? ` com ${pendente.corretorNome}` : '';
+        throw new AppError('CONFLICT', `Este cliente tem uma venda pendente${de}. Confirme ou recuse a venda antes de repassar o lead.`, 409);
+      }
+    }
     let row;
     try {
       row = await this.leadRepository.atribuirCorretor(id, corretorId ?? null);
@@ -124,7 +133,11 @@ class LeadService {
     if (!row) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
     // O cliente ligado ao lead acompanha o repasse; senão o novo corretor não consegue agendar
     // ("Cliente não encontrado na sua carteira"). Lead sem corretor não mexe na carteira.
-    if (corretorId) await this.clienteRepository.moverDoLeadParaCorretor(id, corretorId);
+    if (corretorId) {
+      await this.clienteRepository.moverDoLeadParaCorretor(id, corretorId);
+      // Visitas que ainda vão acontecer seguem o cliente; as que já passaram ficam com quem atendeu.
+      await this.clienteRepository.moverVisitasFuturasDoLead?.(id, corretorId, new Date().toISOString());
+    }
     return toPublicLead(row);
   }
 
