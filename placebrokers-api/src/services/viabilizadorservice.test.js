@@ -320,4 +320,4 @@ describe('ViabilizadorService', () => {
       expect(pendenciasDe(semData)).toContain('documentos_desatualizados');
     });
   });
-});
+});

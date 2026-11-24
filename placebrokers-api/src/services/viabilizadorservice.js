@@ -194,4 +194,4 @@ class ViabilizadorService {
   }
 }
 
-module.exports = { ViabilizadorService, toPublicProduto, pendenciasDe };
+module.exports = { ViabilizadorService, toPublicProduto, pendenciasDe };
