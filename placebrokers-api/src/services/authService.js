@@ -18,6 +18,7 @@ function toPublicUser(profile) {
     id: profile.id, nome: profile.nome, email: profile.email, role: profile.cargo,
     avisoLeadEmail: Boolean(profile.aviso_lead_email), avatarUrl: profile.avatar_url ?? null,
     trocarSenha: profile.trocar_senha === true,
+    telefone: profile.telefone ?? null,
   };
 }
 
@@ -206,9 +207,9 @@ async login(credentials, contexto = {}) {
   };
 
   /**
-   * @param {{ nome, email, password, confirmPassword, role, vinculo, creci }} payload
+   * @param {{ nome, email, password, confirmPassword, role, vinculo, creci, telefone }} payload
    */
-  validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci, uf, construtoraId } = {}) {
+  validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci, uf, construtoraId, telefone } = {}) {
     const errors = this.validateLoginInput({ email, password });
     if (password && password.length < 8) {
   errors.password = 'A senha deve ter pelo menos 8 caracteres.';
@@ -230,6 +231,9 @@ async login(credentials, contexto = {}) {
       if (vinculo === 'externo' && !UFS_VALIDAS.includes(String(uf ?? '').toUpperCase())) {
         errors.uf = 'Informe o estado em que você atua.';
       }
+      // WhatsApp do corretor: é por ele que o gerente e o admin chamam a pessoa.
+      const fone = normalizarTelefone(telefone ?? '');
+      if (!fone.ok) errors.telefone = String(telefone ?? '').trim() ? fone.erro : 'Informe o seu WhatsApp com DDD.';
     }
 
     if (role === 'viabilizador' && !construtoraId) {
@@ -304,6 +308,7 @@ async login(credentials, contexto = {}) {
         creci: payload.creci?.trim() || null,
         uf: payload.role === 'corretor' && payload.vinculo === 'externo' ? String(payload.uf).toUpperCase() : null,
         construtoraId: payload.role === 'viabilizador' ? payload.construtoraId : null,
+        telefone: payload.role === 'corretor' ? normalizarTelefone(payload.telefone).digitos : null,
         status: 'pendente',
       });
     } catch (cause) {

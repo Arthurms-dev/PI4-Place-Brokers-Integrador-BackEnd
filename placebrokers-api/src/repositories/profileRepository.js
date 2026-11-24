@@ -36,8 +36,9 @@ class ProfileRepository {
    * @param {{ id: string, nome: string, email: string, cargo: string }} profile
    * @returns {Promise<object>}
    */
-  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, construtoraId = null, status = 'pendente', diretoriaId = null, trocarSenha = false }) {
+  async create({ id, nome, email, cargo, vinculo = null, creci = null, uf = null, construtoraId = null, status = 'pendente', diretoriaId = null, trocarSenha = false, telefone = null }) {
     const linha = { id, nome, email, cargo, vinculo, creci, uf, construtora_id: construtoraId, status };
+    if (telefone) linha.telefone = telefone;
     // Só manda a coluna quando há diretoria: assim o cadastro de corretor segue igual.
     if (diretoriaId) linha.diretoria_id = diretoriaId;
     // Acesso criado pelo admin nasce com senha temporária: a pessoa troca no primeiro login.

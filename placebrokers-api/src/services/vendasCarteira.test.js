@@ -15,7 +15,8 @@ function setup(cliente = { id: 'cliente-a', corretor: { id: 'corretor-1', nome: 
   };
 }
 const corretor = { id:'corretor-1', cargo:'corretor' };
-const venda = { valor: 300000, clienteId: 'cliente-a', empreendimentoId:'emp-1' };
+const HOJE = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const venda = { valor: 300000, clienteId: 'cliente-a', empreendimentoId:'emp-1', unidade: 'Torre B, 402', dataVenda: HOJE };
 
 describe('VendaService.criar: proteção da carteira', () => {
   test('permite cliente do próprio corretor, venda em estado pendente', async () => {

@@ -25,7 +25,7 @@ const GRUPOS = {
   Métricas: 'Acessos ao site e dashboard',
   Painel: 'Feeds do painel do admin',
   Notificações: 'Aviso de lead novo no celular (site e app)',
-  Viabilizador: 'Área do viabilizador (pós-MVP)',
+  Viabilizador: 'Área do viabilizador',
   'Trabalhe conosco': 'Vagas abertas e candidatura pelo site (público)',
   RH: 'Painel do RH: candidaturas, currículos e vagas',
 };
@@ -126,7 +126,7 @@ const ROTAS = [
     corpo: { status: 'realizado', interesseAposVisita: 'alto' } },
 
   // Vendas
-  { metodo: 'post', caminho: '/vendas', grupo: 'Vendas', acesso: ['corretor'], resumo: 'Lança venda (fica aguardando o gerente)', corpo: { valor: 189000, clienteId: ID, empreendimentoId: ID } },
+  { metodo: 'post', caminho: '/vendas', grupo: 'Vendas', acesso: ['corretor'], resumo: 'Lança venda (fica aguardando o gerente)', corpo: { valor: 189000, clienteId: ID, empreendimentoId: ID, unidade: 'Torre A, 1203', dataVenda: '2026-11-24' } },
   { metodo: 'get', caminho: '/vendas', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Vendas visíveis para o cargo' },
   { metodo: 'patch', caminho: '/vendas/:id', grupo: 'Vendas', acesso: ['admin', 'gerente'], resumo: 'Confirma ou recusa a venda', corpo: { status: 'confirmada' } },
   { metodo: 'get', caminho: '/vendas/vgv', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Total de VGV confirmado', consulta: { equipeId: 'filtra por equipe', diretoriaId: 'filtra por diretoria' } },
@@ -135,7 +135,7 @@ const ROTAS = [
   { metodo: 'get', caminho: '/equipe', grupo: 'Equipe', acesso: ['admin'], resumo: 'Usuários (filtros por status e cargo)', consulta: { status: 'pendente | aprovado | recusado', cargo: 'corretor | gerente | viabilizador | rh | recepcao | diretor | cadastro' } },
   { metodo: 'patch', caminho: '/equipe/:id', grupo: 'Equipe', acesso: ['admin'], resumo: 'Aprova/recusa, ativa/desativa, muda a equipe (corretor) ou a diretoria (diretor)', corpo: { status: 'aprovado', ativo: true, equipeId: ID } },
   { metodo: 'post', caminho: '/equipe/gerentes', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria gerente', corpo: { nome: 'Gerente Exemplo', email: 'gerente@exemplo.com', password: 'senha-de-teste' } },
-  { metodo: 'post', caminho: '/equipe/usuarios', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria usuário interno: gerente, rh, recepcao, diretor (com diretoriaId) ou cadastro', corpo: { nome: 'Diretor Exemplo', email: 'diretor@exemplo.com', password: 'senha-de-teste', cargo: 'diretor', diretoriaId: ID } },
+  { metodo: 'post', caminho: '/equipe/usuarios', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria usuário interno: gerente, rh, recepcao, diretor (com diretoriaId), cadastro ou viabilizador (com construtoraId)', corpo: { nome: 'Diretor Exemplo', email: 'diretor@exemplo.com', password: 'senha-de-teste', cargo: 'diretor', diretoriaId: ID } },
   { metodo: 'get', caminho: '/equipe/times', grupo: 'Equipe', acesso: ['admin'], resumo: 'Equipes' },
   { metodo: 'post', caminho: '/equipe/times', grupo: 'Equipe', acesso: ['admin'], resumo: 'Cria equipe', corpo: { nome: 'Time Paulista', gerenteId: ID, diretoriaId: ID, sede: 'Paulista' } },
   { metodo: 'patch', caminho: '/equipe/times/:id', grupo: 'Equipe', acesso: ['admin'], resumo: 'Atualiza equipe', corpo: { nome: 'Time Paulista 2' } },

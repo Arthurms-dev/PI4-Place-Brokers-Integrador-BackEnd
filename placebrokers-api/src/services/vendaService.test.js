@@ -1,5 +1,6 @@
 'use strict';
 
+const HOJE = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const { VendaService } = require('./vendaservice');
 
 const admin = { id: 'admin-1', cargo: 'admin' };
@@ -139,7 +140,7 @@ describe('VendaService.criar', () => {
     mocks.vendaRepository.criar.mockResolvedValue(vendaCriada);
 
     const resultado = await service.criar(
-      { valor: '350000.50', empreendimentoId: 'emp-1', clienteId: 'cli-1' },
+      { valor: '350000.50', empreendimentoId: 'emp-1', clienteId: 'cli-1', unidade: '  Torre A,   1203 ', dataVenda: HOJE },
       corretor,
     );
 
@@ -150,6 +151,8 @@ describe('VendaService.criar', () => {
       cliente_id: 'cli-1',
       empreendimento_id: 'emp-1',
       valor: 350000.5,
+      unidade: 'Torre A, 1203',
+      data_venda: HOJE,
       status: 'pendente',
     });
   });
@@ -158,13 +161,15 @@ describe('VendaService.criar', () => {
     mocks.clienteRepository.buscarPorId.mockResolvedValue(clienteDoCorretor);
     mocks.vendaRepository.criar.mockResolvedValue({ id: 'v-2' });
 
-    await service.criar({ valor: 100, clienteId: 'cli-1' }, corretor);
+    await service.criar({ valor: 100, clienteId: 'cli-1', unidade: '101', dataVenda: HOJE }, corretor);
 
     expect(mocks.vendaRepository.criar).toHaveBeenCalledWith({
       corretor_id: 'cor-1',
       cliente_id: 'cli-1',
       empreendimento_id: null,
       valor: 100,
+      unidade: '101',
+      data_venda: HOJE,
       status: 'pendente',
     });
   });

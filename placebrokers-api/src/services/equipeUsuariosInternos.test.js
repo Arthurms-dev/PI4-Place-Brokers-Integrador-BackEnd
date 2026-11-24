@@ -7,10 +7,11 @@ const DIRETORIA = '33333333-3333-4333-8333-333333333333';
 function montar() {
   const equipeRepository = {
     buscarDiretoria: jest.fn().mockResolvedValue({ id: DIRETORIA }),
+    construtoraExiste: jest.fn().mockResolvedValue(true),
     buscarPorId: jest.fn(),
     atualizar: jest.fn(async (id, d) => ({ id, ...d })),
   };
-  const profileRepository = { create: jest.fn(async (p) => ({ ...p, diretoria_id: p.diretoriaId ?? null })) };
+  const profileRepository = { create: jest.fn(async (p) => ({ ...p, diretoria_id: p.diretoriaId ?? null, construtora_id: p.construtoraId ?? null })) };
   const authClient = { createUser: jest.fn().mockResolvedValue({ data: { user: { id: 'novo-1' } }, error: null }) };
   return { service: new EquipeService({ equipeRepository, profileRepository, authClient }), equipeRepository, profileRepository, authClient };
 }
@@ -39,7 +40,33 @@ describe('usuários internos criados pelo admin', () => {
     expect(r.diretoria_id).toBe(DIRETORIA);
   });
 
-  test.each(['admin', 'corretor', 'viabilizador', 'qualquer'])('não cria %s por aqui', async (cargo) => {
+  test('viabilizador precisa de construtora', async () => {
+    const { service, authClient } = montar();
+    await expect(service.criarUsuarioInterno({ ...base, cargo: 'viabilizador' })).rejects.toMatchObject({ fieldErrors: { construtoraId: expect.any(String) } });
+    expect(authClient.createUser).not.toHaveBeenCalled();
+  });
+
+  test('viabilizador com construtora inexistente é recusado', async () => {
+    const { service, equipeRepository, authClient } = montar();
+    equipeRepository.construtoraExiste.mockResolvedValue(false);
+    await expect(service.criarUsuarioInterno({ ...base, cargo: 'viabilizador', construtoraId: 'c-x' })).rejects.toMatchObject({ fieldErrors: { construtoraId: expect.any(String) } });
+    expect(authClient.createUser).not.toHaveBeenCalled();
+  });
+
+  test('viabilizador sai aprovado e vinculado à construtora', async () => {
+    const { service, profileRepository } = montar();
+    const r = await service.criarUsuarioInterno({ ...base, cargo: 'viabilizador', construtoraId: 'c-1' });
+    expect(profileRepository.create).toHaveBeenCalledWith(expect.objectContaining({ cargo: 'viabilizador', status: 'aprovado', construtoraId: 'c-1', diretoriaId: null }));
+    expect(r.construtora_id).toBe('c-1');
+  });
+
+  test('outros cargos não levam construtora', async () => {
+    const { service, profileRepository } = montar();
+    await service.criarUsuarioInterno({ ...base, cargo: 'rh', construtoraId: 'c-1' });
+    expect(profileRepository.create).toHaveBeenCalledWith(expect.objectContaining({ construtoraId: null }));
+  });
+
+  test.each(['admin', 'corretor', 'qualquer'])('não cria %s por aqui', async (cargo) => {
     const { service, authClient } = montar();
     await expect(service.criarUsuarioInterno({ ...base, cargo })).rejects.toMatchObject({ fieldErrors: { cargo: expect.any(String) } });
     expect(authClient.createUser).not.toHaveBeenCalled();

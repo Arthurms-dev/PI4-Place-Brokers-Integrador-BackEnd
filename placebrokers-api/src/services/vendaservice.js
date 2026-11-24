@@ -2,6 +2,23 @@
 
 const { AppError } = require('../errors/AppError');
 
+/** Data de hoje em Recife (UTC-3), no formato AAAA-MM-DD. */
+function hojeEmRecife(agora = new Date()) {
+  return new Date(agora.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** Valida a data da venda: AAAA-MM-DD, não futura e no máximo 1 ano atrás. */
+function validarDataVenda(valor, agora = new Date()) {
+  if (!valor) return 'Informe a data da venda.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor) || Number.isNaN(Date.parse(`${valor}T12:00:00Z`))) return 'Data inválida.';
+  const hoje = hojeEmRecife(agora);
+  if (valor > hoje) return 'A data da venda não pode ser futura.';
+  const umAnoAtras = new Date(`${hoje}T12:00:00Z`);
+  umAnoAtras.setUTCFullYear(umAnoAtras.getUTCFullYear() - 1);
+  if (valor < umAnoAtras.toISOString().slice(0, 10)) return 'A data da venda tem mais de 1 ano.';
+  return null;
+}
+
 class VendaService {
   /** @param {{ vendaRepository, equipeRepository }} deps */
   constructor({ vendaRepository, equipeRepository, clienteRepository }) {
@@ -30,7 +47,7 @@ class VendaService {
     return [usuario.id]; 
   }
 
-  async criar({ valor, empreendimentoId, clienteId } = {}, corretor) {
+  async criar({ valor, empreendimentoId, clienteId, unidade, dataVenda } = {}, corretor) {
     const numero = Number(valor);
     if (valor === null || valor === undefined || valor === '' || !Number.isFinite(numero) || numero <= 0) {
       throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, { valor: 'Informe um valor de venda válido.' });
@@ -47,11 +64,24 @@ class VendaService {
       throw new AppError('FORBIDDEN', 'Esse cliente não pertence à sua carteira.', 403);
     }
 
+    const unidadeLimpa = String(unidade ?? '').trim().replace(/\s+/g, ' ');
+    if (!unidadeLimpa) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, { unidade: 'Informe a unidade vendida (ex.: Torre A, 1203).' });
+    }
+    if (unidadeLimpa.length > 40) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, { unidade: 'Use no máximo 40 caracteres.' });
+    }
+    const erroData = validarDataVenda(dataVenda);
+    if (erroData) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, { dataVenda: erroData });
+    }
     return this.vendaRepository.criar({
       corretor_id: corretor.id,
       cliente_id: clienteId || null,
       empreendimento_id: empreendimentoId || null,
       valor: numero,
+      unidade: unidadeLimpa,
+      data_venda: dataVenda,
       status: 'pendente',
     });
   }
@@ -131,4 +161,4 @@ class VendaService {
   }
 }
 
-module.exports = { VendaService };
+module.exports = { VendaService, validarDataVenda };

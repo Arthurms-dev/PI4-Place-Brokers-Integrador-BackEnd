@@ -7,7 +7,8 @@ const STATUS_VALIDOS = ['pendente', 'aprovado', 'recusado'];
 const SEDES_VALIDAS = ['Paulista', 'Recife', 'Caruaru'];
 const CARGOS_VALIDOS = ['admin', 'corretor', 'viabilizador', 'gerente', 'rh', 'recepcao', 'diretor', 'cadastro'];
 // Cargos internos que só o admin cria (sem cadastro público). Admin continua só pelo Supabase.
-const CARGOS_CRIADOS_PELO_ADMIN = ['gerente', 'rh', 'recepcao', 'diretor', 'cadastro'];
+// O viabilizador também entra por aqui, sempre ligado a uma construtora (o cadastro público segue só para corretor).
+const CARGOS_CRIADOS_PELO_ADMIN = ['gerente', 'rh', 'recepcao', 'diretor', 'cadastro', 'viabilizador'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function erroDeCampo(campo, mensagem) {
@@ -109,22 +110,30 @@ class EquipeService {
   }
 
   /**
-   * Cria gerente, RH, recepção, diretor ou cadastro. Já entra aprovado e só faz login.
-   * @param {{ nome?: string, email?: string, password?: string, cargo?: string, diretoriaId?: string }} dados
+   * Cria gerente, RH, recepção, diretor, cadastro ou viabilizador. Já entra aprovado e só faz login.
+   * @param {{ nome?: string, email?: string, password?: string, cargo?: string, diretoriaId?: string, construtoraId?: string }} dados
    */
-  async criarUsuarioInterno({ nome, email, password, cargo, diretoriaId } = {}) {
+  async criarUsuarioInterno({ nome, email, password, cargo, diretoriaId, construtoraId } = {}) {
     const erros = {};
     if (!CARGOS_CRIADOS_PELO_ADMIN.includes(cargo)) erros.cargo = 'Escolha um cargo válido.';
     if (!nome?.trim()) erros.nome = 'Informe o nome.';
     if (!email?.trim() || !EMAIL_REGEX.test(email.trim())) erros.email = 'E-mail inválido.';
     if (!password || password.length < 6) erros.password = 'A senha deve ter pelo menos 6 caracteres.';
     if (cargo === 'diretor' && !diretoriaId) erros.diretoriaId = 'Escolha a diretoria do diretor.';
+    if (cargo === 'viabilizador' && !construtoraId) erros.construtoraId = 'Escolha a construtora do viabilizador.';
     if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', erros);
     // A senha temporária também não pode ser uma das que já vazaram.
     const senhaVazada = await conferirSenhaVazada(this.senhasVazadas, password);
     if (senhaVazada) throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', { password: senhaVazada });
 
     const diretoria_id = cargo === 'diretor' ? await this.validarDiretoria(diretoriaId) : null;
+    let construtora_id = null;
+    if (cargo === 'viabilizador') {
+      if (!(await this.equipeRepository.construtoraExiste(construtoraId))) {
+        throw erroDeCampo('construtoraId', 'Construtora não encontrada.');
+      }
+      construtora_id = construtoraId;
+    }
     const emailNormalizado = email.trim().toLowerCase();
 
     let resultado;
@@ -150,11 +159,13 @@ class EquipeService {
         cargo,
         status: 'aprovado',
         diretoriaId: diretoria_id,
+        construtoraId: construtora_id,
         trocarSenha: true,
       });
       return {
         id: perfil.id, nome: perfil.nome, email: perfil.email, cargo: perfil.cargo,
         status: perfil.status, diretoria_id: perfil.diretoria_id ?? null,
+        construtora_id: perfil.construtora_id ?? null,
         trocarSenha: Boolean(perfil.trocar_senha ?? true),
       };
     } catch (cause) {
@@ -271,4 +282,4 @@ class EquipeService {
   }
 }
 
-module.exports = { EquipeService, CARGOS_CRIADOS_PELO_ADMIN };
+module.exports = { EquipeService, CARGOS_CRIADOS_PELO_ADMIN };

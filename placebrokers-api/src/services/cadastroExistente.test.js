@@ -3,7 +3,7 @@ const { AuthService } = require('./authService');
 
 const form = {
   nome: 'Pessoa Exemplo', email: 'pessoa@example.com', password: 'senha1234',
-  confirmPassword: 'senha1234', role: 'corretor', vinculo: 'interno',
+  confirmPassword: 'senha1234', role: 'corretor', vinculo: 'interno', telefone: '(81) 99629-8692',
 };
 
 function dependencias(existente = null, erroAuth = null) {
