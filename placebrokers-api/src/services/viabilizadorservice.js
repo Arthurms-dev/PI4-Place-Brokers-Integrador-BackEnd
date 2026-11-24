@@ -3,6 +3,8 @@
 const { AppError } = require('../errors/AppError');
 
 const TIPOS_DOCUMENTO = { book: 'book_url', tabela: 'tabela_url' };
+// Data de envio de cada documento (gravada tanto pelo admin quanto pelo viabilizador).
+const DATA_DO_DOCUMENTO = { book: 'book_atualizado_em', tabela: 'tabela_atualizado_em' };
 const PERIODOS = [7, 30, 90];
 const DIAS_PARA_DESATUALIZAR = 30;
 const PESOS = { visualizacoes: 1, leads: 5, visitas: 8 };
@@ -13,7 +15,25 @@ function numeroOuNulo(valor) {
   return Number.isFinite(n) && n >= 0 ? n : NaN;
 }
 
+/**
+ * Data de cada documento que existe. Usa a data do próprio documento; em registros antigos,
+ * enviados antes dessa coluna, cai na data geral. Documento que não existe não tem data.
+ */
+function datasDosDocumentos(row) {
+  const datas = {};
+  for (const [tipo, coluna] of Object.entries(TIPOS_DOCUMENTO)) {
+    if (row[coluna]) datas[tipo] = row[DATA_DO_DOCUMENTO[tipo]] ?? row.documentos_atualizados_em ?? null;
+  }
+  return datas;
+}
+
+function maisRecente(datas) {
+  const validas = datas.filter(Boolean).map((d) => new Date(d).getTime());
+  return validas.length ? new Date(Math.max(...validas)).toISOString() : null;
+}
+
 function toPublicProduto(row) {
+  const datas = datasDosDocumentos(row);
   return {
     id: row.id,
     nome: row.nome,
@@ -31,7 +51,11 @@ function toPublicProduto(row) {
     temBook: Boolean(row.book_url),
     temTabela: Boolean(row.tabela_url),
     temCoordenadas: row.latitude != null && row.longitude != null,
-    documentosAtualizadosEm: row.documentos_atualizados_em ?? null,
+    segmento: row.segmento ?? null,
+    parcelaMin: row.parcela_min ?? null,
+    bookAtualizadoEm: datas.book ?? null,
+    tabelaAtualizadoEm: datas.tabela ?? null,
+    documentosAtualizadosEm: maisRecente(Object.values(datas)),
   };
 }
 function pendenciasDe(row, agora = new Date()) {
@@ -40,10 +64,8 @@ function pendenciasDe(row, agora = new Date()) {
   if (!row.tabela_url) lista.push('sem_tabela');
   if (row.preco_min == null) lista.push('sem_preco');
   if (row.latitude == null || row.longitude == null) lista.push('sem_coordenadas');
-  const atualizado = row.documentos_atualizados_em ? new Date(row.documentos_atualizados_em) : null;
-  if ((row.book_url || row.tabela_url) && (!atualizado || agora - atualizado > DIAS_PARA_DESATUALIZAR * 86400000)) {
-    lista.push('documentos_desatualizados');
-  }
+  const velho = (data) => !data || agora - new Date(data) > DIAS_PARA_DESATUALIZAR * 86400000;
+  if (Object.values(datasDosDocumentos(row)).some(velho)) lista.push('documentos_desatualizados');
   return lista;
 }
 
@@ -89,7 +111,7 @@ class ViabilizadorService {
       if (typeof mudancas.disponivel !== 'boolean') erros.disponivel = 'Informe verdadeiro ou falso.';
       else dados.disponivel = mudancas.disponivel;
     }
-    for (const [campo, coluna] of [['precoMin', 'preco_min'], ['precoMax', 'preco_max']]) {
+    for (const [campo, coluna] of [['precoMin', 'preco_min'], ['precoMax', 'preco_max'], ['parcelaMin', 'parcela_min']]) {
       if (mudancas[campo] === undefined) continue;
       const n = numeroOuNulo(mudancas[campo]);
       if (Number.isNaN(n)) erros[campo] = 'Informe um valor válido.';
@@ -114,9 +136,11 @@ class ViabilizadorService {
 
     const produto = await this._produtoDele(id, usuario);
     const url = await this.uploadService.uploadDocumento(produto.slug, tipo, arquivo);
+    const agora = new Date().toISOString();
     const atualizado = await this.viabilizadorRepository.atualizarProduto(id, {
       [TIPOS_DOCUMENTO[tipo]]: url,
-      documentos_atualizados_em: new Date().toISOString(),
+      [DATA_DO_DOCUMENTO[tipo]]: agora,
+      documentos_atualizados_em: agora,
     });
     return { ...toPublicProduto(atualizado), pendencias: pendenciasDe(atualizado) };
   }
@@ -170,4 +194,4 @@ class ViabilizadorService {
   }
 }
 
-module.exports = { ViabilizadorService, toPublicProduto, pendenciasDe };
+module.exports = { ViabilizadorService, toPublicProduto, pendenciasDe };

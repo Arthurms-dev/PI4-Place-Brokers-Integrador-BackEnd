@@ -1,6 +1,6 @@
 'use strict';
 
-const { ViabilizadorService, pendenciasDe } = require('./viabilizadorservice');
+const { ViabilizadorService, pendenciasDe, toPublicProduto } = require('./viabilizadorservice');
 
 const DIA = 86400000;
 
@@ -163,6 +163,8 @@ describe('ViabilizadorService', () => {
       const [, dados] = deps.viabilizadorRepository.atualizarProduto.mock.calls[0];
       expect(dados.book_url).toBe('https://x/novo.pdf');
       expect(typeof dados.documentos_atualizados_em).toBe('string');
+      expect(dados.book_atualizado_em).toBe(dados.documentos_atualizados_em);
+      expect(dados.tabela_atualizado_em).toBeUndefined();
       expect(resultado.temBook).toBe(true);
     });
 
@@ -260,6 +262,47 @@ describe('ViabilizadorService', () => {
     });
   });
 
+  describe('atualizarProduto: parcela', () => {
+    test('o viabilizador atualiza a parcela mínima (MCMV)', async () => {
+      const deps = createDeps();
+      const service = new ViabilizadorService(deps);
+
+      const r = await service.atualizarProduto('p1', { parcelaMin: 650 }, usuario);
+
+      expect(deps.viabilizadorRepository.atualizarProduto).toHaveBeenCalledWith('p1', { parcela_min: 650 });
+      expect(r.parcelaMin).toBe(650);
+    });
+
+    test('parcela inválida é recusada', async () => {
+      const service = new ViabilizadorService(createDeps());
+      await expect(service.atualizarProduto('p1', { parcelaMin: -1 }, usuario)).rejects.toMatchObject({ fieldErrors: { parcelaMin: expect.any(String) } });
+    });
+  });
+
+  describe('datas dos documentos', () => {
+    test('documento enviado pelo admin (data própria) conta como atualizado', () => {
+      const p = produto({ documentos_atualizados_em: null, book_atualizado_em: new Date(Date.now() - 13 * DIA).toISOString(), tabela_atualizado_em: new Date(Date.now() - 13 * DIA).toISOString() });
+      expect(pendenciasDe(p)).not.toContain('documentos_desatualizados');
+      expect(toPublicProduto(p).documentosAtualizadosEm).toBe(p.book_atualizado_em);
+    });
+
+    test('sem nenhum documento não há data, mesmo que a data geral tenha ficado gravada', () => {
+      const p = produto({ book_url: null, tabela_url: null, documentos_atualizados_em: new Date().toISOString() });
+      const pub = toPublicProduto(p);
+      expect(pub.documentosAtualizadosEm).toBeNull();
+      expect(pub.bookAtualizadoEm).toBeNull();
+      expect(pendenciasDe(p)).not.toContain('documentos_desatualizados');
+    });
+
+    test('cada documento tem a sua data; basta um velho para ficar desatualizado', () => {
+      const p = produto({ documentos_atualizados_em: null, book_atualizado_em: new Date().toISOString(), tabela_atualizado_em: new Date(Date.now() - 40 * DIA).toISOString() });
+      const pub = toPublicProduto(p);
+      expect(pub.bookAtualizadoEm).toBe(p.book_atualizado_em);
+      expect(pub.tabelaAtualizadoEm).toBe(p.tabela_atualizado_em);
+      expect(pendenciasDe(p)).toContain('documentos_desatualizados');
+    });
+  });
+
   describe('pendenciasDe', () => {
     test('produto completo e com documentos recentes: sem pendências', () => {
       expect(pendenciasDe(produto())).toEqual([]);
@@ -277,4 +320,4 @@ describe('ViabilizadorService', () => {
       expect(pendenciasDe(semData)).toContain('documentos_desatualizados');
     });
   });
-});
+});
