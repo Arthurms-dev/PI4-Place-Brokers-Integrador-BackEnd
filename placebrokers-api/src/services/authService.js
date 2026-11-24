@@ -210,6 +210,9 @@ async login(credentials, contexto = {}) {
    */
   validateRegisterInput({ nome, email, password, confirmPassword, role, vinculo, creci, uf, construtoraId } = {}) {
     const errors = this.validateLoginInput({ email, password });
+    if (password && password.length < 8) {
+  errors.password = 'A senha deve ter pelo menos 8 caracteres.';
+}
     if (!nome?.trim()) errors.nome = 'Informe o nome completo.';
     if (confirmPassword !== password) errors.confirmPassword = 'As senhas não coincidem.';
 

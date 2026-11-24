@@ -153,13 +153,47 @@ describe('AuthService', () => {
 
   });
 
-  describe('register', () => {
-    test.todo('caso de sucesso: cria o usuário no Supabase Auth e o perfil em profiles');
-    test.todo('dados inválidos: não chama authClient nem profileRepository');
-    test.todo('e-mail já cadastrado: lança AuthError USER_ALREADY_EXISTS');
-    test.todo('senhas não coincidem: fieldErrors.confirmPassword é preenchido');
-    test.todo('perfil inválido (fora de admin/corretor/viabilizador): fieldErrors.role é preenchido');
+  
+describe('register', () => {
+  test.todo('caso de sucesso: cria o usuário no Supabase Auth e o perfil em profiles');
+  test.todo('dados inválidos: não chama authClient nem profileRepository');
+  test.todo('e-mail já cadastrado: lança AuthError USER_ALREADY_EXISTS');
+  test.todo('senhas não coincidem: fieldErrors.confirmPassword é preenchido');
+  test.todo('perfil inválido (fora de admin/corretor/viabilizador): fieldErrors.role é preenchido');
+
+  test('rejeita senha com menos de 8 caracteres', () => {
+    const service = new AuthService(createDeps());
+
+    const errors = service.validateRegisterInput({
+      nome: 'Gabriel',
+      email: 'gabriel@teste.com',
+      password: '1234567',
+      confirmPassword: '1234567',
+      role: 'corretor',
+      vinculo: 'interno',
+    });
+
+    expect(errors.password).toBe(
+      'A senha deve ter pelo menos 8 caracteres.'
+    );
   });
+
+  test('aceita senha com exatamente 8 caracteres', () => {
+    const service = new AuthService(createDeps());
+
+    const errors = service.validateRegisterInput({
+      nome: 'Gabriel',
+      email: 'gabriel@teste.com',
+      password: '12345678',
+      confirmPassword: '12345678',
+      role: 'corretor',
+      vinculo: 'interno',
+    });
+
+    expect(errors.password).toBeUndefined();
+  });
+});
+
 });
 
 describe('AuthService.renovar', () => {
