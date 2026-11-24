@@ -2,6 +2,9 @@
 
 const { randomUUID } = require('node:crypto');
 const { AppError } = require('../errors/AppError');
+
+// Tipos de vínculo da vaga (revisão de telas, 24/11/2026).
+const VINCULOS = ['autonomo', 'clt', 'estagio'];
 const { normalizarTelefone } = require('../utils/telefone');
 
 const AREAS = {
@@ -49,7 +52,14 @@ class TrabalheConoscoService {
 
   async vagasAbertas() {
     const vagas = await this.repo.listarVagas({ apenasAbertas: true });
-    return vagas.map(({ id, titulo, area, unidade, descricao }) => ({ id, titulo, area, unidade, descricao }));
+    // Vaga com prazo vencido sai do site sozinha (o RH não precisa lembrar de fechar).
+    const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return vagas
+      .filter((v) => !v.prazo || v.prazo >= hoje)
+      .map(({ id, titulo, area, unidade, descricao, requisitos, vinculo, prazo, quantidade }) => ({
+        id, titulo, area, unidade, descricao,
+        requisitos: requisitos ?? null, vinculo: vinculo ?? null, prazo: prazo ?? null, quantidade: quantidade ?? null,
+      }));
   }
 
   /**
@@ -226,6 +236,27 @@ class TrabalheConoscoService {
       const descricao = opcional(dados.descricao);
       if (descricao && descricao.length > 2000) erros.descricao = 'Use no máximo 2.000 caracteres.';
       linha.descricao = descricao;
+    }
+    if (dados.requisitos !== undefined) {
+      const requisitos = opcional(dados.requisitos);
+      if (requisitos && requisitos.length > 2000) erros.requisitos = 'Use no máximo 2.000 caracteres.';
+      linha.requisitos = requisitos;
+    }
+    if (dados.vinculo !== undefined) {
+      const vinculo = opcional(dados.vinculo);
+      if (vinculo && !VINCULOS.includes(vinculo)) erros.vinculo = 'Vínculo inválido.';
+      linha.vinculo = vinculo;
+    }
+    if (dados.prazo !== undefined) {
+      const prazo = opcional(dados.prazo);
+      if (prazo && (!/^\d{4}-\d{2}-\d{2}$/.test(prazo) || Number.isNaN(Date.parse(`${prazo}T12:00:00Z`)))) erros.prazo = 'Data inválida.';
+      else if (prazo && !parcial && prazo < new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10)) erros.prazo = 'O prazo já passou.';
+      linha.prazo = prazo;
+    }
+    if (dados.quantidade !== undefined) {
+      const quantidade = dados.quantidade === null || dados.quantidade === '' ? null : Number(dados.quantidade);
+      if (quantidade !== null && (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 99)) erros.quantidade = 'Informe de 1 a 99.';
+      linha.quantidade = quantidade;
     }
     if (dados.aberta !== undefined) {
       if (typeof dados.aberta !== 'boolean') erros.aberta = 'Deve ser verdadeiro ou falso.';

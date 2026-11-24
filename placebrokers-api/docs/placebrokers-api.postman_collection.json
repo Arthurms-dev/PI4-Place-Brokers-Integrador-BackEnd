@@ -1609,7 +1609,7 @@
             "description": "Cargos: corretor",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"valor\": 189000,\n  \"clienteId\": \"00000000-0000-4000-8000-000000000000\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "raw": "{\n  \"valor\": 189000,\n  \"clienteId\": \"00000000-0000-4000-8000-000000000000\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\",\n  \"unidade\": \"Torre A, 1203\",\n  \"dataVenda\": \"2026-11-24\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1801,7 +1801,7 @@
           }
         },
         {
-          "name": "POST /equipe/usuarios — Cria usuário interno: gerente, rh, recepcao, diretor (com diretoriaId) ou cadastro",
+          "name": "POST /equipe/usuarios — Cria usuário interno: gerente, rh, recepcao, diretor (com diretoriaId), cadastro ou viabilizador (com construtoraId)",
           "request": {
             "method": "POST",
             "header": [
@@ -2085,6 +2085,82 @@
               ]
             },
             "description": "Cargos: gerente",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"corretorId\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Diretor",
+      "description": "Área do diretor: equipes, gerentes e leads da própria diretoria",
+      "item": [
+        {
+          "name": "GET /diretor/diretoria — Diretoria, equipes com gerente e corretores do diretor logado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/diretor/diretoria",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "diretor",
+                "diretoria"
+              ]
+            },
+            "description": "Cargos: diretor"
+          }
+        },
+        {
+          "name": "GET /diretor/leads — Leads dos corretores da diretoria",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/diretor/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "diretor",
+                "leads"
+              ]
+            },
+            "description": "Cargos: diretor"
+          }
+        },
+        {
+          "name": "PATCH /diretor/leads/:id/corretor — Repassa o lead para outro corretor ativo da diretoria",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/diretor/leads/{{id}}/corretor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "diretor",
+                "leads",
+                "{{id}}",
+                "corretor"
+              ]
+            },
+            "description": "Cargos: diretor",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"corretorId\": \"00000000-0000-4000-8000-000000000000\"\n}",
@@ -2425,7 +2501,7 @@
     },
     {
       "name": "Viabilizador",
-      "description": "Área do viabilizador (pós-MVP)",
+      "description": "Área do viabilizador",
       "item": [
         {
           "name": "GET /viabilizador/produtos — Produtos do viabilizador",

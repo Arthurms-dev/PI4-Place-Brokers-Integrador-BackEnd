@@ -161,4 +161,4 @@ class VendaService {
   }
 }
 
-module.exports = { VendaService, validarDataVenda };
+module.exports = { VendaService, validarDataVenda };

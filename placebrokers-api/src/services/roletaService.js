@@ -97,7 +97,11 @@ class RoletaService {
         apto: c.apto,
         recebidos: recebidos[c.corretor_id] ?? 0,
       })),
-      faltam: corretores.filter((c) => !chegou.has(c.id)).map((c) => ({ id: c.id, nome: c.nome })),
+      faltam: corretores.filter((c) => !chegou.has(c.id)).map((c) => ({
+        id: c.id, nome: c.nome,
+        ...(c.equipe_nome ? { equipe: c.equipe_nome } : {}),
+        ...(c.gerente_nome ? { gerente: c.gerente_nome } : {}),
+      })),
       aguardando: aguardando.map((l) => ({
         id: l.id, nome: l.nome, origem: l.origem, criadoEm: l.criado_em,
         empreendimento: l.empreendimento ? { id: l.empreendimento.id, nome: l.empreendimento.nome } : null,

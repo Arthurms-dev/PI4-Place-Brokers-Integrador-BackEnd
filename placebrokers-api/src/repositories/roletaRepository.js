@@ -106,7 +106,22 @@ class RoletaRepository {
       .eq('ativo', true)
       .order('nome', { ascending: true });
     if (error) throw error;
-    return data ?? [];
+    const corretores = data ?? [];
+    // Equipe e gerente de cada um, para a recepção separar nomes iguais (como no caderno: nome, gerente, diretor).
+    const idsEquipes = [...new Set(corretores.map((c) => c.equipe_id).filter(Boolean))];
+    if (!idsEquipes.length) return corretores;
+    const { data: equipes, error: erroEquipes } = await supabaseAdmin.from('equipes').select('id, nome, gerente_id').in('id', idsEquipes);
+    if (erroEquipes) return corretores;
+    const idsGerentes = [...new Set((equipes ?? []).map((e) => e.gerente_id).filter(Boolean))];
+    const { data: gerentes } = idsGerentes.length
+      ? await supabaseAdmin.from('profiles').select('id, nome').in('id', idsGerentes)
+      : { data: [] };
+    const porEquipe = new Map((equipes ?? []).map((e) => [e.id, e]));
+    const nomeGerente = new Map((gerentes ?? []).map((g) => [g.id, g.nome]));
+    return corretores.map((c) => {
+      const equipe = porEquipe.get(c.equipe_id);
+      return { ...c, equipe_nome: equipe?.nome ?? null, gerente_nome: equipe ? nomeGerente.get(equipe.gerente_id) ?? null : null };
+    });
   }
 
   // ---- Focos ----

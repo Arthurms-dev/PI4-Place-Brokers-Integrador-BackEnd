@@ -21,6 +21,7 @@ const GRUPOS = {
   Vendas: 'Vendas lançadas pelo corretor e confirmadas pelo gerente (VGV)',
   Equipe: 'Corretores, gerentes, equipes e diretorias (admin)',
   Gerente: 'Painel do gerente: só a própria equipe',
+  Diretor: 'Área do diretor: equipes, gerentes e leads da própria diretoria',
   Corretores: 'Lista de corretores',
   Métricas: 'Acessos ao site e dashboard',
   Painel: 'Feeds do painel do admin',
@@ -149,6 +150,9 @@ const ROTAS = [
   { metodo: 'get', caminho: '/gerente/agendamentos', grupo: 'Gerente', acesso: ['gerente'], resumo: 'Agendamentos da equipe' },
   { metodo: 'get', caminho: '/gerente/desempenho', grupo: 'Gerente', acesso: ['gerente'], resumo: 'Leads sem atendimento (15 min) e tempo de resposta por corretor (30 dias)' },
   { metodo: 'patch', caminho: '/gerente/leads/:id/corretor', grupo: 'Gerente', acesso: ['gerente'], resumo: 'Repassa o lead para outro corretor da equipe', corpo: { corretorId: ID } },
+  { metodo: 'get', caminho: '/diretor/diretoria', grupo: 'Diretor', acesso: ['diretor'], resumo: 'Diretoria, equipes com gerente e corretores do diretor logado' },
+  { metodo: 'get', caminho: '/diretor/leads', grupo: 'Diretor', acesso: ['diretor'], resumo: 'Leads dos corretores da diretoria' },
+  { metodo: 'patch', caminho: '/diretor/leads/:id/corretor', grupo: 'Diretor', acesso: ['diretor'], resumo: 'Repassa o lead para outro corretor ativo da diretoria', corpo: { corretorId: ID } },
 
   // Corretores
   { metodo: 'get', caminho: '/corretores', grupo: 'Corretores', acesso: ['admin'], resumo: 'Corretores aprovados (para atribuir leads)' },

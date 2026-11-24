@@ -33,7 +33,8 @@ const inicioDoDia = (data) => `${data}T00:00:00-03:00`;
 const fimDoDia = (data) => `${data}T23:59:59.999-03:00`;
 
 function variacao(atual, anterior) {
-  if (anterior === 0) return atual > 0 ? 100 : 0;
+  // Sem base no período anterior não existe percentual (antes mostrava "100%" e parecia crescimento).
+  if (anterior === 0) return atual > 0 ? null : 0;
   return Math.round(((atual - anterior) / anterior) * 1000) / 10;
 }
 
@@ -210,7 +211,8 @@ class MetricasService {
       acessos: {
         total: acessos,
         variacao: variacao(acessos, soma(serieAnt, 'acessos')),
-        porDia: serie.slice(-7).map((l) => ({ dia: l.dia, acessos: Number(l.acessos) })),
+        // Série do período inteiro, igual ao número do card (antes eram só os últimos 7 dias).
+        porDia: serie.map((l) => ({ dia: l.dia, acessos: Number(l.acessos) })),
       },
       imoveis: {
         visualizacoes: { total: viewsAtual, variacao: variacao(viewsAtual, viewsAnt) },

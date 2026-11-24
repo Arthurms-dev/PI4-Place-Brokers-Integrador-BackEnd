@@ -3,7 +3,7 @@
 const { supabaseAdmin } = require('../config/supabase');
 
 const BUCKET_CURRICULOS = 'curriculos';
-const CAMPOS_VAGA = 'id, titulo, area, unidade, descricao, aberta, criado_em, atualizado_em';
+const CAMPOS_VAGA = 'id, titulo, area, unidade, descricao, requisitos, vinculo, prazo, quantidade, aberta, criado_em, atualizado_em';
 const CAMPOS_CANDIDATURA = 'id, vaga_id, nome, email, telefone, unidade, area, creci, linkedin, mensagem, curriculo_path, '
   + 'status, notas, reenvios, criado_em, atualizado_em, vaga:vagas(id, titulo)';
 

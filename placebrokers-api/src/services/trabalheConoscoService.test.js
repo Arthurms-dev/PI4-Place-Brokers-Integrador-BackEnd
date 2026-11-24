@@ -99,7 +99,7 @@ describe('candidatura pelo site', () => {
 
   test('vagas abertas não expõem quem criou nem datas internas', async () => {
     const [v] = await service.vagasAbertas();
-    expect(Object.keys(v).sort()).toEqual(['area', 'descricao', 'id', 'titulo', 'unidade']);
+    expect(Object.keys(v).sort()).toEqual(['area', 'descricao', 'id', 'prazo', 'quantidade', 'requisitos', 'titulo', 'unidade', 'vinculo']);
   });
 });
 
@@ -192,5 +192,39 @@ describe('limpeza de 1 ano (LGPD)', () => {
     expect(falho.limparAntigas).toHaveBeenCalledTimes(2);
     parar();
     jest.useRealTimers();
+  });
+});
+
+describe('detalhes da vaga (requisitos, vínculo, prazo, quantidade)', () => {
+  const { TrabalheConoscoService } = require('./trabalheConoscoService');
+  const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const ontem = new Date(Date.now() - 27 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  function montarRepo(vagas = []) {
+    return {
+      criarVaga: jest.fn(async (d) => ({ id: 'v1', ...d })),
+      listarVagas: jest.fn(async () => vagas),
+    };
+  }
+
+  test('grava os campos novos', async () => {
+    const repo = montarRepo();
+    const service = new TrabalheConoscoService({ candidaturaRepository: repo });
+    await service.criarVaga({ titulo: 'Corretor Recife', area: 'corretor', requisitos: 'CRECI ativo', vinculo: 'autonomo', prazo: hoje, quantidade: '3' }, { id: 'rh' });
+    expect(repo.criarVaga).toHaveBeenCalledWith(expect.objectContaining({ requisitos: 'CRECI ativo', vinculo: 'autonomo', prazo: hoje, quantidade: 3 }));
+  });
+
+  test('recusa vínculo, quantidade e prazo inválidos', async () => {
+    const service = new TrabalheConoscoService({ candidaturaRepository: montarRepo() });
+    await expect(service.criarVaga({ titulo: 'Vaga X', area: 'corretor', vinculo: 'pj', quantidade: 0, prazo: ontem }, { id: 'rh' }))
+      .rejects.toMatchObject({ fieldErrors: { vinculo: expect.any(String), quantidade: expect.any(String), prazo: expect.any(String) } });
+  });
+
+  test('vaga com prazo vencido sai do site', async () => {
+    const service = new TrabalheConoscoService({ candidaturaRepository: montarRepo([
+      { id: 'a', titulo: 'Aberta', area: 'corretor', prazo: hoje },
+      { id: 'b', titulo: 'Vencida', area: 'corretor', prazo: ontem },
+      { id: 'c', titulo: 'Sem prazo', area: 'corretor', prazo: null },
+    ]) });
+    expect((await service.vagasAbertas()).map((v) => v.id)).toEqual(['a', 'c']);
   });
 });

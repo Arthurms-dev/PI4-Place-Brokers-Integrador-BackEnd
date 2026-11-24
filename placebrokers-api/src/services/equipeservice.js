@@ -282,4 +282,4 @@ class EquipeService {
   }
 }
 
-module.exports = { EquipeService, CARGOS_CRIADOS_PELO_ADMIN };
+module.exports = { EquipeService, CARGOS_CRIADOS_PELO_ADMIN };
