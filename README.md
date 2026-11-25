@@ -2,7 +2,15 @@
 
 API da plataforma imobiliária **Place Brokers**, Projeto Integrador 4 (PI4) do curso de Sistemas para Internet da Universidade Católica de Pernambuco.
 
-**Equipe:** Arthur Vinícius, Gabriel Soares, João Victor Varela, Sérgio Bandeira da Cruz, Sofia Viana Perez
+## Equipe
+
+| Nome | RA |
+| --- | --- |
+| Arthur Vinícius | 00000859883 |
+| Gabriel Soares | 00000859526 |
+| João Victor Varela dos Santos | 00000859893 |
+| Sérgio Bandeira da Cruz | 00000857151 |
+| Sofia Viana Perez | 00000857166 |
 
 Front-end: [PI4-Place-Brokers-Integrador-FrontEnd](https://github.com/Arthurms-dev/PI4-Place-Brokers-Integrador-FrontEnd)
 
