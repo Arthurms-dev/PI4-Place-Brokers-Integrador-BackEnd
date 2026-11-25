@@ -182,6 +182,29 @@ class ClienteService {
       throw err;
     }
   }
+
+  /**
+   * Exclui o cliente da carteira. Cliente com venda nunca sai (VGV); com agendamento,
+   * o corretor exclui ou cancela os agendamentos antes.
+   * @param {string} id
+   * @param {{ id: string, cargo: string }} usuario
+   */
+  async excluir(id, usuario) {
+    const existente = await this.clienteRepository.buscarPorId(id);
+    if (!existente) throw new AppError('NOT_FOUND', 'Cliente não encontrado.', 404);
+    if (usuario.cargo !== 'admin' && existente.corretor?.id !== usuario.id) {
+      throw new AppError('FORBIDDEN', 'Você não tem acesso a este cliente.', 403);
+    }
+    const vinculos = await this.clienteRepository.contarVinculos(id);
+    if (vinculos.vendas > 0) {
+      throw new AppError('CONFLICT', 'Cliente com venda registrada não pode ser excluído.', 409);
+    }
+    if (vinculos.agendamentos > 0) {
+      throw new AppError('CONFLICT', 'Exclua os agendamentos deste cliente antes de excluí-lo.', 409);
+    }
+    const excluiu = await this.clienteRepository.excluir(id);
+    if (!excluiu) throw new AppError('NOT_FOUND', 'Cliente não encontrado.', 404);
+  }
 }
 
 module.exports = { ClienteService, toPublicCliente, validarCliente };

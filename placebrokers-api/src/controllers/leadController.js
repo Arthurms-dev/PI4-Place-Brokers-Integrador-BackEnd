@@ -78,6 +78,42 @@ class LeadController {
     }
   };
 
+  criarDoCorretor = async (req, res) => {
+    try {
+      const lead = await this.leadService.criarDoCorretor(req.body ?? {}, req.user);
+      return res.status(201).json({ lead });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  buscarPorId = async (req, res) => {
+    try {
+      const lead = await this.leadService.buscarPorId(req.params.id, req.user);
+      return res.status(200).json({ lead });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  atualizarDados = async (req, res) => {
+    try {
+      const lead = await this.leadService.atualizarDados(req.params.id, req.body ?? {}, req.user);
+      return res.status(200).json({ lead });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  excluir = async (req, res) => {
+    try {
+      await this.leadService.excluir(req.params.id, req.user);
+      return res.status(204).end();
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
   /** @private */
   _handleError(res, error) {
     if (error instanceof AppError) {

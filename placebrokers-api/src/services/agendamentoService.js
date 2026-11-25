@@ -185,6 +185,90 @@ class AgendamentoService {
     if (!row) throw new AppError('NOT_FOUND', 'Agendamento não encontrado.', 404);
     return toPublicAgendamento(row);
   }
+
+  /** @param {string} id */
+  async buscarPorId(id) {
+    const row = await this.agendamentoRepository.buscarPorId(id);
+    if (!row) throw new AppError('NOT_FOUND', 'Agendamento não encontrado.', 404);
+    return toPublicAgendamento(row);
+  }
+
+  /** @param {string} clienteId */
+  async listarPorCliente(clienteId) {
+    const rows = await this.agendamentoRepository.listarPorCliente(clienteId);
+    return rows.map(toPublicAgendamento);
+  }
+
+  /**
+   * Tipo, local, observações e imóvel. Data e status seguem pelas rotas próprias
+   * (conflito de horário e regras de "realizado").
+   * @param {string} id
+   * @param {{ tipo?: string, local?: string|null, observacoes?: string|null, empreendimentoId?: string|null }} dados
+   */
+  async atualizarDetalhes(id, dados = {}) {
+    const atual = await this.agendamentoRepository.buscarPorId(id);
+    if (!atual) throw new AppError('NOT_FOUND', 'Agendamento não encontrado.', 404);
+
+    const erros = {};
+    const campos = {};
+    if (dados.tipo !== undefined) {
+      if (!TIPOS.includes(dados.tipo)) erros.tipo = 'Selecione o tipo do agendamento.';
+      else campos.tipo = dados.tipo;
+    }
+    for (const campo of ['local', 'observacoes']) {
+      if (dados[campo] === undefined) continue;
+      const texto = dados[campo] === null ? '' : String(dados[campo]).trim();
+      if (texto.length > 500) erros[campo] = 'Use no máximo 500 caracteres.';
+      else campos[campo] = texto || null;
+    }
+    if (dados.empreendimentoId !== undefined) campos.empreendimentoId = dados.empreendimentoId || null;
+    const tipoFinal = campos.tipo ?? atual.tipo;
+    const imovelFinal = campos.empreendimentoId !== undefined ? campos.empreendimentoId : atual.empreendimento?.id;
+    if (tipoFinal === 'visita_imovel' && !imovelFinal) erros.empreendimentoId = 'Selecione o imóvel da visita.';
+    if (Object.keys(erros).length) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
+    }
+    if (!Object.keys(campos).length) return toPublicAgendamento(atual);
+
+    try {
+      const row = await this.agendamentoRepository.atualizarDetalhes(id, campos);
+      if (!row) throw new AppError('NOT_FOUND', 'Agendamento não encontrado.', 404);
+      return toPublicAgendamento(row);
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      if (err?.code === '23503' || err?.code === '22P02') {
+        throw new AppError('VALIDATION_ERROR', 'Imóvel inválido.', 400, { empreendimentoId: 'Imóvel não encontrado.' });
+      }
+      throw err;
+    }
+  }
+
+  /** Visita realizada é histórico do cliente: não sai. As demais podem ser excluídas. */
+  async excluir(id) {
+    const atual = await this.agendamentoRepository.buscarPorId(id);
+    if (!atual) throw new AppError('NOT_FOUND', 'Agendamento não encontrado.', 404);
+    if (atual.status === 'realizado') {
+      throw new AppError('CONFLICT', 'Visita já realizada fica no histórico e não pode ser excluída.', 409);
+    }
+    const excluiu = await this.agendamentoRepository.excluir(id);
+    if (!excluiu) throw new AppError('NOT_FOUND', 'Agendamento não encontrado.', 404);
+  }
+
+  /**
+   * PATCH completo: detalhes, nova data e/ou novo status no mesmo pedido.
+   * Cada parte passa pela mesma regra da rota própria (conflito de horário, "realizado" etc.).
+   */
+  async atualizar(id, dados = {}) {
+    const { dataHora, status, motivoCancelamento, interesseAposVisita, tipo, local, observacoes, empreendimentoId } = dados;
+    let resultado = null;
+    if ([tipo, local, observacoes, empreendimentoId].some((v) => v !== undefined)) {
+      resultado = await this.atualizarDetalhes(id, { tipo, local, observacoes, empreendimentoId });
+    }
+    if (dataHora !== undefined) resultado = await this.remarcar(id, dataHora);
+    if (status !== undefined) resultado = await this.atualizarStatus(id, status, { motivoCancelamento, interesseAposVisita });
+    if (!resultado) throw new AppError('VALIDATION_ERROR', 'Nada para alterar.', 400);
+    return resultado;
+  }
 }
 
 module.exports = { AgendamentoService, toPublicAgendamento, validarAgendamento };

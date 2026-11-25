@@ -17,7 +17,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://placebrokers-api.onrender.com"
+      "value": "https://pi-4-place-brokers-integrador-back.vercel.app"
     },
     {
       "key": "token",
@@ -44,7 +44,15 @@
       "value": ""
     },
     {
+      "key": "atividadeId",
+      "value": ""
+    },
+    {
       "key": "corretorId",
+      "value": ""
+    },
+    {
+      "key": "agendamentoId",
       "value": ""
     },
     {
@@ -197,7 +205,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Fulano de Tal\",\n  \"email\": \"fulano@exemplo.com\",\n  \"telefone\": \"81999998888\",\n  \"password\": \"senha-de-teste\",\n  \"confirmPassword\": \"senha-de-teste\",\n  \"role\": \"corretor\",\n  \"vinculo\": \"place\",\n  \"creci\": null,\n  \"uf\": \"PE\"\n}",
+              "raw": "{\n  \"nome\": \"Fulano de Tal\",\n  \"email\": \"fulano@exemplo.com\",\n  \"telefone\": \"81999998888\",\n  \"password\": \"senha-de-teste\",\n  \"confirmPassword\": \"senha-de-teste\",\n  \"role\": \"corretor\",\n  \"vinculo\": \"interno\",\n  \"creci\": null,\n  \"uf\": \"PE\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1161,6 +1169,180 @@
               }
             }
           }
+        },
+        {
+          "name": "GET /leads/:id/atividades/:atividadeId — Uma atividade do lead",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/atividades/{{atividadeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "atividades",
+                "{{atividadeId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "PATCH /leads/:id/atividades/:atividadeId — Corrige a atividade (só quem registrou ou o admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/atividades/{{atividadeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "atividades",
+                "{{atividadeId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descricao\": \"Cliente pediu retorno à tarde\",\n  \"proximoContatoEm\": \"2026-11-28T15:00:00-03:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /leads/:id/atividades/:atividadeId — Exclui a atividade (só quem registrou ou o admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}/atividades/{{atividadeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}",
+                "atividades",
+                "{{atividadeId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "POST /leads/meus — Lead captado pelo próprio corretor (entra direto na carteira dele, sem roleta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/meus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "meus"
+              ]
+            },
+            "description": "Cargos: corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Carla Mendes\",\n  \"telefone\": \"81998765432\",\n  \"email\": \"carla@exemplo.com\",\n  \"mensagem\": \"Indicação do plantão\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /leads/:id — Detalhe do lead (corretor: só os seus)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "PATCH /leads/:id — Atualiza nome, telefone, e-mail, mensagem ou imóvel de interesse",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensagem\": \"Prefere 2 quartos com varanda\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /leads/:id — Exclui lead sem cliente nem agendamento (corretor: só os que ele cadastrou)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
         }
       ]
     },
@@ -1478,6 +1660,150 @@
               }
             }
           }
+        },
+        {
+          "name": "DELETE /clientes/:id — Exclui cliente sem venda e sem agendamento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "GET /clientes/:id/agendamentos — Agendamentos do cliente (relacionamento)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}",
+                "agendamentos"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "POST /clientes/:id/agendamentos — Agenda visita ou reunião para o cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}",
+                "agendamentos"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"visita_imovel\",\n  \"dataHora\": \"2026-12-02T10:00:00-03:00\",\n  \"empreendimentoId\": \"00000000-0000-4000-8000-000000000000\",\n  \"observacoes\": \"Levar tabela atualizada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /clientes/:id/agendamentos/:agendamentoId — Um agendamento do cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos/{{agendamentoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}",
+                "agendamentos",
+                "{{agendamentoId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "PATCH /clientes/:id/agendamentos/:agendamentoId — Altera detalhes, data e/ou status do agendamento do cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos/{{agendamentoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}",
+                "agendamentos",
+                "{{agendamentoId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacoes\": \"Cliente vai com a esposa\",\n  \"dataHora\": \"2026-12-02T15:00:00-03:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /clientes/:id/agendamentos/:agendamentoId — Exclui o agendamento do cliente (visita realizada não sai)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos/{{agendamentoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{id}}",
+                "agendamentos",
+                "{{agendamentoId}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
         }
       ]
     },
@@ -1531,6 +1857,74 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "GET /agendamentos/:id — Detalhe do agendamento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
+          }
+        },
+        {
+          "name": "PATCH /agendamentos/:id — Altera tipo, local, observações, imóvel, data e/ou status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"local\": \"Stand de vendas\",\n  \"observacoes\": \"Confirmado por WhatsApp\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /agendamentos/:id — Exclui agendamento (visita realizada não sai)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agendamentos",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
           }
         },
         {
@@ -1654,7 +2048,7 @@
           }
         },
         {
-          "name": "PATCH /vendas/:id — Confirma ou recusa a venda",
+          "name": "PATCH /vendas/:id — Gerente/admin: confirma ou recusa ({ status }). Corretor: corrige a própria venda pendente (valor, unidade, data)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1673,7 +2067,7 @@
                 "{{id}}"
               ]
             },
-            "description": "Cargos: admin, gerente",
+            "description": "Cargos: admin, gerente, corretor",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"confirmada\"\n}",
@@ -1683,6 +2077,42 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "GET /vendas/:id — Detalhe da venda (mesma visibilidade da lista)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendas",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, gerente, corretor, diretor"
+          }
+        },
+        {
+          "name": "DELETE /vendas/:id — Exclui venda ainda pendente (confirmada conta no VGV e não sai)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendas",
+                "{{id}}"
+              ]
+            },
+            "description": "Cargos: admin, corretor"
           }
         },
         {

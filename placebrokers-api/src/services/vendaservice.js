@@ -159,6 +159,73 @@ class VendaService {
       quantidade: confirmadas.length,
     };
   }
+
+  /** Venda visível para o cargo (mesma regra da listagem). */
+  async buscarPorId(id, usuario) {
+    const venda = await this.vendaRepository.buscarPorId(id);
+    if (!venda) throw new AppError('NOT_FOUND', 'Venda não encontrada.');
+    const ids = await this.corretoresVisiveis(usuario);
+    if (ids !== null && !ids.includes(venda.corretor_id)) {
+      throw new AppError('FORBIDDEN', 'Você não tem acesso a essa venda.');
+    }
+    return venda;
+  }
+
+  /** @private Venda do próprio corretor, ainda aguardando o gerente. */
+  async _pendenteDoCorretor(id, usuario) {
+    const venda = await this.vendaRepository.buscarPorId(id);
+    if (!venda) throw new AppError('NOT_FOUND', 'Venda não encontrada.');
+    if (usuario.cargo !== 'admin' && venda.corretor_id !== usuario.id) {
+      throw new AppError('FORBIDDEN', 'Essa venda é de outro corretor.');
+    }
+    if (venda.status !== 'pendente') {
+      // Venda confirmada conta no VGV e recusada é histórico: nenhuma das duas muda.
+      throw new AppError('CONFLICT', 'Só dá para mudar uma venda que ainda aguarda o gerente.', 409);
+    }
+    return venda;
+  }
+
+  /**
+   * O corretor corrige a própria venda enquanto o gerente não decide.
+   * @param {string} id
+   * @param {{ valor?: number, unidade?: string, dataVenda?: string, empreendimentoId?: string|null }} dados
+   */
+  async editar(id, dados = {}, usuario) {
+    await this._pendenteDoCorretor(id, usuario);
+    const campos = {};
+    const erros = {};
+    if (dados.valor !== undefined) {
+      const numero = Number(dados.valor);
+      if (dados.valor === null || dados.valor === '' || !Number.isFinite(numero) || numero <= 0) erros.valor = 'Informe um valor de venda válido.';
+      else campos.valor = numero;
+    }
+    if (dados.unidade !== undefined) {
+      const unidade = String(dados.unidade ?? '').trim().replace(/\s+/g, ' ');
+      if (!unidade) erros.unidade = 'Informe a unidade vendida (ex.: Torre A, 1203).';
+      else if (unidade.length > 40) erros.unidade = 'Use no máximo 40 caracteres.';
+      else campos.unidade = unidade;
+    }
+    if (dados.dataVenda !== undefined) {
+      const erroData = validarDataVenda(dados.dataVenda);
+      if (erroData) erros.dataVenda = erroData;
+      else campos.data_venda = dados.dataVenda;
+    }
+    if (dados.empreendimentoId !== undefined) campos.empreendimento_id = dados.empreendimentoId || null;
+    if (Object.keys(erros).length) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
+    }
+    if (!Object.keys(campos).length) {
+      throw new AppError('VALIDATION_ERROR', 'Nada para alterar.', 400);
+    }
+    return this.vendaRepository.atualizar(id, campos);
+  }
+
+  /** Exclui venda ainda pendente (lançada por engano). */
+  async excluir(id, usuario) {
+    await this._pendenteDoCorretor(id, usuario);
+    const excluiu = await this.vendaRepository.excluir(id);
+    if (!excluiu) throw new AppError('NOT_FOUND', 'Venda não encontrada.');
+  }
 }
 
 module.exports = { VendaService, validarDataVenda };

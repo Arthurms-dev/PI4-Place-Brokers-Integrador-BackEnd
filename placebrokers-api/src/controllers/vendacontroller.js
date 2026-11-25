@@ -45,6 +45,35 @@ async function vgv(req, res) {
   }
 }
 
+async function buscar(req, res) {
+  try {
+    return res.status(200).json(await vendaService.buscarPorId(req.params.id, req.user));
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+/** Corretor corrige a própria venda pendente; gerente/admin confirmam ou recusam (campo status). */
+async function atualizar(req, res) {
+  try {
+    if (req.user.cargo === 'corretor') {
+      return res.status(200).json(await vendaService.editar(req.params.id, req.body ?? {}, req.user));
+    }
+    return res.status(200).json(await vendaService.decidir(req.params.id, req.body?.status, req.user));
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+async function excluir(req, res) {
+  try {
+    await vendaService.excluir(req.params.id, req.user);
+    return res.status(204).end();
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 function handleError(res, err) {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ code: err.code, message: err.message, fieldErrors: err.fieldErrors });
@@ -53,4 +82,4 @@ function handleError(res, err) {
   return res.status(500).json({ code: 'SERVER_ERROR', message: 'Erro interno do servidor.' });
 }
 
-module.exports = { criar, listar, decidir, vgv };
+module.exports = { criar, listar, decidir, vgv, buscar, atualizar, excluir };

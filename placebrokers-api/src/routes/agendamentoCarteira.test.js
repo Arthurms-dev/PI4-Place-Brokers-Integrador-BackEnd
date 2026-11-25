@@ -21,6 +21,9 @@ jest.mock('../controllers/agendamentoController', () => ({
     criar: mockCriarAgendamento,
     remarcar: jest.fn(),
     atualizarStatus: jest.fn(),
+    buscarPorId: jest.fn(),
+    atualizar: jest.fn(),
+    excluir: jest.fn(),
     _handleError: jest.fn((res, error) => res.status(500).json({ error: error.message })),
   })),
 }));

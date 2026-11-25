@@ -146,6 +146,41 @@ class AgendamentoRepository {
     if (error) throw error;
     return data;
   }
+
+  /** Agendamentos de um cliente (relacionamento /clientes/:id/agendamentos). */
+  async listarPorCliente(clienteId) {
+    const { data, error } = await supabaseAdmin
+      .from('agendamentos')
+      .select(AGENDAMENTO_SELECT)
+      .eq('cliente_id', clienteId)
+      .order('data_hora', { ascending: true });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Atualiza local, observações, tipo e empreendimento (data e status têm rotas próprias). */
+  async atualizarDetalhes(id, { tipo, local, observacoes, empreendimentoId }) {
+    const campos = {};
+    if (tipo !== undefined) campos.tipo = tipo;
+    if (local !== undefined) campos.local = local;
+    if (observacoes !== undefined) campos.observacoes = observacoes;
+    if (empreendimentoId !== undefined) campos.empreendimento_id = empreendimentoId;
+    const { data, error } = await supabaseAdmin
+      .from('agendamentos')
+      .update(campos)
+      .eq('id', id)
+      .select(AGENDAMENTO_SELECT)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  /** @param {string} id @returns {Promise<boolean>} */
+  async excluir(id) {
+    const { data, error } = await supabaseAdmin.from('agendamentos').delete().eq('id', id).select('id');
+    if (error) throw error;
+    return (data ?? []).length > 0;
+  }
 }
 
 module.exports = { AgendamentoRepository };

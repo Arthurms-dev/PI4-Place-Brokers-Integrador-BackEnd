@@ -30,6 +30,23 @@ class LeadAtividadeRepository {
     for (const row of data ?? []) if (!ultima[row.lead_id]) ultima[row.lead_id] = row.criado_em;
     return ultima;
   }
+  async buscarPorId(id) {
+    const { data, error } = await supabaseAdmin.from('lead_atividades')
+      .select(FIELDS).eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+  async atualizar(id, dados) {
+    const { data, error } = await supabaseAdmin.from('lead_atividades')
+      .update(dados).eq('id', id).select(FIELDS).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+  async excluir(id) {
+    const { data, error } = await supabaseAdmin.from('lead_atividades').delete().eq('id', id).select('id');
+    if (error) throw error;
+    return (data ?? []).length > 0;
+  }
   async criar(dados) {
     const { data, error } = await supabaseAdmin.from('lead_atividades')
       .insert(dados).select(FIELDS).single();

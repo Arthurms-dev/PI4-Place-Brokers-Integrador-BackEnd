@@ -62,6 +62,13 @@ class VendaRepository {
     if (error) throw error;
     return data;
   }
+
+  /** @param {string} id @returns {Promise<boolean>} */
+  async excluir(id) {
+    const { data, error } = await supabaseAdmin.from('vendas').delete().eq('id', id).select('id');
+    if (error) throw error;
+    return (data ?? []).length > 0;
+  }
 }
 
 module.exports = { VendaRepository };

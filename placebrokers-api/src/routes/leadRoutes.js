@@ -26,7 +26,12 @@ router.post('/', limitadores.leadPublico, antiSpamLead, leadController.criar);
 router.get('/:id/atividades', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.listar);
 router.post('/:id/atividades', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.registrar);
 
+router.get('/:id/atividades/:atividadeId', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.buscar);
+router.patch('/:id/atividades/:atividadeId', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.atualizar);
+router.delete('/:id/atividades/:atividadeId', authMiddleware, requireRole('admin', 'corretor'), leadAtividadeController.excluir);
+
 router.get('/meus', authMiddleware, requireRole('corretor'), leadController.listarMeus);
+router.post('/meus', authMiddleware, requireRole('corretor'), leadController.criarDoCorretor);
 router.get('/retornos', authMiddleware, requireRole('corretor'), leadAtividadeController.retornos);
 router.post('/:id/cliente', authMiddleware, requireRole('admin', 'corretor'), leadController.garantirCliente);
 router.patch('/:id/status', authMiddleware, requireRole('admin', 'corretor'), leadController.atualizarStatus);
@@ -34,5 +39,10 @@ router.patch('/:id/status', authMiddleware, requireRole('admin', 'corretor'), le
 router.get('/', authMiddleware, requireRole('admin'), leadController.listar);
 router.patch('/:id/corretor', authMiddleware, requireRole('admin'), leadController.atribuirCorretor);
 router.post('/:id/converter', authMiddleware, requireRole('admin'), leadController.converter);
+
+// Depois das rotas fixas (/meus, /retornos) para o :id não engolir esses caminhos.
+router.get('/:id', authMiddleware, requireRole('admin', 'corretor'), leadController.buscarPorId);
+router.patch('/:id', authMiddleware, requireRole('admin', 'corretor'), leadController.atualizarDados);
+router.delete('/:id', authMiddleware, requireRole('admin', 'corretor'), leadController.excluir);
 
 module.exports = router;

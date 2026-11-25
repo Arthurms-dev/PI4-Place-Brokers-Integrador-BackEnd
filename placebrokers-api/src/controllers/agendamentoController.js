@@ -63,6 +63,33 @@ class AgendamentoController {
     }
   };
 
+  buscarPorId = async (req, res) => {
+    try {
+      const agendamento = await this.agendamentoService.buscarPorId(req.params.id);
+      return res.status(200).json({ agendamento });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  atualizar = async (req, res) => {
+    try {
+      const agendamento = await this.agendamentoService.atualizar(req.params.id, req.body ?? {});
+      return res.status(200).json({ agendamento });
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
+  excluir = async (req, res) => {
+    try {
+      await this.agendamentoService.excluir(req.params.id);
+      return res.status(204).end();
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
   /** @private */
   _handleError(res, error) {
     if (error instanceof AppError) {

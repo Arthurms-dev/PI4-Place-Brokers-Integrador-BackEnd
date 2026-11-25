@@ -11,6 +11,9 @@ function rotaLiberadaNaTroca(req) {
 }
 
 async function authMiddleware(req, res, next) {
+  // Já conferida nesta requisição (modo AOS confere antes das rotas): não consulta de novo.
+  if (req.sessaoConferida && req.user) return next();
+
   const header = req.headers.authorization ?? '';
 
   const token = header.startsWith('Bearer ')
@@ -60,6 +63,7 @@ async function authMiddleware(req, res, next) {
 
     req.userId = profile.id;
     req.user = profile;
+    req.sessaoConferida = true;
 
     return next();
   } catch (error) {

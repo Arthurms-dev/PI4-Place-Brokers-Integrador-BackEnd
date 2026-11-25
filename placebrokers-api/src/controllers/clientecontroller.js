@@ -48,6 +48,15 @@ class ClienteController {
     }
   };
 
+  excluir = async (req, res) => {
+    try {
+      await this.clienteService.excluir(req.params.id, req.user);
+      return res.status(204).end();
+    } catch (error) {
+      return this._handleError(res, error);
+    }
+  };
+
   /** @private */
   _handleError(res, error) {
     if (error instanceof AppError) {

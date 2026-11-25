@@ -21,10 +21,12 @@ const notificacaoRoutes = require('./routes/notificacaoRoutes');
 const trabalheConoscoRoutes = require('./routes/trabalheConoscoRoutes');
 const rhRoutes = require('./routes/rhRoutes');
 const { montarDocs } = require('./docs/openapi');
+const { exigirLoginEmTudo, modoAosLigado } = require('./middlewares/modoAos');
 
 const app = express();
 
 aplicarSeguranca(app);
+if (modoAosLigado()) app.use(exigirLoginEmTudo());
 
 app.use('/auth', authRoutes);
 app.use('/leads', leadRoutes);

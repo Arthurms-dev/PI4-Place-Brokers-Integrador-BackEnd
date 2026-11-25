@@ -26,4 +26,16 @@ async function retornos(req,res) {
   try { return res.json({ retornos: await service.retornos(req.user) }); }
   catch (e) { return erro(res,e); }
 }
-module.exports = { listar, registrar, retornos };
+async function buscar(req,res) {
+  try { return res.json({ atividade: await service.buscar(req.params.id, req.params.atividadeId, req.user) }); }
+  catch (e) { return erro(res,e); }
+}
+async function atualizar(req,res) {
+  try { return res.json({ atividade: await service.atualizar(req.params.id, req.params.atividadeId, req.user, req.body ?? {}) }); }
+  catch (e) { return erro(res,e); }
+}
+async function excluir(req,res) {
+  try { await service.excluir(req.params.id, req.params.atividadeId, req.user); return res.status(204).end(); }
+  catch (e) { return erro(res,e); }
+}
+module.exports = { listar, registrar, retornos, buscar, atualizar, excluir };

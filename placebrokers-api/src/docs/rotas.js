@@ -42,7 +42,7 @@ const ROTAS = [
     corpo: { email: 'corretor@exemplo.com', password: 'senha-de-teste' },
     obs: 'Limite: 5 erros por e-mail e 30 por IP a cada 15 minutos.' },
   { metodo: 'post', caminho: '/auth/register', grupo: 'Autenticação', acesso: 'publico', resumo: 'Cadastro de corretor (fica pendente até o admin aprovar)',
-    corpo: { nome: 'Fulano de Tal', email: 'fulano@exemplo.com', telefone: '81999998888', password: 'senha-de-teste', confirmPassword: 'senha-de-teste', role: 'corretor', vinculo: 'place', creci: null, uf: 'PE' } },
+    corpo: { nome: 'Fulano de Tal', email: 'fulano@exemplo.com', telefone: '81999998888', password: 'senha-de-teste', confirmPassword: 'senha-de-teste', role: 'corretor', vinculo: 'interno', creci: null, uf: 'PE' } },
   { metodo: 'post', caminho: '/auth/renovar', grupo: 'Autenticação', acesso: 'publico', resumo: 'Troca o refreshToken do login por um token novo (o token vale 1 hora)',
     corpo: { refreshToken: 'refresh-token-do-login' },
     obs: 'Usado pelo app para não pedir a senha de novo. Confere se a conta continua ativa e aprovada.' },
@@ -101,6 +101,13 @@ const ROTAS = [
   { metodo: 'get', caminho: '/leads/:id/atividades', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Histórico do lead (ligações, WhatsApp, observações, lembretes)' },
   { metodo: 'post', caminho: '/leads/:id/atividades', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Registra contato ou lembrete',
     corpo: { tipo: 'ligacao', descricao: 'Ligou para o cliente pelo app.', proximoContatoEm: null } },
+  { metodo: 'get', caminho: '/leads/:id/atividades/:atividadeId', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Uma atividade do lead' },
+  { metodo: 'patch', caminho: '/leads/:id/atividades/:atividadeId', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Corrige a atividade (só quem registrou ou o admin)', corpo: { descricao: 'Cliente pediu retorno à tarde', proximoContatoEm: '2026-11-28T15:00:00-03:00' } },
+  { metodo: 'delete', caminho: '/leads/:id/atividades/:atividadeId', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Exclui a atividade (só quem registrou ou o admin)' },
+  { metodo: 'post', caminho: '/leads/meus', grupo: 'Leads', acesso: ['corretor'], resumo: 'Lead captado pelo próprio corretor (entra direto na carteira dele, sem roleta)', corpo: { nome: 'Carla Mendes', telefone: '81998765432', email: 'carla@exemplo.com', mensagem: 'Indicação do plantão' } },
+  { metodo: 'get', caminho: '/leads/:id', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Detalhe do lead (corretor: só os seus)' },
+  { metodo: 'patch', caminho: '/leads/:id', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Atualiza nome, telefone, e-mail, mensagem ou imóvel de interesse', corpo: { mensagem: 'Prefere 2 quartos com varanda' } },
+  { metodo: 'delete', caminho: '/leads/:id', grupo: 'Leads', acesso: ['admin', 'corretor'], resumo: 'Exclui lead sem cliente nem agendamento (corretor: só os que ele cadastrou)' },
 
   // Roleta
   { metodo: 'get', caminho: '/roleta/hoje', grupo: 'Roleta', acesso: ['admin', 'recepcao'], resumo: 'Painel da recepção: lista de chegada, quem falta marcar e leads aguardando' },
@@ -119,11 +126,21 @@ const ROTAS = [
   { metodo: 'post', caminho: '/clientes', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Cadastra cliente',
     corpo: { nome: 'Cliente Exemplo', telefone: '81999998888', email: 'cliente@exemplo.com', observacoes: 'Prefere contato à tarde' } },
   { metodo: 'patch', caminho: '/clientes/:id', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Atualiza cliente', corpo: { observacoes: 'Pediu simulação com FGTS' } },
+  { metodo: 'delete', caminho: '/clientes/:id', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Exclui cliente sem venda e sem agendamento' },
+  { metodo: 'get', caminho: '/clientes/:id/agendamentos', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Agendamentos do cliente (relacionamento)' },
+  { metodo: 'post', caminho: '/clientes/:id/agendamentos', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Agenda visita ou reunião para o cliente',
+    corpo: { tipo: 'visita_imovel', dataHora: '2026-12-02T10:00:00-03:00', empreendimentoId: ID, observacoes: 'Levar tabela atualizada' } },
+  { metodo: 'get', caminho: '/clientes/:id/agendamentos/:agendamentoId', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Um agendamento do cliente' },
+  { metodo: 'patch', caminho: '/clientes/:id/agendamentos/:agendamentoId', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Altera detalhes, data e/ou status do agendamento do cliente', corpo: { observacoes: 'Cliente vai com a esposa', dataHora: '2026-12-02T15:00:00-03:00' } },
+  { metodo: 'delete', caminho: '/clientes/:id/agendamentos/:agendamentoId', grupo: 'Clientes', acesso: ['admin', 'corretor'], resumo: 'Exclui o agendamento do cliente (visita realizada não sai)' },
 
   // Agendamentos
   { metodo: 'get', caminho: '/agendamentos', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Agendamentos (corretor: só os seus)' },
   { metodo: 'post', caminho: '/agendamentos', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Agenda visita ou reunião para um cliente da carteira',
     corpo: { tipo: 'visita_imovel', dataHora: '2026-11-05T14:00:00-03:00', duracaoMinutos: 60, clienteId: ID, empreendimentoId: ID, local: null, observacoes: null } },
+  { metodo: 'get', caminho: '/agendamentos/:id', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Detalhe do agendamento' },
+  { metodo: 'patch', caminho: '/agendamentos/:id', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Altera tipo, local, observações, imóvel, data e/ou status', corpo: { local: 'Stand de vendas', observacoes: 'Confirmado por WhatsApp' } },
+  { metodo: 'delete', caminho: '/agendamentos/:id', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Exclui agendamento (visita realizada não sai)' },
   { metodo: 'patch', caminho: '/agendamentos/:id/data', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Remarca', corpo: { dataHora: '2026-11-06T10:00:00-03:00' } },
   { metodo: 'patch', caminho: '/agendamentos/:id/status', grupo: 'Agendamentos', acesso: ['admin', 'corretor'], resumo: 'Muda o status (agendado → confirmado → realizado | nao_compareceu | cancelado)',
     corpo: { status: 'realizado', interesseAposVisita: 'alto' } },
@@ -131,7 +148,9 @@ const ROTAS = [
   // Vendas
   { metodo: 'post', caminho: '/vendas', grupo: 'Vendas', acesso: ['corretor'], resumo: 'Lança venda (fica aguardando o gerente)', corpo: { valor: 189000, clienteId: ID, empreendimentoId: ID, unidade: 'Torre A, 1203', dataVenda: '2026-11-24' } },
   { metodo: 'get', caminho: '/vendas', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Vendas visíveis para o cargo' },
-  { metodo: 'patch', caminho: '/vendas/:id', grupo: 'Vendas', acesso: ['admin', 'gerente'], resumo: 'Confirma ou recusa a venda', corpo: { status: 'confirmada' } },
+  { metodo: 'patch', caminho: '/vendas/:id', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor'], resumo: 'Gerente/admin: confirma ou recusa ({ status }). Corretor: corrige a própria venda pendente (valor, unidade, data)', corpo: { status: 'confirmada' } },
+  { metodo: 'get', caminho: '/vendas/:id', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Detalhe da venda (mesma visibilidade da lista)' },
+  { metodo: 'delete', caminho: '/vendas/:id', grupo: 'Vendas', acesso: ['admin', 'corretor'], resumo: 'Exclui venda ainda pendente (confirmada conta no VGV e não sai)' },
   { metodo: 'get', caminho: '/vendas/vgv', grupo: 'Vendas', acesso: ['admin', 'gerente', 'corretor', 'diretor'], resumo: 'Total de VGV confirmado', consulta: { equipeId: 'filtra por equipe', diretoriaId: 'filtra por diretoria' } },
 
   // Equipe

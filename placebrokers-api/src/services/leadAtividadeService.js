@@ -46,6 +46,55 @@ class LeadAtividadeService {
     }));
   }
 
+  /** Só quem registrou a atividade (ou o admin) edita ou exclui. */
+  async _atividadeDoUsuario(leadId, atividadeId, usuario) {
+    await this.autorizar(leadId, usuario);
+    const atividade = await this.atividadeRepository.buscarPorId(atividadeId);
+    if (!atividade || atividade.lead_id !== leadId) throw new AppError('NOT_FOUND', 'Atividade não encontrada.');
+    return atividade;
+  }
+  async buscar(leadId, atividadeId, usuario) {
+    return publico(await this._atividadeDoUsuario(leadId, atividadeId, usuario));
+  }
+  async atualizar(leadId, atividadeId, usuario, dados = {}) {
+    const atividade = await this._atividadeDoUsuario(leadId, atividadeId, usuario);
+    if (usuario.cargo !== 'admin' && atividade.autor_id !== usuario.id) {
+      throw new AppError('FORBIDDEN', 'Só quem registrou a atividade pode alterá-la.');
+    }
+    const campos = {};
+    const erros = {};
+    if (dados.tipo !== undefined) {
+      if (!TIPOS.includes(dados.tipo)) erros.tipo = 'Selecione um tipo de atividade.';
+      else campos.tipo = dados.tipo;
+    }
+    if (dados.descricao !== undefined) {
+      const descricao = typeof dados.descricao === 'string' ? dados.descricao.trim() : '';
+      if (!descricao || descricao.length > 2000) erros.descricao = 'Descreva o atendimento (1 a 2000 caracteres).';
+      else campos.descricao = descricao;
+    }
+    if (dados.proximoContatoEm !== undefined) {
+      if (dados.proximoContatoEm === null || dados.proximoContatoEm === '') campos.proximo_contato_em = null;
+      else {
+        const data = new Date(dados.proximoContatoEm);
+        if (!Number.isFinite(data.getTime())) erros.proximoContatoEm = 'Data inválida.';
+        else campos.proximo_contato_em = data.toISOString();
+      }
+    }
+    if (Object.keys(erros).length) throw new AppError('VALIDATION_ERROR', 'Verifique os campos.', erros);
+    if (!Object.keys(campos).length) return publico(atividade);
+    const row = await this.atividadeRepository.atualizar(atividadeId, campos);
+    if (!row) throw new AppError('NOT_FOUND', 'Atividade não encontrada.');
+    return publico(row);
+  }
+  async excluir(leadId, atividadeId, usuario) {
+    const atividade = await this._atividadeDoUsuario(leadId, atividadeId, usuario);
+    if (usuario.cargo !== 'admin' && atividade.autor_id !== usuario.id) {
+      throw new AppError('FORBIDDEN', 'Só quem registrou a atividade pode excluí-la.');
+    }
+    const excluiu = await this.atividadeRepository.excluir(atividadeId);
+    if (!excluiu) throw new AppError('NOT_FOUND', 'Atividade não encontrada.');
+  }
+
   /**
    * Retornos marcados pelo corretor (lembretes): o próximo contato mais recente de cada lead
    * em aberto, de 7 dias atrás até 7 dias à frente. Some quando o corretor registra

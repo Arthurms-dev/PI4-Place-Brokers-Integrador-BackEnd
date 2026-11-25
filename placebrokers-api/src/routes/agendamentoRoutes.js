@@ -74,6 +74,9 @@ async function exigirDono(req, res, next) {
   }
 }
 
+router.get('/:id', exigirDono, agendamentoController.buscarPorId);
+router.patch('/:id', exigirDono, agendamentoController.atualizar);
+router.delete('/:id', exigirDono, agendamentoController.excluir);
 router.patch('/:id/data', exigirDono, agendamentoController.remarcar);
 router.patch('/:id/status', exigirDono, agendamentoController.atualizarStatus);
 

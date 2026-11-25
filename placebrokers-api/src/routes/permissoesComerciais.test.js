@@ -3,6 +3,7 @@
 // Testar a camada de roteamento, inclusive o acesso direto sem interface React.
 jest.mock('../controllers/vendacontroller', () => ({
   criar: jest.fn(), listar: jest.fn(), decidir: jest.fn(), vgv: jest.fn(),
+  buscar: jest.fn(), atualizar: jest.fn(), excluir: jest.fn(),
 }));
 jest.mock('../controllers/corretorController', () => ({
   CorretorController: jest.fn().mockImplementation(() => ({ listar: jest.fn() })),
@@ -65,8 +66,11 @@ describe('rotas /vendas', () => {
   test.each([
     ['post','/',['corretor']],
     ['get','/',['admin','gerente','corretor','diretor']],
-    ['patch','/:id',['admin','gerente']],
+    // Corretor entra no PATCH só para corrigir a própria venda pendente (o serviço confere dono e status).
+    ['patch','/:id',['admin','gerente','corretor']],
     ['get','/vgv',['admin','gerente','corretor','diretor']],
+    ['get','/:id',['admin','gerente','corretor','diretor']],
+    ['delete','/:id',['admin','corretor']],
   ])('%s %s: permite somente %p', (method,path,permitidos) => {
     const stack = middlewareDeRota(vendasRouter,method,path);
     expect(stack).toHaveLength(1);

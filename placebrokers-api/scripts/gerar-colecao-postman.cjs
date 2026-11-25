@@ -59,7 +59,8 @@ const colecao = {
   },
   auth: { type: 'bearer', bearer: [{ key: 'token', value: '{{token}}', type: 'string' }] },
   variable: [
-    { key: 'baseUrl', value: 'https://placebrokers-api.onrender.com' },
+    // Padrão: a cópia da Vercel (apresentação de AOS). Para o Render, troque o valor da variável no Postman.
+    { key: 'baseUrl', value: 'https://pi-4-place-brokers-integrador-back.vercel.app' },
     { key: 'token', value: '' },
     ...variaveisDeCaminho.map((key) => ({ key, value: '' })),
   ],

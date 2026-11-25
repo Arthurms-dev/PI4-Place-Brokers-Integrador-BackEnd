@@ -1,5 +1,19 @@
 # Entrega acadêmica AOS — Place Brokers (Express + PostgreSQL)
 
+## Requisitos do enunciado × o que a API tem (24/11/2026)
+
+| Requisito | Onde |
+| --- | --- |
+| Login, logout e sign up | `POST /auth/login`, `POST /auth/logout`, `POST /auth/register` |
+| CRUD de 4 entidades | **Clientes** (`/clientes`), **Agendamentos** (`/agendamentos`), **Leads** (`/leads`, o corretor cria em `POST /leads/meus`), **Vendas** (`/vendas`): listar, detalhe, criar, alterar e excluir |
+| 2 relacionamentos em URL composta | **Lead → atividades** (`/leads/:id/atividades[/:atividadeId]`) e **Cliente → agendamentos** (`/clientes/:id/agendamentos[/:agendamentoId]`): GET, POST, PATCH e DELETE |
+| Rotas protegidas por login | na Vercel, `EXIGIR_LOGIN_EM_TUDO=1`: só login, cadastro (e renovar/recuperar senha), `/health` e `/docs` ficam abertos |
+| Usuário não mexe em dado de outro | corretor só vê, altera e exclui o que é da própria carteira (403); venda confirmada e visita realizada não são excluídas (409) |
+| Publicado na Vercel com PostgreSQL na nuvem | https://pi-4-place-brokers-integrador-back.vercel.app + Supabase (PostgreSQL) |
+| Postman com variáveis | `docs/placebrokers-api.postman_collection.json`: `{{baseUrl}}` (Vercel), `{{token}}` (salvo no login), `{{id}}`, `{{agendamentoId}}`, `{{atividadeId}}` |
+| 2 registros de cada entidade e relacionamento | dados de demonstração no banco (apagados só depois das apresentações) |
+
+
 ## Estado inspecionado em 30/10/2026
 
 A API existente utiliza **Express 4** e **PostgreSQL por meio do Supabase**. A arquitetura está separada em `routes/`, `controllers/`, `services/` e `repositories/`. **Não há razão para recriar o back-end** para essa entrega.

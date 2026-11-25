@@ -232,6 +232,24 @@ class ClienteRepository {
     if (error) throw error;
     return data;
   }
+
+  /** Quantas vendas e agendamentos estão ligados ao cliente (para barrar a exclusão). */
+  async contarVinculos(id) {
+    const [vendas, agendamentos] = await Promise.all([
+      supabaseAdmin.from('vendas').select('id', { count: 'exact', head: true }).eq('cliente_id', id),
+      supabaseAdmin.from('agendamentos').select('id', { count: 'exact', head: true }).eq('cliente_id', id),
+    ]);
+    if (vendas.error) throw vendas.error;
+    if (agendamentos.error) throw agendamentos.error;
+    return { vendas: vendas.count ?? 0, agendamentos: agendamentos.count ?? 0 };
+  }
+
+  /** @param {string} id @returns {Promise<boolean>} true se excluiu */
+  async excluir(id) {
+    const { data, error } = await supabaseAdmin.from('clientes').delete().eq('id', id).select('id');
+    if (error) throw error;
+    return (data ?? []).length > 0;
+  }
 }
 
 module.exports = { ClienteRepository };

@@ -249,6 +249,110 @@ class LeadService {
     }
     return registrado;
   }
+
+  /** Lead visível: admin vê todos, corretor só os da própria carteira. */
+  async _leadDoUsuario(id, usuario) {
+    const lead = await this.leadRepository.buscarPorId(id);
+    if (!lead) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+    if (usuario.cargo !== 'admin' && lead.corretor?.id !== usuario.id) {
+      throw new AppError('FORBIDDEN', 'Esse lead não está atribuído a você.', 403);
+    }
+    return lead;
+  }
+
+  async buscarPorId(id, usuario) {
+    return toPublicLead(await this._leadDoUsuario(id, usuario));
+  }
+
+  /** @private Nome e telefone obrigatórios; e-mail opcional (captação na rua, plantão). */
+  _validarContato(dados, { exigirCampos = true } = {}) {
+    const erros = {};
+    const limpo = {};
+    if (dados.nome !== undefined || exigirCampos) {
+      if (!dados.nome?.trim()) erros.nome = 'Informe o nome.';
+      else limpo.nome = dados.nome.trim();
+    }
+    if (dados.telefone !== undefined || exigirCampos) {
+      const fone = normalizarTelefone(dados.telefone);
+      if (!fone.ok) erros.telefone = fone.erro;
+      else limpo.telefone = fone.digitos;
+    }
+    if (dados.email !== undefined) {
+      const email = dados.email?.trim().toLowerCase() || null;
+      if (email && !EMAIL_REGEX.test(email)) erros.email = 'E-mail inválido.';
+      else limpo.email = email;
+    }
+    if (dados.mensagem !== undefined) {
+      const mensagem = dados.mensagem?.trim() || null;
+      if (mensagem && mensagem.length > 2000) erros.mensagem = 'Use no máximo 2000 caracteres.';
+      else limpo.mensagem = mensagem;
+    }
+    if (dados.empreendimentoId !== undefined) limpo.empreendimentoId = dados.empreendimentoId || null;
+    if (Object.keys(erros).length) {
+      throw new AppError('VALIDATION_ERROR', 'Verifique os campos destacados.', 400, erros);
+    }
+    return limpo;
+  }
+
+  /** @private Mesmo telefone ou e-mail = mesma pessoa (regra da Place). */
+  async _recusarContatoRepetido({ email, telefone }, ignorarId = null) {
+    if (!this.leadRepository.buscarPorContato) return;
+    const existente = await this.leadRepository.buscarPorContato({ email, telefone });
+    if (existente && existente.id !== ignorarId) {
+      throw new AppError('CONFLICT', 'Esse contato já é um lead cadastrado.', 409);
+    }
+  }
+
+  _erroDeImovel(err) {
+    if (err?.code === '23503' || err?.code === '22P02') {
+      return new AppError('VALIDATION_ERROR', 'Empreendimento inválido.', 400, { empreendimentoId: 'Empreendimento não encontrado.' });
+    }
+    return err;
+  }
+
+  /** Lead captado pelo próprio corretor: entra direto na carteira dele, sem roleta. */
+  async criarDoCorretor(dados = {}, usuario) {
+    const limpo = this._validarContato(dados);
+    await this._recusarContatoRepetido(limpo);
+    try {
+      const row = await this.leadRepository.criarDoCorretor({ ...limpo, corretorId: usuario.id });
+      return toPublicLead(row);
+    } catch (err) {
+      throw this._erroDeImovel(err);
+    }
+  }
+
+  async atualizarDados(id, dados = {}, usuario) {
+    await this._leadDoUsuario(id, usuario);
+    const limpo = this._validarContato(dados, { exigirCampos: false });
+    if (!Object.keys(limpo).length) throw new AppError('VALIDATION_ERROR', 'Nada para alterar.', 400);
+    if (limpo.email || limpo.telefone) await this._recusarContatoRepetido(limpo, id);
+    try {
+      const row = await this.leadRepository.atualizarDados(id, limpo);
+      if (!row) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+      return toPublicLead(row);
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw this._erroDeImovel(err);
+    }
+  }
+
+  /**
+   * Corretor só exclui lead que ele mesmo captou; lead do site/roleta é da Place.
+   * Lead que já virou cliente ou tem agendamento não sai (histórico).
+   */
+  async excluir(id, usuario) {
+    const lead = await this._leadDoUsuario(id, usuario);
+    if (usuario.cargo !== 'admin' && lead.origem !== 'corretor') {
+      throw new AppError('FORBIDDEN', 'Só dá para excluir lead que você mesmo cadastrou.', 403);
+    }
+    const vinculos = await this.leadRepository.contarVinculos(id);
+    if (vinculos.clientes > 0 || vinculos.agendamentos > 0) {
+      throw new AppError('CONFLICT', 'Lead com cliente ou agendamento não pode ser excluído.', 409);
+    }
+    const excluiu = await this.leadRepository.excluir(id);
+    if (!excluiu) throw new AppError('NOT_FOUND', 'Lead não encontrado.', 404);
+  }
 }
 
 module.exports = { LeadService, toPublicLead, validarLead };

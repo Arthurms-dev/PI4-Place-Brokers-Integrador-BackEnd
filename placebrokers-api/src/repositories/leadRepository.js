@@ -122,6 +122,74 @@ class LeadRepository {
     if (error) throw error;
     return data;
   }
+
+  /** Lead captado pelo próprio corretor (indicação, plantão): já nasce na carteira dele. */
+  async criarDoCorretor({ nome, email, telefone, empreendimentoId, mensagem, corretorId }) {
+    const { data, error } = await supabaseAdmin
+      .from('leads')
+      .insert({
+        nome,
+        email,
+        telefone,
+        empreendimento_id: empreendimentoId ?? null,
+        mensagem: mensagem ?? null,
+        origem: 'corretor',
+        status: 'novo',
+        corretor_id: corretorId,
+        atribuido_em: new Date().toISOString(),
+      })
+      .select(LEAD_SELECT)
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  /** Atualiza os dados de contato do lead. */
+  async atualizarDados(id, { nome, email, telefone, mensagem, empreendimentoId }) {
+    const campos = {};
+    if (nome !== undefined) campos.nome = nome;
+    if (email !== undefined) campos.email = email;
+    if (telefone !== undefined) campos.telefone = telefone;
+    if (mensagem !== undefined) campos.mensagem = mensagem;
+    if (empreendimentoId !== undefined) campos.empreendimento_id = empreendimentoId;
+    const { data, error } = await supabaseAdmin
+      .from('leads').update(campos).eq('id', id).select(LEAD_SELECT).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  /** Cliente, agendamento ou venda ligados ao lead (barram a exclusão). */
+  async contarVinculos(id) {
+    const contar = (tabela, coluna) =>
+      supabaseAdmin.from(tabela).select('id', { count: 'exact', head: true }).eq(coluna, id);
+    const respostas = await Promise.all([
+      contar('clientes', 'lead_id'),
+      contar('agendamentos', 'lead_id'),
+      contar('agendamentos', 'lead_origem_id'),
+    ]);
+    const erro = respostas.find((r) => r.error);
+    if (erro) throw erro.error;
+    const [clientes, agLead, agOrigem] = respostas.map((r) => r.count ?? 0);
+    return { clientes, agendamentos: agLead + agOrigem };
+  }
+
+  /** @param {string} id @returns {Promise<boolean>} */
+  async excluir(id) {
+    const { data, error } = await supabaseAdmin.from('leads').delete().eq('id', id).select('id');
+    if (error) throw error;
+    return (data ?? []).length > 0;
+  }
+
+  /** Primeiro lead com o mesmo telefone ou o mesmo e-mail (consultas separadas, sem montar filtro em texto). */
+  async buscarPorContato({ email, telefone } = {}) {
+    for (const [coluna, valor] of [['telefone', telefone], ['email', email]]) {
+      if (!valor) continue;
+      const { data, error } = await supabaseAdmin.from('leads').select('id').eq(coluna, valor).limit(1);
+      if (error) throw error;
+      if (data?.length) return data[0];
+    }
+    return null;
+  }
 }
 
 module.exports = { LeadRepository };

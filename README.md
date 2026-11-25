@@ -36,6 +36,7 @@ npm test                 # testes com Jest
 | `RESEND_API_KEY` | envio do e-mail "Esqueci minha senha" pelo [Resend](https://resend.com). Sem ela, em desenvolvimento o link aparece no terminal do back; em produção nada é enviado |
 | `EMAIL_REMETENTE` | remetente dos e-mails, ex.: `Place Brokers <nao-responda@placebrokers.com.br>` (o domínio precisa estar verificado no Resend) |
 | `SITE_URL` | endereço do site usado no link do e-mail (ex.: `https://placebrokers-frontend.vercel.app`). Se faltar, usa o primeiro `CORS_ORIGIN` |
+| `EXIGIR_LOGIN_EM_TUDO` | `1` **só na cópia da Vercel** (apresentação de AOS): toda rota pede login, menos login, cadastro, renovar sessão, recuperar senha, `/health` e `/docs`. No Render fica sem ela, porque o catálogo e o formulário do site são públicos |
 | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_DRIVE_DOCUMENTOS_FOLDER_IDS` | só para os scripts de sincronização com o Google Drive (`scripts/`), rodados localmente |
 
 ## Documentação da API
