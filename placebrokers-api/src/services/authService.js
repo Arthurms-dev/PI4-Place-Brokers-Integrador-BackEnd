@@ -187,7 +187,23 @@ async login(credentials, contexto = {}) {
     };
   }
 
-
+    /**
+   * @param {string} token
+   */
+  async logout(token) {
+    if (!token) return;
+    let resultado;
+    try {
+      resultado = await this.authClient.encerrarSessao(token);
+    } catch (cause) {
+      throw new AuthError('SERVER_ERROR', 'Erro ao conectar à autenticação.', {}, cause);
+    }
+    const erro = resultado?.error;
+    if (erro && !/invalid|expired|not.?found|missing/i.test(`${erro.code ?? ''} ${erro.message ?? ''}`)) {
+      throw new AuthError('SERVER_ERROR', 'Não foi possível encerrar a sessão agora.', {}, erro);
+    }
+  }
+  
   async registrarTentativaFalha (email) {
     if (!this.loginAttemptRepository || !this.painelAdmRepository) return;
 
