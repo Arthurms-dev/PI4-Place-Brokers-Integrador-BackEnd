@@ -242,6 +242,24 @@
           }
         },
         {
+          "name": "POST /auth/logout — Encerra a sessão: revoga o token no provedor de autenticação",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Qualquer usuário logado"
+          }
+        },
+        {
           "name": "GET /auth/me — Dados do usuário logado",
           "request": {
             "method": "GET",

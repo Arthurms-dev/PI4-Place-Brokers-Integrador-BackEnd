@@ -1,9 +1,9 @@
-// Testa a configuracao das rotas sem acessar o Supabase nem rede.
 'use strict';
 
 jest.mock('../controllers/authController', () => ({
   login: jest.fn(),
   register: jest.fn(),
+  logout: jest.fn(),
   me: jest.fn(),
   atualizarMe: jest.fn(),
   alterarSenha: jest.fn(),
@@ -49,6 +49,12 @@ describe('limitadores ligados as rotas de autenticacao', () => {
   test('POST /auth/login: bloqueios por IP e email ocorrem antes do login', () => {
     expect(funcoesDaRota('post', '/login')).toEqual([
       limitadores.loginPorIp, limitadores.loginPorEmail, controller.login,
+    ]);
+  });
+
+    test('POST /auth/logout: exige login e chama o controller de logout', () => {
+    expect(funcoesDaRota('post', '/logout')).toEqual([
+      authMiddleware, controller.logout,
     ]);
   });
 
