@@ -81,9 +81,12 @@ async function me(req, res) {
   }
 }
 
-// Depois de mudar o perfil, a próxima chamada de /auth/me já mostra o dado novo (sem esperar o cache).
+function tokenDaRequisicao(req) {
+  return String(req.headers?.authorization ?? '').replace(/^Bearer\s+/i, '');
+}
+
 function esquecerSessaoDaRequisicao(req) {
-  const token = String(req.headers?.authorization ?? '').replace(/^Bearer\s+/i, '');
+  const token = tokenDaRequisicao(req);
   if (token) invalidarSessao(token);
 }
 
@@ -122,6 +125,17 @@ async function renovar(req, res) {
     return res.status(200).json(await authService.renovar(req.body));
   } catch (err) {
     return handleAuthError(res, err);
+  }
+}
+
+async function logout(req, res) {
+  try {
+    await authService.logout(tokenDaRequisicao(req));
+    return res.status(204).send();
+  } catch (err) {
+    return handleAuthError(res, err);
+  } finally {
+    esquecerSessaoDaRequisicao(req);
   }
 }
 
@@ -200,6 +214,7 @@ module.exports = {
   removerFoto,
   login,
   register,
+  logout,
   me,
   atualizarMe,
   alterarSenha,
