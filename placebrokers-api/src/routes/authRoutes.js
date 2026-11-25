@@ -3,7 +3,7 @@
 const { Router } = require('express');
 const multer = require('multer');
 const {
-  login, register, me, atualizarMe, alterarSenha, esqueciSenha, redefinirSenha, renovar, trocarFoto, removerFoto,
+  login, register, logout, me, atualizarMe, alterarSenha, esqueciSenha, redefinirSenha, renovar, trocarFoto, removerFoto,
 } = require('../controllers/authController');
 const { TAMANHO_MAXIMO_ENVIO } = require('../services/fotoPerfilService');
 const { authMiddleware } = require('../middlewares/authMiddleware');
@@ -23,9 +23,9 @@ function receberFoto(req, res, next) {
 router.post('/login', limitadores.loginPorIp, limitadores.loginPorEmail, login);
 router.post('/register', limitadores.cadastro, register);
 router.post('/renovar', limitadores.renovacao, renovar);
+router.post('/logout', authMiddleware, logout);
 router.get('/me', authMiddleware, me);
 router.patch('/me', authMiddleware, atualizarMe);
-// Foto de perfil: cada um troca a própria (o id vem do token, nunca do corpo).
 router.put('/me/foto', authMiddleware, limitadores.fotoPerfil, receberFoto, trocarFoto);
 router.delete('/me/foto', authMiddleware, removerFoto);
 router.patch('/senha', authMiddleware, limitadores.trocaDeSenha, alterarSenha);
