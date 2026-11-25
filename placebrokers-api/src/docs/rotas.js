@@ -46,6 +46,8 @@ const ROTAS = [
   { metodo: 'post', caminho: '/auth/renovar', grupo: 'Autenticação', acesso: 'publico', resumo: 'Troca o refreshToken do login por um token novo (o token vale 1 hora)',
     corpo: { refreshToken: 'refresh-token-do-login' },
     obs: 'Usado pelo app para não pedir a senha de novo. Confere se a conta continua ativa e aprovada.' },
+    { metodo: 'post', caminho: '/auth/logout', grupo: 'Autenticação', acesso: 'logado', resumo: 'Encerra a sessão: revoga o token no provedor de autenticação',
+    obs: 'Responde 204 sem corpo. Idempotente: token já expirado também encerra sem erro. O app e o site devem apagar os tokens locais mesmo que a chamada falhe.' },
   { metodo: 'get', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Dados do usuário logado' },
   { metodo: 'patch', caminho: '/auth/me', grupo: 'Autenticação', acesso: 'logado', resumo: 'Atualiza nome, telefone e o aviso de lead por e-mail', corpo: { nome: 'Fulano de Tal', telefone: '81999998888', avisoLeadEmail: true } },
   { metodo: 'put', caminho: '/auth/me/foto', grupo: 'Autenticação', acesso: 'logado', resumo: 'Troca a própria foto de perfil (multipart: foto JPG/PNG/WebP até 5 MB; vira quadrado de 256 px em WebP)', multipart: true },
