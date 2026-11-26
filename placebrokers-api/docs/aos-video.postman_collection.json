@@ -1,0 +1,633 @@
+{
+  "info": {
+    "name": "Place Brokers · AOS (vídeo)",
+    "description": "Só as requisições do vídeo de AOS, na ordem do roteiro. Clique Send de cima para baixo.\n\nAntes de gravar, na aba Variables (coluna Current value):\n- emailCorretor e senhaCorretor: o corretor de teste já aprovado (não salve a senha no repositório)\n- leadId: id de um lead desse corretor (passo 11)\n- clienteDeOutroCorretor: id de um cliente de outro corretor (passo 12)\n\ntoken, id e agendamentoId são preenchidos sozinhos pelos scripts. A coleção completa continua em placebrokers-api.postman_collection.json.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://pi-4-place-brokers-integrador-back.vercel.app"
+    },
+    {
+      "key": "emailCorretor",
+      "value": ""
+    },
+    {
+      "key": "senhaCorretor",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": ""
+    },
+    {
+      "key": "agendamentoId",
+      "value": ""
+    },
+    {
+      "key": "leadId",
+      "value": ""
+    },
+    {
+      "key": "clienteDeOutroCorretor",
+      "value": ""
+    },
+    {
+      "key": "telefoneCadastro",
+      "value": ""
+    },
+    {
+      "key": "telefoneCliente",
+      "value": ""
+    },
+    {
+      "key": "dataReuniao",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 · GET /clientes sem token → 401",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes"
+          ]
+        },
+        "description": "Prova que as rotas são protegidas: sem token, a API responde 401.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Sem login a rota é bloqueada (401)\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 · POST /auth/register (sign up)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        },
+        "description": "E-mail e telefone mudam a cada envio, então dá para repetir o teste. Cada envio cria uma conta pendente: depois do vídeo, o admin recusa em Equipe → Aprovações.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Corretor Vídeo AOS\",\n  \"email\": \"video.aos+{{$timestamp}}@exemplo.com\",\n  \"telefone\": \"{{telefoneCadastro}}\",\n  \"password\": \"Senha-do-video-123\",\n  \"confirmPassword\": \"Senha-do-video-123\",\n  \"role\": \"corretor\",\n  \"vinculo\": \"interno\",\n  \"creci\": null,\n  \"uf\": \"PE\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"telefoneCadastro\", \"819\" + String(Date.now()).slice(-8));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Conta criada (fica pendente até o admin aprovar)\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 · POST /auth/login (guarda o token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Preencha emailCorretor e senhaCorretor na aba Variables (Current value) com o corretor de teste já aprovado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{emailCorretor}}\",\n  \"password\": \"{{senhaCorretor}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login aceito\", () => pm.response.to.have.status(200));",
+              "const corpo = pm.response.json();",
+              "if (corpo.token) pm.collectionVariables.set(\"token\", corpo.token);",
+              "pm.test(\"Token salvo na variável {{token}}\", () => pm.expect(pm.collectionVariables.get(\"token\")).to.not.be.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 · GET /clientes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes"
+          ]
+        },
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Lista da carteira do corretor\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Pelo menos 2 clientes pré-cadastrados\", () => pm.expect(pm.response.json().clientes.length).to.be.at.least(2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 · POST /clientes (guarda o id)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/clientes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes"
+          ]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Cliente Vídeo AOS\",\n  \"telefone\": \"{{telefoneCliente}}\",\n  \"email\": \"cliente.video+{{$timestamp}}@exemplo.com\",\n  \"observacoes\": \"Criado no vídeo de AOS\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"telefoneCliente\", \"819\" + String(Date.now() + 7).slice(-8));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Cliente criado\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"id\", pm.response.json().cliente.id);",
+              "pm.test(\"id salvo na variável {{id}}\", () => pm.expect(pm.collectionVariables.get(\"id\")).to.not.be.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 · GET /clientes/:id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{id}}"
+          ]
+        },
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Detalhe do cliente criado\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 · PATCH /clientes/:id",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{id}}"
+          ]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"observacoes\": \"Pediu simulação com FGTS\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Cliente alterado\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Observação nova gravada\", () => pm.expect(pm.response.json().cliente.observacoes).to.eql(\"Pediu simulação com FGTS\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 · POST /clientes/:id/agendamentos (guarda o agendamentoId)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{id}}",
+            "agendamentos"
+          ]
+        },
+        "description": "Relacionamento 1: cliente → agendamentos, pela URL composta. Reunião no escritório, 3 dias à frente.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"reuniao_escritorio\",\n  \"dataHora\": \"{{dataReuniao}}\",\n  \"local\": \"Escritório da Place\",\n  \"observacoes\": \"Reunião marcada no vídeo de AOS\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const d = new Date(Date.now() + 3 * 24 * 3600 * 1000);",
+              "d.setUTCHours(13 + (d.getUTCMinutes() % 6), (d.getUTCSeconds() % 2) * 30, 0, 0);",
+              "pm.collectionVariables.set(\"dataReuniao\", d.toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Agendamento criado para o cliente\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"agendamentoId\", pm.response.json().agendamento.id);",
+              "pm.test(\"agendamentoId salvo\", () => pm.expect(pm.collectionVariables.get(\"agendamentoId\")).to.not.be.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 · GET /clientes/:id/agendamentos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{id}}",
+            "agendamentos"
+          ]
+        },
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Agendamentos do cliente\", () => pm.response.to.have.status(200));",
+              "pm.test(\"O agendamento novo está na lista\", () => pm.expect(pm.response.json().agendamentos.map(a => a.id)).to.include(pm.collectionVariables.get(\"agendamentoId\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 · DELETE /clientes/:id/agendamentos/:agendamentoId",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{id}}/agendamentos/{{agendamentoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{id}}",
+            "agendamentos",
+            "{{agendamentoId}}"
+          ]
+        },
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Agendamento excluído\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 · GET /leads/:leadId/atividades",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/leads/{{leadId}}/atividades",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "leads",
+            "{{leadId}}",
+            "atividades"
+          ]
+        },
+        "description": "Relacionamento 2: lead → atividades. Antes de enviar, cole na variável leadId o id de um lead do corretor (é a troca de variável que o professor pede para ver)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Histórico do lead\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 · PATCH /clientes/:id de outro corretor → 403",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{clienteDeOutroCorretor}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{clienteDeOutroCorretor}}"
+          ]
+        },
+        "description": "Cole na variável clienteDeOutroCorretor o id de um cliente que NÃO é da carteira do corretor de teste.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"observacoes\": \"Tentativa de alterar cliente de outro corretor\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Não altera dado de outro usuário (403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 · DELETE /clientes/:id",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes",
+            "{{id}}"
+          ]
+        },
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Cliente do vídeo excluído\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 · POST /auth/logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        },
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Sessão encerrada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 · GET /clientes com o token antigo → 401",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/clientes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "clientes"
+          ]
+        },
+        "description": "Mesmo token de antes do logout. Testem uma vez antes de gravar."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Depois do logout o token não vale mais (401)\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
