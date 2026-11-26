@@ -99,14 +99,14 @@ Todas as rotas, exceto as públicas, pedem `Authorization: Bearer <token>`. A li
 
 | Recurso | Rotas | Quem |
 | --- | --- | --- |
-| `/auth` | `POST /login` (devolve `token` de 1 hora e `refreshToken`), `POST /renovar`, `POST /register`, `POST /esqueci-senha`, `POST /redefinir-senha`, `GET /me`, `PATCH /me`, `PATCH /senha` | público / logado |
+| `/auth` | `POST /login` (devolve `token` de 1 hora e `refreshToken`), `POST /renovar`, `POST /register`, `POST /esqueci-senha`, `POST /redefinir-senha`, `POST /logout`, `GET /me`, `PATCH /me`, `PUT/DELETE /me/foto`, `PATCH /senha` | público / logado |
 | `/empreendimentos` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `POST /:id/imagens/capa`, `POST /:id/imagens/galeria`, `DELETE /:id/imagens/:imagemId`, `POST /:id/tipologias`, `PATCH /:id/tipologias/:tipologiaId`, `GET /:id/documentos`, `GET /:id/documentos/:tipo`, `GET /:id/documentos/arquivo/:docId`, `GET/POST /:id/documentos/admin`, `PATCH /:id/documentos/admin/:docId`, `GET /documentos/pendencias` | catálogo público; documentos para admin, gerente e corretor; edição admin e cadastro |
 | `/construtoras` | `GET /`, `POST /` | leitura / admin e cadastro |
-| `/leads` | `POST /` (formulário do site), `GET /`, `GET /meus`, `GET /retornos`, `PATCH /:id/status`, `PATCH /:id/corretor`, `POST /:id/converter`, `POST /:id/cliente`, `GET/POST /:id/atividades` | público (criar) / admin / corretor |
+| `/leads` | `POST /` (formulário do site), `GET /`, `GET /meus`, `GET /retornos`, `PATCH /:id/status`, `PATCH /:id/corretor`, `POST /:id/converter`, `POST /:id/cliente`, `POST /meus`, `GET/PATCH/DELETE /:id`, `GET/POST /:id/atividades`, `GET/PATCH/DELETE /:id/atividades/:atividadeId` | público (criar) / admin / corretor |
 | `/roleta` | `GET /hoje`, `POST /chegada`, `PATCH/DELETE /chegada/:corretorId`, `POST /iniciar`, `POST /distribuir`, `GET /minha`, `GET /focos`, `PUT /focos/:corretorId` | recepção e admin / corretor / gerente (focos da equipe) |
-| `/clientes` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id` | admin, corretor (só a própria carteira) |
-| `/agendamentos` | `GET /`, `POST /`, `PATCH /:id/data`, `PATCH /:id/status` | admin, corretor (só os seus) |
-| `/vendas` | `POST /`, `GET /`, `PATCH /:id`, `GET /vgv` | corretor registra; gerente/admin confirmam; diretor só lê a própria diretoria |
+| `/clientes` | `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id`, `GET/POST /:id/agendamentos`, `GET/PATCH/DELETE /:id/agendamentos/:agendamentoId` | admin, corretor (só a própria carteira) |
+| `/agendamentos` | `GET /`, `POST /`, `GET/PATCH/DELETE /:id`, `PATCH /:id/data`, `PATCH /:id/status` | admin, corretor (só os seus) |
+| `/vendas` | `POST /`, `GET /`, `GET /:id`, `PATCH /:id`, `DELETE /:id`, `GET /vgv` | corretor registra; gerente/admin confirmam; diretor só lê a própria diretoria |
 | `/equipe` | `GET /`, `PATCH /:id`, `POST /gerentes`, `POST /usuarios`, `GET/POST /times`, `PATCH/DELETE /times/:id`, `GET/POST /diretorias` | admin |
 | `/gerente` | `GET /equipe`, `GET /leads`, `GET /agendamentos`, `GET /desempenho`, `PATCH /leads/:id/corretor` | gerente (só a própria equipe) |
 | `/corretores` | `GET /` | admin |

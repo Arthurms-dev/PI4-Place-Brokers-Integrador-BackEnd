@@ -234,7 +234,7 @@ async login(credentials, contexto = {}) {
     if (confirmPassword !== password) errors.confirmPassword = 'As senhas não coincidem.';
 
     if (!role || !VALID_ROLES_CADASTRO.includes(role)) {
-      errors.role = 'Cadastro publico disponivel apenas para corretores.';
+      errors.role = 'Cadastro público disponível apenas para corretores.';
     }
 
     if (role === 'corretor') {
